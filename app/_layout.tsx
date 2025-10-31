@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 
 import { useSupabase } from "@/hooks/useSupabase";
+import { QueryProvider } from "@/providers/query-provider";
 import { SupabaseProvider } from "@/providers/supabase-provider";
 
 SplashScreen.setOptions({
@@ -16,7 +17,9 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   return (
     <SupabaseProvider>
-      <RootNavigator />
+      <QueryProvider>
+        <RootNavigator />
+      </QueryProvider>
     </SupabaseProvider>
   );
 }
