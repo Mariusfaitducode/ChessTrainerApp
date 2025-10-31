@@ -8,6 +8,7 @@ export default function PublicLayout() {
         options={{
           title: "Welcome",
           headerTransparent: true,
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -15,8 +16,7 @@ export default function PublicLayout() {
         options={{
           title: "Sign Up",
           headerTransparent: true,
-          headerLargeTitle: true,
-          headerBackButtonDisplayMode: "minimal",
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -24,8 +24,7 @@ export default function PublicLayout() {
         options={{
           title: "Sign In",
           headerTransparent: true,
-          headerLargeTitle: true,
-          headerBackButtonDisplayMode: "minimal",
+          headerShown: false,
         }}
       />
     </Stack>
