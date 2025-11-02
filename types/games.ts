@@ -1,6 +1,6 @@
 // Types pour les parties d'échecs
 
-import { Platform, GameResult } from './chess';
+import { Platform, GameResult } from "./chess";
 
 export interface Game {
   id: string;
@@ -25,7 +25,7 @@ export interface GameAnalysis {
   evaluation: number | null;
   best_move: string | null;
   played_move: string;
-  mistake_level: 'blunder' | 'mistake' | 'inaccuracy' | null;
+  mistake_level: "blunder" | "mistake" | "inaccuracy" | null;
   analysis_data: Record<string, any> | null;
   created_at: string;
 }

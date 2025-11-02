@@ -136,12 +136,12 @@ export const getPlayerGames = async (
   }
 
   const data = await response.json();
-  
+
   // Chess.com peut retourner directement un tableau ou un objet avec une propriété games
   if (Array.isArray(data)) {
     return data;
   }
-  
+
   return data.games || [];
 };
 

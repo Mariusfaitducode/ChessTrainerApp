@@ -7,7 +7,7 @@ interface ChessboardWrapperProps {
   showCoordinates?: boolean;
 }
 
-// Placeholder pour l'échiquier - sera remplacé par react-chessboard (web) 
+// Placeholder pour l'échiquier - sera remplacé par react-chessboard (web)
 // ou une solution native plus tard
 export const ChessboardWrapper = ({
   fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -19,7 +19,9 @@ export const ChessboardWrapper = ({
 
   return (
     <View style={styles.container}>
-      <View style={[styles.placeholder, { width: boardSize, height: boardSize }]}>
+      <View
+        style={[styles.placeholder, { width: boardSize, height: boardSize }]}
+      >
         <Text style={styles.placeholderText}>Échiquier</Text>
         <Text style={styles.placeholderSubtext}>
           Visualisation à implémenter

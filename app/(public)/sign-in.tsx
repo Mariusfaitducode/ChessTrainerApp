@@ -48,7 +48,7 @@ export default function SignInScreen() {
       console.error("Sign in error:", err);
       Alert.alert(
         "Erreur de connexion",
-        err?.message || "Email ou mot de passe incorrect"
+        err?.message || "Email ou mot de passe incorrect",
       );
     } finally {
       setIsLoading(false);

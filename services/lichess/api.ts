@@ -1,11 +1,11 @@
 /**
  * Service pour l'API Lichess
  * Documentation: https://lichess.org/api
- * 
+ *
  * Lichess a deux modes :
  * - API publique (sans auth) pour les données publiques
  * - API avec token (OAuth) pour les données privées
- * 
+ *
  * Pour notre cas, on utilise l'API publique avec username
  */
 
@@ -72,7 +72,9 @@ export interface LichessGame {
 /**
  * Récupère le profil public d'un joueur
  */
-export const getUserProfile = async (username: string): Promise<LichessUser> => {
+export const getUserProfile = async (
+  username: string,
+): Promise<LichessUser> => {
   const response = await fetch(`${BASE_URL}/user/${username}`, {
     headers: {
       Accept: "application/json",
@@ -98,7 +100,7 @@ export const getUserProfile = async (username: string): Promise<LichessUser> => 
 export const getUserGames = async (
   username: string,
   max: number = 50,
-  since?: number
+  since?: number,
 ): Promise<LichessGame[]> => {
   const params = new URLSearchParams({
     max: max.toString(),
@@ -114,25 +116,27 @@ export const getUserGames = async (
       headers: {
         Accept: "application/x-ndjson",
       },
-    }
+    },
   );
 
   if (!response.ok) {
     if (response.status === 404) {
       return [];
     }
-    throw new Error(`Erreur lors de la récupération des parties: ${response.statusText}`);
+    throw new Error(
+      `Erreur lors de la récupération des parties: ${response.statusText}`,
+    );
   }
 
   // Lichess retourne du NDJSON (Newline Delimited JSON)
   const text = await response.text();
-  
+
   if (!text || text.trim() === "") {
     return [];
   }
-  
+
   const lines = text.trim().split("\n");
-  
+
   const games: LichessGame[] = [];
   for (const line of lines) {
     if (line.trim()) {
@@ -143,7 +147,7 @@ export const getUserGames = async (
       }
     }
   }
-  
+
   return games;
 };
 
@@ -158,7 +162,9 @@ export const getGamePGN = async (gameId: string): Promise<string> => {
   });
 
   if (!response.ok) {
-    throw new Error(`Erreur lors de la récupération du PGN: ${response.statusText}`);
+    throw new Error(
+      `Erreur lors de la récupération du PGN: ${response.statusText}`,
+    );
   }
 
   return response.text();

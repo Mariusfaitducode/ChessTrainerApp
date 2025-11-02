@@ -1,6 +1,6 @@
 // Types pour les exercices
 
-import { ExerciseType } from './chess';
+import { ExerciseType } from "./chess";
 
 export interface Exercise {
   id: string;

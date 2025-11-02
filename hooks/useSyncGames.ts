@@ -5,7 +5,11 @@ import { useSupabase } from "./useSupabase";
 import { useChessPlatform } from "./useChessPlatform";
 import type { Platform } from "@/types/chess";
 import { getAllPlayerGames, type ChessComGame } from "@/services/chesscom/api";
-import { getUserGames, getGamePGN, type LichessGame } from "@/services/lichess/api";
+import {
+  getUserGames,
+  getGamePGN,
+  type LichessGame,
+} from "@/services/lichess/api";
 import { prepareGamesForInsert } from "@/services/sync/games";
 
 /**
@@ -25,7 +29,9 @@ export const useSyncGames = () => {
       platform?: Platform;
     } = {}) => {
       if (!session?.user) {
-        throw new Error("Vous devez être connecté pour synchroniser les parties");
+        throw new Error(
+          "Vous devez être connecté pour synchroniser les parties",
+        );
       }
 
       const platformsToSync = platform
@@ -34,7 +40,7 @@ export const useSyncGames = () => {
 
       if (platformsToSync.length === 0) {
         throw new Error(
-          "Aucun username configuré. Ajoute un username dans l'onglet Profil."
+          "Aucun username configuré. Ajoute un username dans l'onglet Profil.",
         );
       }
 
@@ -44,29 +50,44 @@ export const useSyncGames = () => {
 
       for (const userPlatform of platformsToSync) {
         try {
-          console.log(`[Sync] Récupération des parties pour ${userPlatform.platform} (${userPlatform.platform_username})`);
-          
+          console.log(
+            `[Sync] Récupération des parties pour ${userPlatform.platform} (${userPlatform.platform_username})`,
+          );
+
           // Récupérer les parties depuis l'API
           let apiGames: (ChessComGame | LichessGame)[] = [];
 
           if (userPlatform.platform === "chesscom") {
             const months = Math.ceil(maxGames / 50);
-            console.log(`[Sync] Chess.com: récupération de ${Math.min(months, 12)} mois`);
+            console.log(
+              `[Sync] Chess.com: récupération de ${Math.min(months, 12)} mois`,
+            );
             apiGames = await getAllPlayerGames(
               userPlatform.platform_username,
-              Math.min(months, 12)
+              Math.min(months, 12),
             );
-            console.log(`[Sync] Chess.com: ${apiGames.length} parties récupérées`);
+            console.log(
+              `[Sync] Chess.com: ${apiGames.length} parties récupérées`,
+            );
             apiGames = apiGames.slice(0, maxGames);
-            console.log(`[Sync] Chess.com: ${apiGames.length} parties après limite`);
+            console.log(
+              `[Sync] Chess.com: ${apiGames.length} parties après limite`,
+            );
           } else if (userPlatform.platform === "lichess") {
             console.log(`[Sync] Lichess: récupération de ${maxGames} parties`);
-            apiGames = await getUserGames(userPlatform.platform_username, maxGames);
-            console.log(`[Sync] Lichess: ${apiGames.length} parties récupérées`);
+            apiGames = await getUserGames(
+              userPlatform.platform_username,
+              maxGames,
+            );
+            console.log(
+              `[Sync] Lichess: ${apiGames.length} parties récupérées`,
+            );
           }
 
           if (apiGames.length === 0) {
-            console.warn(`[Sync] Aucune partie trouvée pour ${userPlatform.platform}`);
+            console.warn(
+              `[Sync] Aucune partie trouvée pour ${userPlatform.platform}`,
+            );
             continue;
           }
 
@@ -76,20 +97,24 @@ export const useSyncGames = () => {
           const gamesToInsert = await prepareGamesForInsert(
             userPlatform.platform,
             apiGames,
-            session.user.id
+            session.user.id,
           );
 
           console.log(`[Sync] ${gamesToInsert.length} parties converties`);
 
           if (gamesToInsert.length === 0) {
-            console.warn(`[Sync] Aucune partie n'a pu être convertie pour ${userPlatform.platform}`);
+            console.warn(
+              `[Sync] Aucune partie n'a pu être convertie pour ${userPlatform.platform}`,
+            );
             continue;
           }
 
           // Vérifier quelles parties existent déjà
           const platformGameIds = gamesToInsert.map((g) => g.platform_game_id);
-          console.log(`[Sync] Vérification des doublons parmi ${platformGameIds.length} parties...`);
-          
+          console.log(
+            `[Sync] Vérification des doublons parmi ${platformGameIds.length} parties...`,
+          );
+
           let existingGames: { platform_game_id: string }[] = [];
           if (platformGameIds.length > 0) {
             // Supabase .in() a une limite, on doit gérer ça par batch si nécessaire
@@ -99,24 +124,29 @@ export const useSyncGames = () => {
               .eq("user_id", session.user.id)
               .eq("platform", userPlatform.platform)
               .in("platform_game_id", platformGameIds);
-            
+
             if (error) {
-              console.error("[Sync] Erreur lors de la vérification des doublons:", error);
+              console.error(
+                "[Sync] Erreur lors de la vérification des doublons:",
+                error,
+              );
             } else {
               existingGames = data || [];
             }
           }
 
           const existingIds = new Set(
-            existingGames?.map((g) => g.platform_game_id) || []
+            existingGames?.map((g) => g.platform_game_id) || [],
           );
 
           // Filtrer les nouvelles parties
           const newGames = gamesToInsert.filter(
-            (g) => !existingIds.has(g.platform_game_id)
+            (g) => !existingIds.has(g.platform_game_id),
           );
 
-          console.log(`[Sync] ${newGames.length} nouvelles parties (${gamesToInsert.length - newGames.length} déjà existantes)`);
+          console.log(
+            `[Sync] ${newGames.length} nouvelles parties (${gamesToInsert.length - newGames.length} déjà existantes)`,
+          );
 
           if (newGames.length === 0) {
             totalSkipped += gamesToInsert.length;
@@ -124,8 +154,10 @@ export const useSyncGames = () => {
             continue;
           }
 
-          console.log(`[Sync] Insertion de ${newGames.length} nouvelles parties...`);
-          
+          console.log(
+            `[Sync] Insertion de ${newGames.length} nouvelles parties...`,
+          );
+
           // Insérer les nouvelles parties
           const { error: insertError, data } = await supabase
             .from("games")
@@ -146,20 +178,27 @@ export const useSyncGames = () => {
             .update({ last_sync_at: new Date().toISOString() })
             .eq("id", userPlatform.id);
         } catch (error: any) {
-          console.error(`Erreur lors de la sync pour ${userPlatform.platform}:`, error);
+          console.error(
+            `Erreur lors de la sync pour ${userPlatform.platform}:`,
+            error,
+          );
           totalErrors++;
           throw new Error(
             `Erreur lors de la synchronisation de ${userPlatform.platform}: ${
               error?.message || "Erreur inconnue"
-            }`
+            }`,
           );
         }
       }
 
-      console.log(`[Sync] Résultat: ${totalImported} importées, ${totalSkipped} ignorées, ${totalErrors} erreurs`);
+      console.log(
+        `[Sync] Résultat: ${totalImported} importées, ${totalSkipped} ignorées, ${totalErrors} erreurs`,
+      );
 
       if (totalImported === 0 && totalSkipped === 0 && totalErrors === 0) {
-        throw new Error("Aucune partie trouvée. Vérifie que le username est correct et qu'il a des parties.");
+        throw new Error(
+          "Aucune partie trouvée. Vérifie que le username est correct et qu'il a des parties.",
+        );
       }
 
       return {
@@ -170,26 +209,29 @@ export const useSyncGames = () => {
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
-      
+
       if (result.imported === 0 && result.skipped > 0) {
         Alert.alert(
           "Synchronisation terminée",
-          `Toutes les parties sont déjà importées (${result.skipped} parties vérifiées)`
+          `Toutes les parties sont déjà importées (${result.skipped} parties vérifiées)`,
         );
       } else if (result.imported > 0) {
         Alert.alert(
           "Synchronisation réussie",
-          `${result.imported} nouvelle${result.imported > 1 ? "s" : ""} partie${result.imported > 1 ? "s" : ""} importée${result.imported > 1 ? "s" : ""}`
+          `${result.imported} nouvelle${result.imported > 1 ? "s" : ""} partie${result.imported > 1 ? "s" : ""} importée${result.imported > 1 ? "s" : ""}`,
         );
       } else {
         Alert.alert(
           "Synchronisation",
-          `Aucune nouvelle partie trouvée. Vérifie que le username est correct et qu'il a des parties récentes.`
+          `Aucune nouvelle partie trouvée. Vérifie que le username est correct et qu'il a des parties récentes.`,
         );
       }
     },
     onError: (error: any) => {
-      Alert.alert("Erreur de synchronisation", error?.message || "Une erreur est survenue");
+      Alert.alert(
+        "Erreur de synchronisation",
+        error?.message || "Une erreur est survenue",
+      );
     },
   });
 

@@ -53,7 +53,10 @@ export default function SignUpScreen() {
     }
 
     if (password.length < 6) {
-      Alert.alert("Erreur", "Le mot de passe doit contenir au moins 6 caractères");
+      Alert.alert(
+        "Erreur",
+        "Le mot de passe doit contenir au moins 6 caractères",
+      );
       return;
     }
 
@@ -73,7 +76,7 @@ export default function SignUpScreen() {
       console.error("Sign up error:", err);
       Alert.alert(
         "Erreur d'inscription",
-        err?.message || "Une erreur est survenue lors de l'inscription"
+        err?.message || "Une erreur est survenue lors de l'inscription",
       );
     } finally {
       setIsLoading(false);
@@ -98,7 +101,7 @@ export default function SignUpScreen() {
       console.error("Verify OTP error:", err);
       Alert.alert(
         "Erreur de vérification",
-        err?.message || "Code de vérification incorrect"
+        err?.message || "Code de vérification incorrect",
       );
     } finally {
       setIsLoading(false);
@@ -245,16 +248,16 @@ export default function SignUpScreen() {
         <TouchableOpacity
           style={[
             styles.button,
-            (!email || !password || !confirmPassword || isLoading || !isLoaded) &&
+            (!email ||
+              !password ||
+              !confirmPassword ||
+              isLoading ||
+              !isLoaded) &&
               styles.buttonDisabled,
           ]}
           onPress={onSignUpPress}
           disabled={
-            !email ||
-            !password ||
-            !confirmPassword ||
-            isLoading ||
-            !isLoaded
+            !email || !password || !confirmPassword || isLoading || !isLoaded
           }
         >
           {isLoading ? (

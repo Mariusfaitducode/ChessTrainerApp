@@ -53,7 +53,8 @@ export const useChessPlatform = () => {
         }
       } catch (error: any) {
         throw new Error(
-          error?.message || `Le joueur "${username}" n'existe pas sur ${platform}`
+          error?.message ||
+            `Le joueur "${username}" n'existe pas sur ${platform}`,
         );
       }
 

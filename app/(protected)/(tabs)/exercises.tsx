@@ -21,15 +21,15 @@ export default function ExercisesScreen() {
   const router = useRouter();
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
   const { exercises, isLoading, refetch } = useExercises(
-    filter === "all" ? undefined : filter === "completed"
+    filter === "all" ? undefined : filter === "completed",
   );
 
   const filteredExercises =
     filter === "all"
       ? exercises
       : filter === "pending"
-      ? exercises.filter((e) => !e.completed)
-      : exercises.filter((e) => e.completed);
+        ? exercises.filter((e) => !e.completed)
+        : exercises.filter((e) => e.completed);
 
   const handleExercisePress = (exerciseId: string) => {
     router.push(`/(protected)/exercise/${exerciseId}` as any);
@@ -48,10 +48,7 @@ export default function ExercisesScreen() {
         <Text style={styles.title}>Mes exercices</Text>
         <View style={styles.filters}>
           <TouchableOpacity
-            style={[
-              styles.filter,
-              filter === "all" && styles.filterActive,
-            ]}
+            style={[styles.filter, filter === "all" && styles.filterActive]}
             onPress={() => setFilter("all")}
           >
             <Text
@@ -64,10 +61,7 @@ export default function ExercisesScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[
-              styles.filter,
-              filter === "pending" && styles.filterActive,
-            ]}
+            style={[styles.filter, filter === "pending" && styles.filterActive]}
             onPress={() => setFilter("pending")}
           >
             <Text
@@ -112,8 +106,8 @@ export default function ExercisesScreen() {
               {filter === "pending"
                 ? "Aucun exercice en attente."
                 : filter === "completed"
-                ? "Aucun exercice terminé."
-                : "Aucun exercice disponible."}
+                  ? "Aucun exercice terminé."
+                  : "Aucun exercice disponible."}
             </Text>
             <Text style={styles.emptySubtext}>
               Analyse tes parties pour générer des exercices personnalisés.
