@@ -19,7 +19,6 @@ interface GameCardProps {
   game: Game;
   userPlatforms: UserPlatform[];
   onPress: () => void;
-  onPressIn?: () => void;
 }
 
 const getTimeControlType = (
@@ -104,12 +103,7 @@ const getResultColor = (status: "win" | "loss" | "draw") => {
   }
 };
 
-export const GameCard = ({
-  game,
-  userPlatforms,
-  onPress,
-  onPressIn,
-}: GameCardProps) => {
+export const GameCard = ({ game, userPlatforms, onPress }: GameCardProps) => {
   // Trouver la plateforme correspondante
   const platform = userPlatforms.find((p) => p.platform === game.platform);
   const userUsername = platform?.platform_username?.toLowerCase();
@@ -164,12 +158,7 @@ export const GameCard = ({
   const resultColor = getResultColor(resultStatus);
 
   return (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={onPress}
-      onPressIn={onPressIn}
-      activeOpacity={0.7}
-    >
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.content}>
         {/* Logo type de partie */}
         <View style={styles.iconContainer}>
