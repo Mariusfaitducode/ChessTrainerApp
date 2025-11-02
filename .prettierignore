@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+
+# Lock files
+package-lock.json
+yarn.lock
+bun.lock
+
+# Generated files
+expo-env.d.ts
+
+# Documentation (optionnel - tu peux les formater si tu veux)
+# *.md
