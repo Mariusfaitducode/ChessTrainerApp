@@ -1,16 +1,11 @@
-import {
-  useMemo,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-} from "react";
+import { useMemo, useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  InteractionManager,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -26,51 +21,10 @@ import { formatTimeControl, getResultLabel } from "@/utils/chess";
 import { colors, spacing, typography, shadows, borders } from "@/theme";
 
 export default function GameDetailScreen() {
-  const renderStartTime = performance.now();
-  console.log(`[GameDetail] 🔵 Render démarré`);
-
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-
-  // Utiliser useRef pour capturer le temps du premier render (qui correspond au clic)
-  const mountTimeRef = useRef<number | null>(null);
-  if (mountTimeRef.current === null) {
-    mountTimeRef.current = performance.now();
-    console.log(
-      `[GameDetail] ⏱️ Premier render (clic) à ${mountTimeRef.current}ms`,
-    );
-  }
-
-  console.log(
-    `[GameDetail] 🔵 Avant useGame, temps depuis render: ${performance.now() - renderStartTime}ms`,
-  );
   const { game, analyses, isLoading, error } = useGame(id);
-  const afterUseGameTime = performance.now();
-  console.log(
-    `[GameDetail] 🔵 Après useGame, temps depuis render: ${afterUseGameTime - renderStartTime}ms, temps depuis clic: ${mountTimeRef.current ? afterUseGameTime - mountTimeRef.current : "N/A"}ms, game: ${game ? "✅" : "❌"}, isLoading: ${isLoading}`,
-  );
 
-  // Utiliser useLayoutEffect pour se déclencher AVANT le paint, plus rapide
-  useLayoutEffect(() => {
-    if (game && mountTimeRef.current) {
-      const totalTime = performance.now() - mountTimeRef.current;
-      console.log(
-        `[GameDetail] ⏱️ useLayoutEffect: Données disponibles, temps total depuis clic: ${totalTime}ms`,
-      );
-    }
-  }, [game]);
-
-  // Aussi un useEffect pour comparer
-  useEffect(() => {
-    if (game && mountTimeRef.current) {
-      const totalTime = performance.now() - mountTimeRef.current;
-      console.log(
-        `[GameDetail] ⏱️ useEffect: Données disponibles, temps total depuis clic: ${totalTime}ms`,
-      );
-    }
-  }, [game]);
-
-  const useChessGameStartTime = performance.now();
   const {
     moves,
     currentFen,
@@ -84,21 +38,7 @@ export default function GameDetailScreen() {
     isAtStart,
     isAtEnd,
     error: chessError,
-    isParsing,
   } = useChessGame(game?.pgn || null);
-  const useChessGameEndTime = performance.now();
-  console.log(
-    `[GameDetail] 🔵 useChessGame terminé en ${useChessGameEndTime - useChessGameStartTime}ms, moves: ${moves.length}, isParsing: ${isParsing}`,
-  );
-
-  useEffect(() => {
-    if (!isParsing && moves.length > 0 && mountTimeRef.current) {
-      const parseTime = performance.now() - mountTimeRef.current;
-      console.log(
-        `[GameDetail] Parsing terminé en ${parseTime}ms depuis clic, ${moves.length} coups parsés`,
-      );
-    }
-  }, [isParsing, moves.length]);
 
   // Trouver le dernier coup joué pour le highlight
   // Note: react-native-chessboard gère déjà le highlight automatiquement
@@ -109,11 +49,20 @@ export default function GameDetailScreen() {
     (a: { move_number: number }) => a.move_number === currentMoveIndex + 1,
   );
 
-  // Mémoriser les moves aplatis pour éviter les recalculs
-  const flattenStartTime = performance.now();
+  // Différer le rendu des composants lourds sur mobile pour éviter de bloquer pendant la navigation
+  const [readyToRenderHeavy, setReadyToRenderHeavy] = useState(false);
+
+  useEffect(() => {
+    if (game && !readyToRenderHeavy) {
+      InteractionManager.runAfterInteractions(() => {
+        setReadyToRenderHeavy(true);
+      });
+    }
+  }, [game, readyToRenderHeavy]);
+
+  // Mémoriser les moves aplatis
   const flattenedMoves = useMemo(() => {
-    const start = performance.now();
-    const result = moves.flatMap((m) => {
+    return moves.flatMap((m) => {
       const result: {
         moveNumber: number;
         white?: string;
@@ -138,16 +87,7 @@ export default function GameDetailScreen() {
       }
       return result;
     });
-    const end = performance.now();
-    console.log(`[GameDetail] 🔵 flattenedMoves calculé en ${end - start}ms`);
-    return result;
   }, [moves]);
-  const flattenEndTime = performance.now();
-  if (flattenEndTime - flattenStartTime > 5) {
-    console.log(
-      `[GameDetail] ⚠️ useMemo flattenedMoves a pris ${flattenEndTime - flattenStartTime}ms (attendu < 5ms)`,
-    );
-  }
 
   // Mémoriser le callback pour éviter les re-renders
   const handleMoveSelect = useCallback(
@@ -239,48 +179,59 @@ export default function GameDetailScreen() {
         </Text>
       </View>
 
-      {/* Échiquier */}
-      <View style={styles.chessboardContainer}>
-        <ChessboardWrapper
-          fen={currentFen}
-          boardOrientation="white"
-          lastMove={lastMove}
-        />
-      </View>
+      {/* Échiquier - Différer le rendu sur mobile pour éviter de bloquer */}
+      {readyToRenderHeavy ? (
+        <>
+          <View style={styles.chessboardContainer}>
+            <ChessboardWrapper
+              fen={currentFen}
+              boardOrientation="white"
+              lastMove={lastMove}
+            />
+          </View>
 
-      {/* Barre d'analyse (si disponible) */}
-      {currentAnalysis?.evaluation && (
-        <View style={styles.analysisContainer}>
-          <AnalysisBar
-            evaluation={currentAnalysis.evaluation}
-            isWhiteToMove={isWhiteTurn}
-          />
+          {/* Barre d'analyse (si disponible) */}
+          {currentAnalysis?.evaluation && (
+            <View style={styles.analysisContainer}>
+              <AnalysisBar
+                evaluation={currentAnalysis.evaluation}
+                isWhiteToMove={isWhiteTurn}
+              />
+            </View>
+          )}
+
+          {/* Contrôles de navigation */}
+          <View style={styles.controlsContainer}>
+            <GameControls
+              onFirst={goToStart}
+              onPrevious={goToPrevious}
+              onNext={goToNext}
+              onLast={goToEnd}
+              isAtStart={isAtStart}
+              isAtEnd={isAtEnd}
+              currentMove={currentMoveIndex}
+              totalMoves={totalMoves}
+            />
+          </View>
+
+          {/* Liste des coups */}
+          <View style={styles.movesSection}>
+            <Text style={styles.sectionTitle}>Coups</Text>
+            <MoveList
+              moves={flattenedMoves}
+              currentMove={currentMoveIndex}
+              onMoveSelect={handleMoveSelect}
+            />
+          </View>
+        </>
+      ) : (
+        <View style={styles.loadingPlaceholder}>
+          <ActivityIndicator size="small" color={colors.orange[500]} />
+          <Text style={styles.loadingPlaceholderText}>
+            Préparation de l&apos;échiquier...
+          </Text>
         </View>
       )}
-
-      {/* Contrôles de navigation */}
-      <View style={styles.controlsContainer}>
-        <GameControls
-          onFirst={goToStart}
-          onPrevious={goToPrevious}
-          onNext={goToNext}
-          onLast={goToEnd}
-          isAtStart={isAtStart}
-          isAtEnd={isAtEnd}
-          currentMove={currentMoveIndex}
-          totalMoves={totalMoves}
-        />
-      </View>
-
-      {/* Liste des coups */}
-      <View style={styles.movesSection}>
-        <Text style={styles.sectionTitle}>Coups</Text>
-        <MoveList
-          moves={flattenedMoves}
-          currentMove={currentMoveIndex}
-          onMoveSelect={handleMoveSelect}
-        />
-      </View>
 
       {/* Infos supplémentaires */}
       <View style={styles.infoSection}>
@@ -419,5 +370,16 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.medium,
     color: colors.text.primary,
+  },
+  loadingPlaceholder: {
+    padding: spacing[8],
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 200,
+  },
+  loadingPlaceholderText: {
+    marginTop: spacing[3],
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
   },
 });

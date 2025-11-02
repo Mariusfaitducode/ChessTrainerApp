@@ -1,5 +1,4 @@
-import { useMemo, useCallback } from "react";
-import { cache } from "@/utils/cache";
+import { useMemo } from "react";
 import {
   View,
   Text,
@@ -11,7 +10,6 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { RefreshCw } from "lucide-react-native";
-import { useQueryClient } from "@tanstack/react-query";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -70,126 +68,8 @@ export default function GamesScreen() {
   const { syncGames, isSyncing } = useSyncGames();
   const { platforms } = useChessPlatform();
 
-  const queryClient = useQueryClient();
-  const { supabase } = useSupabase();
-
-  // Précharger les données de la partie au hover/press (pour mobile: onPressIn)
-  // Optimisé : charger d'abord les métadonnées (ultra rapide), puis le PGN en parallèle
-  const prefetchGameData = useCallback(
-    async (gameId: string) => {
-      // Vérifier si les métadonnées sont déjà en cache
-      const cachedMetadata = queryClient.getQueryData([
-        "game-metadata",
-        gameId,
-      ]);
-
-      if (!cachedMetadata) {
-        // Vérifier d'abord le cache persistant
-        const persistentCache = await cache.get(`game-metadata-${gameId}`);
-        if (persistentCache) {
-          // Utiliser le cache persistant comme initialData
-          queryClient.setQueryData(["game-metadata", gameId], persistentCache);
-        } else {
-          // Précharger les métadonnées (sans PGN) - utilise la même logique que useGame
-          queryClient.prefetchQuery({
-            queryKey: ["game-metadata", gameId],
-            queryFn: async () => {
-              // ESSAYER LE CACHE D'ABORD
-              const cachedData = await cache.get(`game-metadata-${gameId}`);
-              if (cachedData) {
-                return cachedData;
-              }
-
-              // Si pas de cache, fetch depuis Supabase
-              const { data, error } = await supabase
-                .from("games")
-                .select(
-                  "id, platform, platform_game_id, white_player, black_player, result, time_control, played_at, analyzed_at",
-                )
-                .eq("id", gameId)
-                .single();
-              if (error) throw error;
-              // Sauvegarder dans le cache persistant
-              if (data) {
-                cache.set(`game-metadata-${gameId}`, data);
-              }
-              return data;
-            },
-            staleTime: 10 * 60 * 1000,
-          });
-        }
-      }
-
-      // Précharger le PGN en parallèle (mais ne pas bloquer)
-      const cachedPgn = queryClient.getQueryData(["game-pgn", gameId]);
-      if (!cachedPgn) {
-        // Vérifier d'abord le cache persistant
-        const persistentPgn = await cache.get(`game-pgn-${gameId}`);
-        if (persistentPgn !== null) {
-          queryClient.setQueryData(["game-pgn", gameId], persistentPgn);
-        } else {
-          queryClient.prefetchQuery({
-            queryKey: ["game-pgn", gameId],
-            queryFn: async () => {
-              // ESSAYER LE CACHE D'ABORD
-              const cachedPgn = await cache.get<string>(`game-pgn-${gameId}`);
-              if (cachedPgn) {
-                return cachedPgn;
-              }
-
-              // Si pas de cache, fetch depuis Supabase
-              const { data, error } = await supabase
-                .from("games")
-                .select("pgn")
-                .eq("id", gameId)
-                .single();
-              if (error) throw error;
-              const pgn = data?.pgn || null;
-              // Sauvegarder dans le cache persistant
-              if (pgn) {
-                cache.set(`game-pgn-${gameId}`, pgn);
-              }
-              return pgn;
-            },
-            staleTime: 10 * 60 * 1000,
-          });
-        }
-      }
-
-      // Précharger aussi les analyses en parallèle
-      const cachedAnalyses = queryClient.getQueryData([
-        "game-analyses",
-        gameId,
-      ]);
-      if (!cachedAnalyses) {
-        queryClient.prefetchQuery({
-          queryKey: ["game-analyses", gameId],
-          queryFn: async () => {
-            const { data, error } = await supabase
-              .from("game_analyses")
-              .select(
-                "id, game_id, move_number, evaluation, best_move, mistake_level",
-              )
-              .eq("game_id", gameId)
-              .order("move_number", { ascending: true });
-            if (error) throw error;
-            return data ?? [];
-          },
-          staleTime: 10 * 60 * 1000,
-        });
-      }
-    },
-    [queryClient, supabase],
-  );
-
   const handleGamePress = (gameId: string) => {
-    const clickTime = performance.now();
-    console.log(`[GamesScreen] 🔵 Clic sur partie ${gameId} à ${clickTime}ms`);
-    // Utiliser InteractionManager pour différer la navigation si nécessaire
     router.push(`/(protected)/game/${gameId}` as any);
-    console.log(
-      `[GamesScreen] 🔵 router.push appelé, temps: ${performance.now() - clickTime}ms`,
-    );
   };
 
   const handleSync = async () => {
@@ -246,7 +126,6 @@ export default function GamesScreen() {
       game={item}
       userPlatforms={platforms}
       onPress={() => handleGamePress(item.id)}
-      onPressIn={() => prefetchGameData(item.id)}
     />
   );
 
@@ -314,25 +193,6 @@ export default function GamesScreen() {
         }
         showsVerticalScrollIndicator={false}
         stickySectionHeadersEnabled={false}
-        onViewableItemsChanged={useCallback(
-          ({
-            viewableItems,
-          }: {
-            viewableItems: Array<{ item: Game; index: number | null }>;
-          }) => {
-            // Précharger les parties visibles + les prochaines (pour un scroll fluide)
-            viewableItems.forEach(({ item }: { item: Game }) => {
-              if (item) {
-                // Précharger la partie actuelle (idempotent, vérifie le cache avant)
-                prefetchGameData(item.id);
-              }
-            });
-          },
-          [prefetchGameData],
-        )}
-        viewabilityConfig={{
-          itemVisiblePercentThreshold: 50,
-        }}
       />
     </View>
   );
