@@ -1,24 +1,30 @@
-import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
+import { Stack } from "expo-router";
+import { View, StyleSheet } from "react-native";
+
+import { TabBar } from "@/components/navigation/TabBar";
+import { colors } from "@/theme";
 
 export default function TabsLayout() {
   return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Label>Dashboard</Label>
-        <Icon sf="chart.bar.fill" drawable="custom_android_drawable" />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="games">
-        <Label>Parties</Label>
-        <Icon sf="square.grid.2x2.fill" drawable="custom_android_drawable" />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="exercises">
-        <Label>Exercices</Label>
-        <Icon sf="brain.head.profile" drawable="custom_android_drawable" />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="profile">
-        <Label>Profil</Label>
-        <Icon sf="person.fill" drawable="custom_android_drawable" />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <View style={styles.container}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="games" />
+        <Stack.Screen name="exercises" />
+        <Stack.Screen name="profile" />
+      </Stack>
+      <TabBar />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+});
