@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +8,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { RefreshCw } from "lucide-react-native";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -16,6 +16,7 @@ import { useGames } from "@/hooks/useGames";
 import { useSyncGames } from "@/hooks/useSyncGames";
 import { GameCard } from "@/components/games/GameCard";
 import type { Game } from "@/types/games";
+import { colors, spacing, typography, shadows, borders } from "@/theme";
 
 export default function GamesScreen() {
   const insets = useSafeAreaInsets();
@@ -30,7 +31,7 @@ export default function GamesScreen() {
   const handleSync = async () => {
     try {
       await syncGames({ maxGames: 50 });
-    } catch (error) {
+    } catch {
       // L'erreur est déjà gérée dans le hook avec Alert
     }
   };
@@ -42,8 +43,8 @@ export default function GamesScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View>
+        <View style={styles.headerContent}>
+          <View style={styles.titleSection}>
             <Text style={styles.title}>Mes parties</Text>
             <Text style={styles.count}>
               {games.length} partie{games.length > 1 ? "s" : ""}
@@ -53,11 +54,15 @@ export default function GamesScreen() {
             style={[styles.syncButton, isSyncing && styles.syncButtonDisabled]}
             onPress={handleSync}
             disabled={isSyncing}
+            activeOpacity={0.7}
           >
             {isSyncing ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color={colors.text.inverse} size="small" />
             ) : (
-              <Text style={styles.syncButtonText}>Synchroniser</Text>
+              <>
+                <RefreshCw size={16} color={colors.text.inverse} />
+                <Text style={styles.syncButtonText}>Synchroniser</Text>
+              </>
             )}
           </TouchableOpacity>
         </View>
@@ -67,18 +72,27 @@ export default function GamesScreen() {
         data={games}
         renderItem={renderGame}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[
+          styles.list,
+          games.length === 0 && styles.listEmpty,
+        ]}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refetch}
+            tintColor={colors.orange[500]}
+            colors={[colors.orange[500]]}
+          />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Aucune partie importée.</Text>
+            <Text style={styles.emptyText}>Aucune partie importée</Text>
             <Text style={styles.emptySubtext}>
               Ajoute ton username dans le profil pour synchroniser tes parties.
             </Text>
           </View>
         }
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
@@ -87,63 +101,80 @@ export default function GamesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background.primary,
   },
   header: {
-    padding: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    backgroundColor: colors.background.secondary,
+    borderBottomWidth: borders.width.thin,
+    borderBottomColor: colors.border.light,
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[4],
+    paddingBottom: spacing[4],
+    ...shadows.sm,
   },
-  headerTop: {
+  headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
+    gap: spacing[3],
+  },
+  titleSection: {
+    flex: 1,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 4,
+    fontSize: typography.fontSize["2xl"],
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text.primary,
+    marginBottom: spacing[1],
   },
   count: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
   },
   syncButton: {
-    backgroundColor: "#2196F3",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    minWidth: 100,
+    backgroundColor: colors.orange[500],
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    borderRadius: borders.radius.md,
+    gap: spacing[2],
+    minWidth: 120,
   },
   syncButtonDisabled: {
     opacity: 0.6,
   },
   syncButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
+    color: colors.text.inverse,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
   },
   list: {
-    padding: 16,
+    padding: spacing[4],
+    paddingBottom: spacing[8],
+  },
+  listEmpty: {
+    flexGrow: 1,
   },
   emptyContainer: {
-    padding: 32,
+    flex: 1,
+    padding: spacing[8],
     alignItems: "center",
+    justifyContent: "center",
+    minHeight: 300,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#666",
-    marginBottom: 8,
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text.secondary,
+    marginBottom: spacing[2],
     textAlign: "center",
   },
   emptySubtext: {
-    fontSize: 14,
-    color: "#999",
+    fontSize: typography.fontSize.sm,
+    color: colors.text.tertiary,
     textAlign: "center",
+    lineHeight: typography.fontSize.sm * typography.lineHeight.normal,
   },
 });
