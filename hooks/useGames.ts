@@ -25,22 +25,10 @@ export const useGames = () => {
     },
   });
 
-  const syncGames = useMutation({
-    mutationFn: async () => {
-      // TODO: Implémenter la synchronisation avec les plateformes
-      throw new Error("Not implemented yet");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["games"] });
-    },
-  });
-
   return {
     games: games ?? [],
     isLoading,
     error,
     refetch,
-    syncGames: syncGames.mutateAsync,
-    isSyncing: syncGames.isPending,
   };
 };

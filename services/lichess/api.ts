@@ -126,11 +126,25 @@ export const getUserGames = async (
 
   // Lichess retourne du NDJSON (Newline Delimited JSON)
   const text = await response.text();
+  
+  if (!text || text.trim() === "") {
+    return [];
+  }
+  
   const lines = text.trim().split("\n");
   
-  return lines
-    .filter((line) => line.trim())
-    .map((line) => JSON.parse(line));
+  const games: LichessGame[] = [];
+  for (const line of lines) {
+    if (line.trim()) {
+      try {
+        games.push(JSON.parse(line));
+      } catch (error) {
+        console.warn("[Lichess API] Erreur parsing ligne:", error, line);
+      }
+    }
+  }
+  
+  return games;
 };
 
 /**
