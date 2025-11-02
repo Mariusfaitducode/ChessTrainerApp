@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
 import type { Exercise } from "@/types/exercises";
 import { formatDate } from "@/utils/date";
+import { colors, spacing, typography, shadows, borders } from "@/theme";
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -75,80 +76,76 @@ export const ExerciseCard = ({ exercise, onPress }: ExerciseCardProps) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    borderLeftWidth: 4,
-    borderLeftColor: "#2196F3",
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.lg,
+    padding: spacing[4],
+    marginBottom: spacing[3],
+    ...shadows.sm,
+    borderLeftWidth: borders.width.medium,
+    borderLeftColor: colors.orange[500],
   },
   completedCard: {
-    borderLeftColor: "#4CAF50",
-    opacity: 0.8,
+    borderLeftColor: colors.success.main,
+    opacity: 0.85,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: spacing[2],
   },
   type: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#000",
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text.primary,
     flex: 1,
   },
   completedBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#4CAF50",
+    width: spacing[6],
+    height: spacing[6],
+    borderRadius: borders.radius.full,
+    backgroundColor: colors.success.main,
     justifyContent: "center",
     alignItems: "center",
   },
   completedText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
+    color: colors.text.inverse,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
   },
   description: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 12,
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
+    marginBottom: spacing[3],
   },
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: spacing[2],
   },
   difficulty: {
     flexDirection: "row",
   },
   difficultyText: {
-    fontSize: 14,
-    color: "#FF9800",
+    fontSize: typography.fontSize.sm,
+    color: colors.warning.main,
   },
   stats: {
     flexDirection: "row",
-    gap: 12,
+    gap: spacing[3],
   },
   score: {
-    fontSize: 12,
-    color: "#4CAF50",
-    fontWeight: "600",
+    fontSize: typography.fontSize.xs,
+    color: colors.success.main,
+    fontWeight: typography.fontWeight.semibold,
   },
   attempts: {
-    fontSize: 12,
-    color: "#999",
+    fontSize: typography.fontSize.xs,
+    color: colors.text.tertiary,
   },
   date: {
-    fontSize: 11,
-    color: "#999",
+    fontSize: typography.fontSize.xs,
+    color: colors.text.tertiary,
   },
 });

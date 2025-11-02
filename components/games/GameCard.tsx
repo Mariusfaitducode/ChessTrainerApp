@@ -2,7 +2,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
 import type { Game } from "@/types/games";
 import { formatDate, formatTimeControl, getResultLabel } from "@/utils";
-import { Platform } from "@/types/chess";
+import type { Platform } from "@/types/chess";
+import { colors, spacing, typography, shadows, borders } from "@/theme";
 
 interface GameCardProps {
   game: Game;
@@ -49,54 +50,50 @@ export const GameCard = ({ game, onPress }: GameCardProps) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.lg,
+    padding: spacing[4],
+    marginBottom: spacing[3],
+    ...shadows.sm,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: spacing[3],
   },
   platform: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#666",
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text.secondary,
     textTransform: "uppercase",
   },
   badge: {
-    backgroundColor: "#4CAF50",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: colors.success.main,
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+    borderRadius: borders.radius.md,
   },
   badgeText: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "600",
+    color: colors.text.inverse,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.semibold,
   },
   players: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: spacing[3],
   },
   player: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#000",
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.text.primary,
   },
   vs: {
-    marginHorizontal: 12,
-    fontSize: 14,
-    color: "#999",
+    marginHorizontal: spacing[3],
+    fontSize: typography.fontSize.sm,
+    color: colors.text.tertiary,
   },
   footer: {
     flexDirection: "row",
@@ -104,12 +101,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   result: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text.primary,
   },
   meta: {
-    fontSize: 12,
-    color: "#999",
+    fontSize: typography.fontSize.xs,
+    color: colors.text.tertiary,
   },
 });

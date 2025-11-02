@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGames } from "@/hooks/useGames";
 import { GameCard } from "@/components/games/GameCard";
 import type { Game } from "@/types/games";
+import { colors, spacing, typography, borders } from "@/theme";
 
 export default function GamesScreen() {
   const insets = useSafeAreaInsets();
@@ -25,7 +26,9 @@ export default function GamesScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Mes parties</Text>
-        <Text style={styles.count}>{games.length} partie{games.length > 1 ? "s" : ""}</Text>
+        <Text style={styles.count}>
+          {games.length} partie{games.length > 1 ? "s" : ""}
+        </Text>
       </View>
 
       <FlatList
@@ -38,12 +41,9 @@ export default function GamesScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              Aucune partie importée.
-            </Text>
+            <Text style={styles.emptyText}>Aucune partie importée.</Text>
             <Text style={styles.emptySubtext}>
-              Connecte ton compte Lichess ou Chess.com pour synchroniser tes
-              parties.
+              Ajoute ton username dans le profil pour synchroniser tes parties.
             </Text>
           </View>
         }
@@ -55,41 +55,41 @@ export default function GamesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background.primary,
   },
   header: {
-    padding: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    padding: spacing[4],
+    backgroundColor: colors.background.secondary,
+    borderBottomWidth: borders.width.thin,
+    borderBottomColor: colors.border.light,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 4,
+    fontSize: typography.fontSize["2xl"],
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text.primary,
+    marginBottom: spacing[1],
   },
   count: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
   },
   list: {
-    padding: 16,
+    padding: spacing[4],
   },
   emptyContainer: {
-    padding: 32,
+    padding: spacing[8],
     alignItems: "center",
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#666",
-    marginBottom: 8,
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text.secondary,
+    marginBottom: spacing[2],
     textAlign: "center",
   },
   emptySubtext: {
-    fontSize: 14,
-    color: "#999",
+    fontSize: typography.fontSize.sm,
+    color: colors.text.tertiary,
     textAlign: "center",
   },
 });

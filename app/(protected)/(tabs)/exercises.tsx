@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { View, Text, StyleSheet, FlatList, RefreshControl } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  RefreshControl,
+  TouchableOpacity,
+} from "react-native";
 import { useRouter } from "expo-router";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -7,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useExercises } from "@/hooks/useExercises";
 import { ExerciseCard } from "@/components/exercises/ExerciseCard";
 import type { Exercise } from "@/types/exercises";
+import { colors, spacing, typography, borders } from "@/theme";
 
 export default function ExercisesScreen() {
   const insets = useSafeAreaInsets();
@@ -39,30 +47,54 @@ export default function ExercisesScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Mes exercices</Text>
         <View style={styles.filters}>
-          <Text
-            style={[styles.filter, filter === "all" && styles.filterActive]}
+          <TouchableOpacity
+            style={[
+              styles.filter,
+              filter === "all" && styles.filterActive,
+            ]}
             onPress={() => setFilter("all")}
           >
-            Tous
-          </Text>
-          <Text
+            <Text
+              style={[
+                styles.filterText,
+                filter === "all" && styles.filterTextActive,
+              ]}
+            >
+              Tous
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[
               styles.filter,
               filter === "pending" && styles.filterActive,
             ]}
             onPress={() => setFilter("pending")}
           >
-            En attente
-          </Text>
-          <Text
+            <Text
+              style={[
+                styles.filterText,
+                filter === "pending" && styles.filterTextActive,
+              ]}
+            >
+              En attente
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[
               styles.filter,
               filter === "completed" && styles.filterActive,
             ]}
             onPress={() => setFilter("completed")}
           >
-            Terminés
-          </Text>
+            <Text
+              style={[
+                styles.filterText,
+                filter === "completed" && styles.filterTextActive,
+              ]}
+            >
+              Terminés
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -96,55 +128,58 @@ export default function ExercisesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background.primary,
   },
   header: {
-    padding: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    padding: spacing[4],
+    backgroundColor: colors.background.secondary,
+    borderBottomWidth: borders.width.thin,
+    borderBottomColor: colors.border.light,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 12,
+    fontSize: typography.fontSize["2xl"],
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text.primary,
+    marginBottom: spacing[3],
   },
   filters: {
     flexDirection: "row",
-    gap: 16,
+    gap: spacing[4],
   },
   filter: {
-    fontSize: 14,
-    color: "#666",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    backgroundColor: "#f0f0f0",
-    overflow: "hidden",
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
+    borderRadius: borders.radius.md,
+    backgroundColor: colors.background.tertiary,
   },
   filterActive: {
-    color: "#2196F3",
-    backgroundColor: "#E3F2FD",
-    fontWeight: "600",
+    backgroundColor: colors.orange[100],
+  },
+  filterText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
+  },
+  filterTextActive: {
+    color: colors.orange[600],
+    fontWeight: typography.fontWeight.semibold,
   },
   list: {
-    padding: 16,
+    padding: spacing[4],
   },
   emptyContainer: {
-    padding: 32,
+    padding: spacing[8],
     alignItems: "center",
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#666",
-    marginBottom: 8,
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text.secondary,
+    marginBottom: spacing[2],
     textAlign: "center",
   },
   emptySubtext: {
-    fontSize: 14,
-    color: "#999",
+    fontSize: typography.fontSize.sm,
+    color: colors.text.tertiary,
     textAlign: "center",
   },
 });

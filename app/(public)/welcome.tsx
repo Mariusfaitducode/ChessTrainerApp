@@ -2,6 +2,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { colors, spacing, typography, shadows, borders } from "@/theme";
+
 export default function WelcomeScreen() {
   const router = useRouter();
 
@@ -46,32 +48,32 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background.primary,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing[6],
     justifyContent: "space-between",
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingTop: spacing[16],
+    paddingBottom: spacing[10],
   },
   header: {
     alignItems: "center",
-    marginTop: 40,
+    marginTop: spacing[10],
   },
   title: {
-    fontSize: 42,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 12,
+    fontSize: typography.fontSize["4xl"],
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text.primary,
+    marginBottom: spacing[3],
     textAlign: "center",
   },
   subtitle: {
-    fontSize: 18,
-    color: "#666",
+    fontSize: typography.fontSize.lg,
+    color: colors.text.secondary,
     textAlign: "center",
-    lineHeight: 26,
-    paddingHorizontal: 20,
+    lineHeight: typography.fontSize.lg * typography.lineHeight.normal,
+    paddingHorizontal: spacing[5],
   },
   illustration: {
     alignItems: "center",
@@ -82,41 +84,37 @@ const styles = StyleSheet.create({
     fontSize: 120,
   },
   buttons: {
-    gap: 12,
-    marginBottom: 20,
+    gap: spacing[3],
+    marginBottom: spacing[5],
   },
   primaryButton: {
-    backgroundColor: "#2196F3",
-    borderRadius: 12,
-    padding: 18,
+    backgroundColor: colors.orange[500],
+    borderRadius: borders.radius.lg,
+    padding: spacing[5],
     alignItems: "center",
-    shadowColor: "#2196F3",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    ...shadows.md,
   },
   primaryButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
+    color: colors.text.inverse,
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
   },
   secondaryButton: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 18,
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.lg,
+    padding: spacing[5],
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#2196F3",
+    borderWidth: borders.width.thin,
+    borderColor: colors.border.medium,
   },
   secondaryButtonText: {
-    color: "#2196F3",
-    fontSize: 18,
-    fontWeight: "600",
+    color: colors.orange[500],
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
   },
   footer: {
-    fontSize: 14,
-    color: "#999",
+    fontSize: typography.fontSize.sm,
+    color: colors.text.tertiary,
     textAlign: "center",
   },
 });

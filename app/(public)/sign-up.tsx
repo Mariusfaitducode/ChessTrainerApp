@@ -13,6 +13,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSignUp } from "@/hooks/useSignUp";
+import { colors, spacing, typography, shadows, borders } from "@/theme";
 
 export default function SignUpScreen() {
   const insets = useSafeAreaInsets();
@@ -93,7 +94,6 @@ export default function SignUpScreen() {
         email: email.trim(),
         token: token.trim(),
       });
-      // La navigation se fera automatiquement via useSupabase qui détecte la session
     } catch (err: any) {
       console.error("Verify OTP error:", err);
       Alert.alert(
@@ -111,7 +111,7 @@ export default function SignUpScreen() {
         style={styles.container}
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 20 },
+          { paddingTop: insets.top + spacing[5] },
         ]}
         keyboardShouldPersistTaps="handled"
       >
@@ -129,7 +129,7 @@ export default function SignUpScreen() {
               style={styles.input}
               value={token}
               placeholder="123456"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.text.tertiary}
               onChangeText={setToken}
               keyboardType="number-pad"
               maxLength={6}
@@ -139,12 +139,15 @@ export default function SignUpScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.button, isLoading && styles.buttonDisabled]}
+            style={[
+              styles.button,
+              (!token || isLoading || !isLoaded) && styles.buttonDisabled,
+            ]}
             onPress={onVerifyPress}
             disabled={!token || isLoading || !isLoaded}
           >
             {isLoading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.text.inverse} />
             ) : (
               <Text style={styles.buttonText}>Vérifier</Text>
             )}
@@ -167,7 +170,7 @@ export default function SignUpScreen() {
       style={styles.container}
       contentContainerStyle={[
         styles.content,
-        { paddingTop: insets.top + 20 },
+        { paddingTop: insets.top + spacing[5] },
       ]}
       keyboardShouldPersistTaps="handled"
     >
@@ -188,7 +191,7 @@ export default function SignUpScreen() {
             keyboardType="email-address"
             value={email}
             placeholder="ton@email.com"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.text.tertiary}
             onChangeText={setEmail}
             editable={!isLoading}
           />
@@ -201,7 +204,7 @@ export default function SignUpScreen() {
               style={styles.passwordInput}
               value={password}
               placeholder="••••••••"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.text.tertiary}
               secureTextEntry={!showPassword}
               onChangeText={setPassword}
               editable={!isLoading}
@@ -213,9 +216,7 @@ export default function SignUpScreen() {
               <Text style={styles.eyeText}>{showPassword ? "👁️" : "👁️‍🗨️"}</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.hint}>
-            Minimum 6 caractères
-          </Text>
+          <Text style={styles.hint}>Minimum 6 caractères</Text>
         </View>
 
         <View style={styles.inputGroup}>
@@ -225,7 +226,7 @@ export default function SignUpScreen() {
               style={styles.passwordInput}
               value={confirmPassword}
               placeholder="••••••••"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.text.tertiary}
               secureTextEntry={!showConfirmPassword}
               onChangeText={setConfirmPassword}
               editable={!isLoading}
@@ -244,8 +245,8 @@ export default function SignUpScreen() {
         <TouchableOpacity
           style={[
             styles.button,
-            isLoading && styles.buttonDisabled,
-            (!email || !password || !confirmPassword) && styles.buttonDisabled,
+            (!email || !password || !confirmPassword || isLoading || !isLoaded) &&
+              styles.buttonDisabled,
           ]}
           onPress={onSignUpPress}
           disabled={
@@ -257,7 +258,7 @@ export default function SignUpScreen() {
           }
         >
           {isLoading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.text.inverse} />
           ) : (
             <Text style={styles.buttonText}>Créer mon compte</Text>
           )}
@@ -277,113 +278,111 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background.primary,
   },
   content: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingHorizontal: spacing[6],
+    paddingBottom: spacing[10],
   },
   header: {
-    marginBottom: 40,
+    marginBottom: spacing[10],
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 8,
+    fontSize: typography.fontSize["3xl"],
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text.primary,
+    marginBottom: spacing[2],
   },
   subtitle: {
-    fontSize: 16,
-    color: "#666",
-    lineHeight: 22,
+    fontSize: typography.fontSize.base,
+    color: colors.text.secondary,
+    lineHeight: typography.fontSize.base * typography.lineHeight.normal,
   },
   form: {
-    gap: 24,
-    marginBottom: 32,
+    gap: spacing[6],
+    marginBottom: spacing[8],
   },
   inputGroup: {
-    gap: 8,
+    gap: spacing[2],
   },
   label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text.primary,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    backgroundColor: "#f9f9f9",
+    borderWidth: borders.width.thin,
+    borderColor: colors.border.light,
+    borderRadius: borders.radius.lg,
+    padding: spacing[4],
+    fontSize: typography.fontSize.base,
+    backgroundColor: colors.background.secondary,
+    color: colors.text.primary,
   },
   passwordContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 12,
-    backgroundColor: "#f9f9f9",
+    borderWidth: borders.width.thin,
+    borderColor: colors.border.light,
+    borderRadius: borders.radius.lg,
+    backgroundColor: colors.background.secondary,
   },
   passwordInput: {
     flex: 1,
-    padding: 16,
-    fontSize: 16,
+    padding: spacing[4],
+    fontSize: typography.fontSize.base,
+    color: colors.text.primary,
   },
   eyeButton: {
-    padding: 16,
+    padding: spacing[4],
   },
   eyeText: {
-    fontSize: 20,
+    fontSize: typography.fontSize.xl,
   },
   hint: {
-    fontSize: 12,
-    color: "#999",
-    marginTop: -4,
+    fontSize: typography.fontSize.xs,
+    color: colors.text.tertiary,
+    marginTop: -spacing[1],
   },
   button: {
-    backgroundColor: "#2196F3",
-    borderRadius: 12,
-    padding: 18,
+    backgroundColor: colors.orange[500],
+    borderRadius: borders.radius.lg,
+    padding: spacing[5],
     alignItems: "center",
-    marginTop: 8,
-    shadowColor: "#2196F3",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    marginTop: spacing[2],
+    ...shadows.md,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
+    color: colors.text.inverse,
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
   },
   backButton: {
-    marginTop: 12,
-    padding: 12,
+    marginTop: spacing[3],
+    padding: spacing[3],
     alignItems: "center",
   },
   backButtonText: {
-    color: "#2196F3",
-    fontSize: 16,
-    fontWeight: "500",
+    color: colors.orange[500],
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.medium,
   },
   footer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 20,
+    marginTop: spacing[5],
   },
   footerText: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
   },
   footerLink: {
-    fontSize: 14,
-    color: "#2196F3",
-    fontWeight: "600",
+    fontSize: typography.fontSize.sm,
+    color: colors.orange[500],
+    fontWeight: typography.fontWeight.semibold,
   },
 });

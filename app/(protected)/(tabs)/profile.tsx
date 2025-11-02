@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSupabase } from "@/hooks/useSupabase";
 import { useChessPlatform } from "@/hooks/useChessPlatform";
 import type { Platform } from "@/types/chess";
+import { colors, spacing, typography, shadows, borders } from "@/theme";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -134,7 +135,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Chess.com */}
-        <View style={[styles.platformCard, { marginTop: 12 }]}>
+        <View style={[styles.platformCard, { marginTop: spacing[3] }]}>
           <View style={styles.platformHeader}>
             <Text style={styles.platformName}>Chess.com</Text>
             {chesscomPlatform && (
@@ -219,7 +220,7 @@ export default function ProfileScreen() {
                 disabled={!usernameInput.trim() || isAdding}
               >
                 {isAdding ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={colors.text.inverse} />
                 ) : (
                   <Text style={styles.modalButtonConfirmText}>Ajouter</Text>
                 )}
@@ -235,99 +236,91 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background.primary,
   },
   content: {
-    padding: 16,
+    padding: spacing[4],
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 24,
-    color: "#000",
+    fontSize: typography.fontSize["3xl"],
+    fontWeight: typography.fontWeight.bold,
+    marginBottom: spacing[6],
+    color: colors.text.primary,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing[6],
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 12,
-    color: "#000",
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.semibold,
+    marginBottom: spacing[3],
+    color: colors.text.primary,
   },
   infoCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.lg,
+    padding: spacing[4],
+    ...shadows.sm,
   },
   infoLabel: {
-    fontSize: 12,
-    color: "#999",
-    marginBottom: 4,
+    fontSize: typography.fontSize.xs,
+    color: colors.text.tertiary,
+    marginBottom: spacing[1],
     textTransform: "uppercase",
   },
   infoValue: {
-    fontSize: 16,
-    color: "#000",
-    fontWeight: "500",
+    fontSize: typography.fontSize.base,
+    color: colors.text.primary,
+    fontWeight: typography.fontWeight.medium,
   },
   emptyText: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 8,
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
+    marginBottom: spacing[2],
   },
   emptySubtext: {
-    fontSize: 12,
-    color: "#999",
-    lineHeight: 18,
+    fontSize: typography.fontSize.xs,
+    color: colors.text.tertiary,
+    lineHeight: typography.fontSize.xs * typography.lineHeight.normal,
   },
   signOutButton: {
-    backgroundColor: "#f44336",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.error.main,
+    borderRadius: borders.radius.lg,
+    padding: spacing[4],
     alignItems: "center",
   },
   signOutText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.text.inverse,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
   },
   platformCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.lg,
+    padding: spacing[4],
+    ...shadows.sm,
   },
   platformHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: spacing[3],
   },
   platformName: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#000",
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text.primary,
   },
   connectedBadge: {
-    backgroundColor: "#4CAF50",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: colors.success.main,
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+    borderRadius: borders.radius.md,
   },
   connectedText: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "600",
+    color: colors.text.inverse,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.semibold,
   },
   platformInfo: {
     flexDirection: "row",
@@ -335,31 +328,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   platformUsername: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "500",
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
+    fontWeight: typography.fontWeight.medium,
   },
   connectButton: {
-    backgroundColor: "#2196F3",
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: colors.orange[500],
+    borderRadius: borders.radius.md,
+    padding: spacing[3],
     alignItems: "center",
     justifyContent: "center",
     minHeight: 44,
   },
   connectButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.text.inverse,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
   },
   disconnectButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
   },
   disconnectButtonText: {
-    color: "#f44336",
-    fontSize: 14,
-    fontWeight: "600",
+    color: colors.error.main,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
   },
   modalOverlay: {
     flex: 1,
@@ -367,56 +360,57 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
+    backgroundColor: colors.background.secondary,
+    borderTopLeftRadius: spacing[5],
+    borderTopRightRadius: spacing[5],
+    padding: spacing[6],
     maxHeight: "50%",
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 8,
-    color: "#000",
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.bold,
+    marginBottom: spacing[2],
+    color: colors.text.primary,
   },
   modalSubtitle: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 16,
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
+    marginBottom: spacing[4],
   },
   usernameInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 16,
-    backgroundColor: "#f9f9f9",
+    borderWidth: borders.width.thin,
+    borderColor: colors.border.light,
+    borderRadius: borders.radius.md,
+    padding: spacing[3],
+    fontSize: typography.fontSize.base,
+    marginBottom: spacing[4],
+    backgroundColor: colors.background.tertiary,
+    color: colors.text.primary,
   },
   modalButtons: {
     flexDirection: "row",
-    gap: 12,
+    gap: spacing[3],
   },
   modalButton: {
     flex: 1,
-    padding: 14,
-    borderRadius: 8,
+    padding: spacing[4],
+    borderRadius: borders.radius.md,
     alignItems: "center",
   },
   modalButtonCancel: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: colors.background.tertiary,
   },
   modalButtonCancelText: {
-    color: "#666",
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.text.secondary,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
   },
   modalButtonConfirm: {
-    backgroundColor: "#2196F3",
+    backgroundColor: colors.orange[500],
   },
   modalButtonConfirmText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.text.inverse,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
   },
 });

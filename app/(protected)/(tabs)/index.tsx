@@ -8,13 +8,12 @@ import {
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useSupabase } from "@/hooks/useSupabase";
 import { useGames } from "@/hooks/useGames";
 import { useExercises } from "@/hooks/useExercises";
+import { colors, spacing, typography, shadows, borders } from "@/theme";
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const { session } = useSupabase();
   const {
     games,
     isLoading: isLoadingGames,
@@ -98,61 +97,57 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background.primary,
   },
   content: {
-    padding: 16,
+    padding: spacing[4],
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 24,
-    color: "#000",
+    fontSize: typography.fontSize["3xl"],
+    fontWeight: typography.fontWeight.bold,
+    marginBottom: spacing[6],
+    color: colors.text.primary,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing[6],
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 12,
-    color: "#000",
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.semibold,
+    marginBottom: spacing[3],
+    color: colors.text.primary,
   },
   statsGrid: {
     flexDirection: "row",
-    gap: 12,
+    gap: spacing[3],
   },
   statCard: {
     flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.lg,
+    padding: spacing[4],
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...shadows.sm,
   },
   statNumber: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#2196F3",
-    marginBottom: 4,
+    fontSize: typography.fontSize["3xl"],
+    fontWeight: typography.fontWeight.bold,
+    color: colors.orange[500],
+    marginBottom: spacing[1],
   },
   statLabel: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
   },
   emptyText: {
-    fontSize: 14,
-    color: "#999",
+    fontSize: typography.fontSize.sm,
+    color: colors.text.tertiary,
     fontStyle: "italic",
-    paddingVertical: 16,
+    paddingVertical: spacing[4],
   },
   infoText: {
-    fontSize: 14,
-    color: "#666",
-    paddingVertical: 8,
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
+    paddingVertical: spacing[2],
   },
 });
