@@ -1,4 +1,10 @@
-import { useMemo } from "react";
+import {
+  useMemo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
 import {
   View,
   Text,
@@ -20,14 +26,55 @@ import { formatTimeControl, getResultLabel } from "@/utils/chess";
 import { colors, spacing, typography, shadows, borders } from "@/theme";
 
 export default function GameDetailScreen() {
+  const renderStartTime = performance.now();
+  console.log(`[GameDetail] 🔵 Render démarré`);
+
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+
+  // Utiliser useRef pour capturer le temps du premier render (qui correspond au clic)
+  const mountTimeRef = useRef<number | null>(null);
+  if (mountTimeRef.current === null) {
+    mountTimeRef.current = performance.now();
+    console.log(
+      `[GameDetail] ⏱️ Premier render (clic) à ${mountTimeRef.current}ms`,
+    );
+  }
+
+  console.log(
+    `[GameDetail] 🔵 Avant useGame, temps depuis render: ${performance.now() - renderStartTime}ms`,
+  );
   const { game, analyses, isLoading, error } = useGame(id);
+  const afterUseGameTime = performance.now();
+  console.log(
+    `[GameDetail] 🔵 Après useGame, temps depuis render: ${afterUseGameTime - renderStartTime}ms, temps depuis clic: ${mountTimeRef.current ? afterUseGameTime - mountTimeRef.current : "N/A"}ms, game: ${game ? "✅" : "❌"}, isLoading: ${isLoading}`,
+  );
+
+  // Utiliser useLayoutEffect pour se déclencher AVANT le paint, plus rapide
+  useLayoutEffect(() => {
+    if (game && mountTimeRef.current) {
+      const totalTime = performance.now() - mountTimeRef.current;
+      console.log(
+        `[GameDetail] ⏱️ useLayoutEffect: Données disponibles, temps total depuis clic: ${totalTime}ms`,
+      );
+    }
+  }, [game]);
+
+  // Aussi un useEffect pour comparer
+  useEffect(() => {
+    if (game && mountTimeRef.current) {
+      const totalTime = performance.now() - mountTimeRef.current;
+      console.log(
+        `[GameDetail] ⏱️ useEffect: Données disponibles, temps total depuis clic: ${totalTime}ms`,
+      );
+    }
+  }, [game]);
+
+  const useChessGameStartTime = performance.now();
   const {
     moves,
     currentFen,
     currentMoveIndex,
-    currentMove,
     totalMoves,
     goToStart,
     goToEnd,
@@ -37,27 +84,85 @@ export default function GameDetailScreen() {
     isAtStart,
     isAtEnd,
     error: chessError,
+    isParsing,
   } = useChessGame(game?.pgn || null);
+  const useChessGameEndTime = performance.now();
+  console.log(
+    `[GameDetail] 🔵 useChessGame terminé en ${useChessGameEndTime - useChessGameStartTime}ms, moves: ${moves.length}, isParsing: ${isParsing}`,
+  );
+
+  useEffect(() => {
+    if (!isParsing && moves.length > 0 && mountTimeRef.current) {
+      const parseTime = performance.now() - mountTimeRef.current;
+      console.log(
+        `[GameDetail] Parsing terminé en ${parseTime}ms depuis clic, ${moves.length} coups parsés`,
+      );
+    }
+  }, [isParsing, moves.length]);
 
   // Trouver le dernier coup joué pour le highlight
-  const lastMove = useMemo(() => {
-    if (currentMoveIndex < 0 || !moves.length) return undefined;
-
-    const moveIndex = currentMoveIndex;
-    const move = moves[Math.floor(moveIndex / 2)];
-    if (!move) return undefined;
-
-    // Essayer de déterminer from/to depuis le coup (simplifié)
-    // On pourrait améliorer ça en stockant from/to dans useChessGame
-    return undefined; // Pour l'instant, pas de highlight du dernier coup
-  }, [currentMoveIndex, moves]);
+  // Note: react-native-chessboard gère déjà le highlight automatiquement
+  const lastMove = undefined;
 
   // Trouver l'analyse pour le coup courant
   const currentAnalysis = analyses.find(
-    (a) => a.move_number === currentMoveIndex + 1,
+    (a: { move_number: number }) => a.move_number === currentMoveIndex + 1,
   );
 
-  if (isLoading) {
+  // Mémoriser les moves aplatis pour éviter les recalculs
+  const flattenStartTime = performance.now();
+  const flattenedMoves = useMemo(() => {
+    const start = performance.now();
+    const result = moves.flatMap((m) => {
+      const result: {
+        moveNumber: number;
+        white?: string;
+        black?: string;
+        fen: string;
+      }[] = [];
+      if (m.white) {
+        result.push({
+          moveNumber: m.moveNumber,
+          white: m.white,
+          black: undefined,
+          fen: m.fen,
+        });
+      }
+      if (m.black) {
+        result.push({
+          moveNumber: m.moveNumber,
+          white: undefined,
+          black: m.black,
+          fen: m.fen,
+        });
+      }
+      return result;
+    });
+    const end = performance.now();
+    console.log(`[GameDetail] 🔵 flattenedMoves calculé en ${end - start}ms`);
+    return result;
+  }, [moves]);
+  const flattenEndTime = performance.now();
+  if (flattenEndTime - flattenStartTime > 5) {
+    console.log(
+      `[GameDetail] ⚠️ useMemo flattenedMoves a pris ${flattenEndTime - flattenStartTime}ms (attendu < 5ms)`,
+    );
+  }
+
+  // Mémoriser le callback pour éviter les re-renders
+  const handleMoveSelect = useCallback(
+    (moveIndex: number) => {
+      // moveIndex est l'index dans la liste aplatie
+      // On doit trouver quel coup réel correspond
+      const targetMoveIndex = Math.floor(moveIndex / 2) * 2;
+      goToMove(Math.max(-1, targetMoveIndex - 1));
+    },
+    [goToMove],
+  );
+
+  // Ne pas bloquer sur isLoading si game est déjà disponible (cache)
+  // Cela permet d'afficher immédiatement même si React Query marque comme loading
+  if (!game && isLoading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color={colors.orange[500]} />
@@ -171,24 +276,9 @@ export default function GameDetailScreen() {
       <View style={styles.movesSection}>
         <Text style={styles.sectionTitle}>Coups</Text>
         <MoveList
-          moves={moves.flatMap((m, moveIndex) => {
-            const result: { white?: string; black?: string; fen: string }[] =
-              [];
-            if (m.white) {
-              result.push({ white: m.white, black: undefined, fen: m.fen });
-            }
-            if (m.black) {
-              result.push({ white: undefined, black: m.black, fen: m.fen });
-            }
-            return result;
-          })}
+          moves={flattenedMoves}
           currentMove={currentMoveIndex}
-          onMoveSelect={(moveIndex) => {
-            // moveIndex est l'index dans la liste aplatie
-            // On doit trouver quel coup réel correspond
-            const targetMoveIndex = Math.floor(moveIndex / 2) * 2;
-            goToMove(Math.max(-1, targetMoveIndex - 1));
-          }}
+          onMoveSelect={handleMoveSelect}
         />
       </View>
 

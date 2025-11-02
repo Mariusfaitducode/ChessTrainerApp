@@ -47,29 +47,45 @@ export const parseBlackPlayer = (pgn: string): string | null => {
 };
 
 /**
- * Extrait la date de la partie depuis le PGN
+ * Extrait l'ELO du joueur blanc depuis le PGN
+ */
+export const parseWhiteElo = (pgn: string): number | null => {
+  const match = pgn.match(/\[WhiteElo\s+"([^"]+)"\]/);
+  return match ? parseInt(match[1]) || null : null;
+};
+
+/**
+ * Extrait l'ELO du joueur noir depuis le PGN
+ */
+export const parseBlackElo = (pgn: string): number | null => {
+  const match = pgn.match(/\[BlackElo\s+"([^"]+)"\]/);
+  return match ? parseInt(match[1]) || null : null;
+};
+
+/**
+ * Parse le time control depuis le PGN
+ */
+export const parseTimeControl = (pgn: string): string | null => {
+  const match = pgn.match(/\[TimeControl\s+"([^"]+)"\]/);
+  return match ? match[1] : null;
+};
+
+/**
+ * Parse la date de la partie depuis le PGN
  */
 export const parseGameDate = (pgn: string): string | null => {
   const match = pgn.match(/\[Date\s+"([^"]+)"\]/);
   if (!match) return null;
 
   const dateStr = match[1];
-  // Format PGN: "YYYY.MM.DD" ou "???.??.??"
-  if (dateStr.includes("?") || dateStr.includes(".") === false) return null;
+  if (dateStr === "????.??.??") return null;
 
   try {
+    // Format PGN: "YYYY.MM.DD"
     const [year, month, day] = dateStr.split(".");
     const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     return date.toISOString();
   } catch {
     return null;
   }
-};
-
-/**
- * Extrait le time control depuis le PGN
- */
-export const parseTimeControl = (pgn: string): string | null => {
-  const match = pgn.match(/\[TimeControl\s+"([^"]+)"\]/);
-  return match ? match[1] : null;
 };
