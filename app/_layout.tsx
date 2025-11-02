@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { useSupabase } from "@/hooks/useSupabase";
 import { QueryProvider } from "@/providers/query-provider";
@@ -16,11 +17,13 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   return (
-    <SupabaseProvider>
-      <QueryProvider>
-        <RootNavigator />
-      </QueryProvider>
-    </SupabaseProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SupabaseProvider>
+        <QueryProvider>
+          <RootNavigator />
+        </QueryProvider>
+      </SupabaseProvider>
+    </GestureHandlerRootView>
   );
 }
 

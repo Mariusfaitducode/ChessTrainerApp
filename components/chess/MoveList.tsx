@@ -1,6 +1,13 @@
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
 
 import type { GameMove } from "@/types/chess";
+import { colors, spacing, typography, borders, shadows } from "@/theme";
 
 interface MoveListProps {
   moves: GameMove[];
@@ -14,39 +21,47 @@ export const MoveList = ({
   onMoveSelect,
 }: MoveListProps) => {
   return (
-    <ScrollView style={styles.container} horizontal>
-      <View style={styles.movesContainer}>
-        {moves.map((move, index) => {
-          const moveNumber = Math.floor(index / 2) + 1;
-          const isWhiteMove = index % 2 === 0;
-          const isCurrent = currentMove === index;
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
+        <View style={styles.movesContainer}>
+          {moves.map((move, index) => {
+            const moveNumber = Math.floor(index / 2) + 1;
+            const isWhiteMove = index % 2 === 0;
+            const isCurrent = currentMove === index;
 
-          return (
-            <View
-              key={index}
-              style={[
-                styles.move,
-                isCurrent && styles.currentMove,
-                isWhiteMove && styles.moveNumber,
-              ]}
-            >
-              {isWhiteMove && (
-                <Text style={styles.moveNumberText}>{moveNumber}.</Text>
-              )}
-              <Text
+            return (
+              <TouchableOpacity
+                key={index}
                 style={[
-                  styles.moveText,
-                  isCurrent && styles.currentMoveText,
-                  isWhiteMove ? styles.whiteMove : styles.blackMove,
+                  styles.move,
+                  isCurrent && styles.currentMove,
+                  isWhiteMove && styles.moveNumber,
                 ]}
+                onPress={() => onMoveSelect?.(index)}
+                activeOpacity={0.7}
               >
-                {move.white || move.black}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
-    </ScrollView>
+                {isWhiteMove && (
+                  <Text style={styles.moveNumberText}>{moveNumber}.</Text>
+                )}
+                <Text
+                  style={[
+                    styles.moveText,
+                    isCurrent && styles.currentMoveText,
+                    isWhiteMove ? styles.whiteMove : styles.blackMove,
+                  ]}
+                >
+                  {move.white || move.black}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
@@ -54,42 +69,48 @@ const styles = StyleSheet.create({
   container: {
     maxHeight: 200,
   },
+  scrollView: {
+    flexGrow: 0,
+  },
   movesContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    padding: 12,
+    padding: spacing[3],
+    gap: spacing[1],
   },
   move: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 4,
-    borderRadius: 4,
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+    borderRadius: borders.radius.md,
+    backgroundColor: colors.background.tertiary,
   },
   currentMove: {
-    backgroundColor: "#2196F3",
+    backgroundColor: colors.orange[500],
+    ...shadows.sm,
   },
   moveNumber: {
-    marginRight: 4,
+    marginRight: spacing[1],
   },
   moveNumberText: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "500",
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
+    fontWeight: typography.fontWeight.medium,
   },
   moveText: {
-    fontSize: 14,
+    fontSize: typography.fontSize.sm,
     fontFamily: "monospace",
+    fontWeight: typography.fontWeight.medium,
   },
   whiteMove: {
-    color: "#000",
+    color: colors.text.primary,
   },
   blackMove: {
-    color: "#666",
+    color: colors.text.secondary,
   },
   currentMoveText: {
-    color: "#fff",
-    fontWeight: "600",
+    color: colors.text.inverse,
+    fontWeight: typography.fontWeight.semibold,
   },
 });
