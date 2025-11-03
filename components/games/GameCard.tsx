@@ -8,6 +8,8 @@ import {
   Trophy,
   XCircle,
   Minus,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react-native";
 
 import type { Game } from "@/types/games";
@@ -19,6 +21,7 @@ interface GameCardProps {
   game: Game;
   userPlatforms: UserPlatform[];
   onPress: () => void;
+  isAnalyzing?: boolean;
 }
 
 const getTimeControlType = (
@@ -103,7 +106,12 @@ const getResultColor = (status: "win" | "loss" | "draw") => {
   }
 };
 
-export const GameCard = ({ game, userPlatforms, onPress }: GameCardProps) => {
+export const GameCard = ({
+  game,
+  userPlatforms,
+  onPress,
+  isAnalyzing = false,
+}: GameCardProps) => {
   // Trouver la plateforme correspondante
   const platform = userPlatforms.find((p) => p.platform === game.platform);
   const userUsername = platform?.platform_username?.toLowerCase();
@@ -175,6 +183,23 @@ export const GameCard = ({ game, userPlatforms, onPress }: GameCardProps) => {
           )}
         </View>
 
+        {/* Statut analyse */}
+        <View style={styles.analysisStatus}>
+          {isAnalyzing ? (
+            <Loader2
+              size={16}
+              color={colors.orange[500]}
+              style={styles.analysisIcon}
+            />
+          ) : game.analyzed_at ? (
+            <CheckCircle2
+              size={16}
+              color={colors.orange[600]}
+              style={styles.analysisIcon}
+            />
+          ) : null}
+        </View>
+
         {/* Résultat */}
         <View style={styles.resultContainer}>
           <ResultIcon size={20} color={resultColor} />
@@ -220,6 +245,15 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.medium,
     color: colors.text.secondary,
+  },
+  analysisStatus: {
+    width: 32,
+    height: 32,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  analysisIcon: {
+    // Animation automatique pour Loader2
   },
   resultContainer: {
     width: 32,
