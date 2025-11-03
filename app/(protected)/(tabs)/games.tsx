@@ -126,6 +126,7 @@ export default function GamesScreen() {
       game={item}
       userPlatforms={platforms}
       onPress={() => handleGamePress(item.id)}
+      isAnalyzing={false} // TODO: Passer le statut réel depuis useAnalyzeGames
     />
   );
 

@@ -1,15 +1,20 @@
+import { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   RefreshControl,
+  TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
+import { Brain } from "lucide-react-native";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useGames } from "@/hooks/useGames";
 import { useExercises } from "@/hooks/useExercises";
+import { useAnalyzeGames } from "@/hooks/useAnalyzeGames";
 import { colors, spacing, typography, shadows, borders } from "@/theme";
 
 export default function DashboardScreen() {
@@ -24,6 +29,8 @@ export default function DashboardScreen() {
     isLoading: isLoadingExercises,
     refetch: refetchExercises,
   } = useExercises();
+  const { analyzeGames, isAnalyzing, progress } = useAnalyzeGames();
+  const [analyzingGameId, setAnalyzingGameId] = useState<string | null>(null);
 
   const isLoading = isLoadingGames || isLoadingExercises;
 
@@ -33,6 +40,35 @@ export default function DashboardScreen() {
 
   const pendingExercises = exercises.filter((e) => !e.completed);
   const recentGames = games.slice(0, 5);
+
+  // Obtenir les 5 dernières parties non analysées
+  const unanalyzedGames = games.filter((g) => !g.analyzed_at).slice(0, 5);
+
+  const handleAnalyzeFirst = async () => {
+    if (unanalyzedGames.length === 0) {
+      return;
+    }
+
+    const firstGame = unanalyzedGames[0];
+    setAnalyzingGameId(firstGame.id);
+
+    try {
+      await analyzeGames({ games: [firstGame] });
+      // Rafraîchir les données après analyse
+      await Promise.all([refetchGames(), refetchExercises()]);
+    } catch {
+      // L'erreur est déjà gérée dans le hook avec Alert
+    } finally {
+      setAnalyzingGameId(null);
+    }
+  };
+
+  // Calculer le progress pour la partie en cours d'analyse
+  const currentProgress = analyzingGameId ? progress[analyzingGameId] : null;
+  const progressPercent =
+    currentProgress && currentProgress.total > 0
+      ? Math.round((currentProgress.current / currentProgress.total) * 100)
+      : 0;
 
   return (
     <ScrollView
@@ -60,6 +96,72 @@ export default function DashboardScreen() {
             <Text style={styles.statLabel}>En attente</Text>
           </View>
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Analyse</Text>
+          {unanalyzedGames.length > 0 && (
+            <TouchableOpacity
+              style={[
+                styles.analyzeButton,
+                isAnalyzing && styles.analyzeButtonDisabled,
+              ]}
+              onPress={handleAnalyzeFirst}
+              disabled={isAnalyzing}
+              activeOpacity={0.7}
+            >
+              {isAnalyzing ? (
+                <>
+                  <ActivityIndicator
+                    color={colors.text.inverse}
+                    size="small"
+                    style={styles.buttonSpinner}
+                  />
+                  <Text style={styles.analyzeButtonText}>
+                    Analyse en cours...
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Brain size={16} color={colors.text.inverse} />
+                  <Text style={styles.analyzeButtonText}>
+                    Analyser la prochaine
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+        {isAnalyzing && currentProgress && currentProgress.total > 0 && (
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View
+                style={[styles.progressFill, { width: `${progressPercent}%` }]}
+              />
+            </View>
+            <Text style={styles.progressText}>
+              {progressPercent}% ({currentProgress.current}/
+              {currentProgress.total} coups analysés)
+            </Text>
+          </View>
+        )}
+        {unanalyzedGames.length === 0 && games.length > 0 ? (
+          <Text style={styles.infoText}>
+            Toutes les parties ont déjà été analysées
+          </Text>
+        ) : unanalyzedGames.length === 0 ? (
+          <Text style={styles.emptyText}>
+            Aucune partie. Synchronise tes comptes pour importer tes parties.
+          </Text>
+        ) : (
+          <Text style={styles.infoText}>
+            {unanalyzedGames.length} partie
+            {unanalyzedGames.length > 1 ? "s" : ""} non analysée
+            {unanalyzedGames.length > 1 ? "s" : ""} disponible
+            {unanalyzedGames.length > 1 ? "s" : ""}
+          </Text>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -149,5 +251,53 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.text.secondary,
     paddingVertical: spacing[2],
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: spacing[3],
+  },
+  analyzeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[2],
+    backgroundColor: colors.orange[500],
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: borders.radius.md,
+    ...shadows.sm,
+  },
+  analyzeButtonDisabled: {
+    opacity: 0.7,
+  },
+  buttonSpinner: {
+    marginRight: spacing[1],
+  },
+  analyzeButtonText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text.inverse,
+  },
+  progressContainer: {
+    marginTop: spacing[3],
+    marginBottom: spacing[2],
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: borders.radius.full,
+    overflow: "hidden",
+    marginBottom: spacing[2],
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: colors.orange[500],
+    borderRadius: borders.radius.full,
+  },
+  progressText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.text.tertiary,
+    textAlign: "center",
   },
 });
