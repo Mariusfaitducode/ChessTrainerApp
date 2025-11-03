@@ -1,6 +1,10 @@
-import { useEffect, useRef, memo } from "react";
-import { View, StyleSheet, Dimensions, InteractionManager } from "react-native";
+import { useEffect, useRef, memo, useState } from "react";
+import { View, StyleSheet, InteractionManager, Image } from "react-native";
 import Chessboard, { type ChessboardRef } from "react-native-chessboard";
+import type { PieceType } from "react-native-chessboard/lib/typescript/types";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const PIECES = require("react-native-chessboard/lib/commonjs/constants").PIECES;
 
 interface ChessboardWrapperProps {
   fen?: string;
@@ -20,8 +24,17 @@ const ChessboardWrapperComponent = ({
   highlightSquares = [],
 }: ChessboardWrapperProps) => {
   const chessboardRef = useRef<ChessboardRef>(null);
-  const boardSize = Math.min(Dimensions.get("window").width - 32, 400);
+  const containerRef = useRef<View>(null);
+  const [boardSize, setBoardSize] = useState<number>(0);
   const previousFenRef = useRef<string | undefined>(undefined);
+
+  // Mesurer la taille du container avec onLayout
+  const handleLayout = (event: any) => {
+    const { width } = event.nativeEvent.layout;
+    if (width > 0 && width !== boardSize) {
+      setBoardSize(width);
+    }
+  };
 
   // Mettre à jour la position quand le FEN change
   // Utiliser requestAnimationFrame pour éviter les warnings Reanimated
@@ -90,41 +103,97 @@ const ChessboardWrapperComponent = ({
   }, [highlightSquares]);
 
   return (
-    <View style={styles.container}>
-      <Chessboard
-        ref={chessboardRef}
-        fen={fen}
-        gestureEnabled={!!onMove} // Désactiver les gestes si onMove n'est pas fourni
-        withLetters={showCoordinates}
-        withNumbers={showCoordinates}
-        boardSize={boardSize}
-        onMove={(info) => {
-          if (onMove) {
-            onMove({
-              from: info.move.from,
-              to: info.move.to,
-              promotion: info.move.promotion,
-            });
-            // Note: react-native-chessboard gère automatiquement la validation des coups
-            // Si le coup est invalide, il ne sera pas joué
-          }
-        }}
-        colors={{
-          black: "#B58863",
-          white: "#F0D9B5",
-          lastMoveHighlight: "rgba(255, 255, 0, 0.4)",
-        }}
-        durations={{ move: 150 }}
-      />
+    <View ref={containerRef} style={styles.container} onLayout={handleLayout}>
+      {boardSize > 0 && (
+        <View
+          style={[
+            styles.boardWrapper,
+            boardOrientation === "black" && styles.boardFlipped,
+          ]}
+        >
+          <Chessboard
+            ref={chessboardRef}
+            fen={fen}
+            gestureEnabled={!!onMove} // Désactiver les gestes si onMove n'est pas fourni
+            // Désactiver les coordonnées quand inversé car elles seront à l'envers
+            withLetters={showCoordinates && boardOrientation === "white"}
+            withNumbers={showCoordinates && boardOrientation === "white"}
+            boardSize={boardSize}
+            // Inverser la rotation des pièces pour compenser la rotation du plateau
+            renderPiece={
+              boardOrientation === "black"
+                ? (piece: PieceType) => {
+                    const pieceSize = boardSize / 8;
+                    return (
+                      <Image
+                        source={PIECES[piece]}
+                        style={[
+                          { width: pieceSize, height: pieceSize },
+                          styles.pieceFlipped,
+                        ]}
+                      />
+                    );
+                  }
+                : undefined
+            }
+            onMove={(info) => {
+              if (onMove) {
+                // Si le plateau est inversé, on doit inverser les coordonnées des coups
+                let from = info.move.from;
+                let to = info.move.to;
+                if (boardOrientation === "black") {
+                  // Inverser les coordonnées : a1 -> h8, h8 -> a1, etc.
+                  const flipSquare = (square: string): string => {
+                    const file = square[0];
+                    const rank = square[1];
+                    const newFile = String.fromCharCode(
+                      97 + (7 - (file.charCodeAt(0) - 97)),
+                    );
+                    const newRank = String(8 - parseInt(rank) + 1);
+                    return (newFile + newRank) as any;
+                  };
+                  from = flipSquare(from) as typeof from;
+                  to = flipSquare(to) as typeof to;
+                }
+                onMove({
+                  from,
+                  to,
+                  promotion: info.move.promotion,
+                });
+                // Note: react-native-chessboard gère automatiquement la validation des coups
+                // Si le coup est invalide, il ne sera pas joué
+              }
+            }}
+            colors={{
+              black: "#B58863",
+              white: "#F0D9B5",
+              lastMoveHighlight: "rgba(255, 255, 0, 0.4)",
+            }}
+            durations={{ move: 150 }}
+          />
+        </View>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 16,
+    width: "100%",
+    aspectRatio: 1, // Garder un ratio 1:1 pour l'échiquier
+  },
+  boardWrapper: {
+    width: "100%",
+    height: "100%",
+  },
+  boardFlipped: {
+    transform: [{ rotate: "180deg" }],
+  },
+  pieceFlipped: {
+    transform: [{ rotate: "180deg" }],
   },
 });
 

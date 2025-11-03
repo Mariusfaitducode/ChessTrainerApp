@@ -9,6 +9,14 @@ export default function ProtectedLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="game/[id]"
+        options={{
+          headerShown: true,
+          headerBackTitle: "Retour",
+          presentation: "card",
+        }}
+      />
     </Stack>
   );
 }
