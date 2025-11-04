@@ -1,5 +1,5 @@
 import { useEffect, useRef, memo, useState } from "react";
-import { View, StyleSheet, InteractionManager, Image } from "react-native";
+import { View, StyleSheet, Image } from "react-native";
 import Chessboard, { type ChessboardRef } from "react-native-chessboard";
 import type { PieceType } from "react-native-chessboard/lib/typescript/types";
 
@@ -26,7 +26,10 @@ const ChessboardWrapperComponent = ({
   const chessboardRef = useRef<ChessboardRef>(null);
   const containerRef = useRef<View>(null);
   const [boardSize, setBoardSize] = useState<number>(0);
-  const previousFenRef = useRef<string | undefined>(undefined);
+  // FEN initial pour l'initialisation uniquement - ne change jamais après le montage
+  const [initialFen] = useState(() => fen);
+  const currentFenRef = useRef<string>(fen);
+  const isMountedRef = useRef(false);
 
   // Mesurer la taille du container avec onLayout
   const handleLayout = (event: any) => {
@@ -36,46 +39,75 @@ const ChessboardWrapperComponent = ({
     }
   };
 
-  // Mettre à jour la position quand le FEN change
-  // Utiliser requestAnimationFrame pour éviter les warnings Reanimated
+  // Initialisation après le montage
   useEffect(() => {
-    if (chessboardRef.current && fen && fen !== previousFenRef.current) {
-      const startTime = performance.now();
-      const isFirstRender = previousFenRef.current === undefined;
-
-      const updateBoard = () => {
+    if (boardSize > 0 && chessboardRef.current && !isMountedRef.current) {
+      isMountedRef.current = true;
+      currentFenRef.current = initialFen;
+      // Initialiser avec le FEN initial
+      requestAnimationFrame(() => {
         if (chessboardRef.current) {
-          try {
-            // Appeler directement resetBoard sans double wrapping
-            // react-native-chessboard gère déjà les animations en interne
-            chessboardRef.current.resetBoard(fen);
-            const resetTime = performance.now() - startTime;
-            if (resetTime > 100) {
-              // Logger seulement si > 100ms pour éviter le spam
-              console.log(`[Chessboard] resetBoard terminé en ${resetTime}ms`);
-            }
-            previousFenRef.current = fen;
-          } catch (err) {
-            console.error("[Chessboard] Erreur lors du resetBoard:", err);
-          }
+          chessboardRef.current.resetBoard(initialFen);
         }
-      };
-
-      // Différer légèrement pour permettre au composant de se rendre d'abord
-      // Mais pas trop pour éviter la latence
-      if (isFirstRender) {
-        // Premier render: utiliser queueMicrotask pour être rapide
-        queueMicrotask(updateBoard);
-      } else {
-        // Updates suivants: utiliser InteractionManager seulement si nécessaire
-        // Sinon updateBoard directement pour plus de vitesse
-        if (InteractionManager.runAfterInteractions) {
-          InteractionManager.runAfterInteractions(updateBoard);
-        } else {
-          queueMicrotask(updateBoard);
-        }
-      }
+      });
     }
+  }, [boardSize, initialFen]);
+
+  // Mettre à jour la position quand le FEN change (après le montage initial)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingFenRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (
+      !isMountedRef.current ||
+      !chessboardRef.current ||
+      fen === currentFenRef.current
+    ) {
+      return;
+    }
+
+    // Stocker le FEN en attente
+    pendingFenRef.current = fen;
+
+    // Annuler l'appel précédent s'il existe
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Debounce : attendre un peu avant d'appliquer la mise à jour
+    // Cela évite les appels multiples rapides
+    timeoutRef.current = setTimeout(() => {
+      const fenToApply = pendingFenRef.current;
+      if (
+        fenToApply &&
+        chessboardRef.current &&
+        fenToApply !== currentFenRef.current
+      ) {
+        currentFenRef.current = fenToApply;
+        pendingFenRef.current = null;
+
+        // Utiliser double requestAnimationFrame pour s'assurer que l'appel se fait après le render complet
+        // Cela évite d'accéder aux shared values Reanimated pendant le render
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (chessboardRef.current) {
+              try {
+                chessboardRef.current.resetBoard(fenToApply);
+              } catch (err) {
+                console.error("[Chessboard] Erreur lors du resetBoard:", err);
+              }
+            }
+          });
+        });
+      }
+    }, 16); // ~1 frame à 60fps
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
   }, [fen]);
 
   // Highlight des cases spécifiées (si nécessaire) - seulement si highlightSquares change
@@ -113,9 +145,8 @@ const ChessboardWrapperComponent = ({
         >
           <Chessboard
             ref={chessboardRef}
-            fen={fen}
-            gestureEnabled={!!onMove} // Désactiver les gestes si onMove n'est pas fourni
-            // Désactiver les coordonnées quand inversé car elles seront à l'envers
+            fen={initialFen}
+            gestureEnabled={!!onMove}
             withLetters={showCoordinates && boardOrientation === "white"}
             withNumbers={showCoordinates && boardOrientation === "white"}
             boardSize={boardSize}
