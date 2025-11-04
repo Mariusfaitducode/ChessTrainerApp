@@ -81,3 +81,6 @@ Si le fetch Supabase reste lent (> 500ms):
 2. Utiliser un CDN pour Supabase
 3. Stocker les parties récentes en cache local (AsyncStorage)
 4. Lazy loading: charger le PGN seulement quand nécessaire
+
+
+
