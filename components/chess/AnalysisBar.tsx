@@ -145,10 +145,11 @@ const styles = StyleSheet.create({
     marginTop: spacing[1],
     fontWeight: typography.fontWeight.medium,
   },
-  // Styles pour la version verticale (simplifiée)
   verticalBarContainer: {
-    width: 12,
-    height: "100%",
+    flex: 1,
+    width: "100%",
     backgroundColor: colors.border.light,
+    overflow: "hidden",
+    position: "relative",
   },
 });

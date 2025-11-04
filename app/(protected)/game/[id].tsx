@@ -200,16 +200,18 @@ export default function GameDetailScreen() {
           )}
 
           <View style={styles.chessboardWrapper}>
-            {currentAnalysis && (
-              <AnalysisBar
-                evaluation={currentAnalysis.evaluation || 0}
-                isWhiteToMove={isWhiteTurn}
-                bestMove={currentAnalysis.best_move}
-                mistakeLevel={currentAnalysis.mistake_level}
-                orientation="vertical"
-                boardOrientation={boardOrientation}
-              />
-            )}
+            <View style={styles.analysisBarContainer}>
+              {currentAnalysis && (
+                <AnalysisBar
+                  evaluation={currentAnalysis.evaluation || 0}
+                  isWhiteToMove={isWhiteTurn}
+                  bestMove={currentAnalysis.best_move}
+                  mistakeLevel={currentAnalysis.mistake_level}
+                  orientation="vertical"
+                  boardOrientation={boardOrientation}
+                />
+              )}
+            </View>
 
             <View style={styles.chessboardContainer}>
               <ChessboardWrapper
@@ -325,12 +327,16 @@ const styles = StyleSheet.create({
   chessboardWrapper: {
     flexDirection: "row",
     alignItems: "stretch",
-    marginBottom: spacing[4],
     width: "100%",
-    gap: 0,
+    marginBottom: spacing[4],
+  },
+  analysisBarContainer: {
+    width: 12,
+    alignSelf: "stretch",
   },
   chessboardContainer: {
     flex: 1,
+    minWidth: 0,
   },
   controlsContainer: {
     backgroundColor: colors.background.secondary,

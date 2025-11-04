@@ -179,11 +179,8 @@ const ChessboardWrapperComponent = ({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
     width: "100%",
-    aspectRatio: 1, // Garder un ratio 1:1 pour l'échiquier
+    aspectRatio: 1,
   },
   boardWrapper: {
     width: "100%",
