@@ -7,6 +7,8 @@ import {
   prepareAnalysesForInsert,
 } from "@/services/chess/analyzer";
 import { insertAnalyses } from "@/utils/analysis";
+import { generateExercisesForGame } from "@/utils/exercise";
+import { useChessPlatform } from "./useChessPlatform";
 import type { Game } from "@/types/games";
 
 interface AnalyzeGameOptions {
@@ -20,6 +22,7 @@ interface AnalyzeGameOptions {
 export const useAnalyzeGame = () => {
   const { supabase, session } = useSupabase();
   const queryClient = useQueryClient();
+  const { platforms } = useChessPlatform();
 
   const analyze = useMutation({
     mutationFn: async ({
@@ -53,6 +56,18 @@ export const useAnalyzeGame = () => {
       queryClient.invalidateQueries({ queryKey: ["game-analyses", game.id] });
       queryClient.invalidateQueries({ queryKey: ["games"] });
       queryClient.invalidateQueries({ queryKey: ["game-metadata", game.id] });
+
+      // Générer les exercices en différé (pour ne pas bloquer l'analyse)
+      setTimeout(() => {
+        generateExercisesForGame(
+          supabase,
+          game.id,
+          game,
+          platforms,
+          queryClient,
+          "useAnalyzeGame",
+        );
+      }, 100); // Petit délai pour laisser l'insertion se terminer
 
       return analyses;
     },

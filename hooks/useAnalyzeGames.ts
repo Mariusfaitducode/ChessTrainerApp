@@ -8,6 +8,8 @@ import {
   prepareAnalysesForInsert,
 } from "@/services/chess/analyzer";
 import { insertAnalyses } from "@/utils/analysis";
+import { generateExercisesForGame } from "@/utils/exercise";
+import { useChessPlatform } from "./useChessPlatform";
 import type { Game } from "@/types/games";
 
 interface AnalyzeGamesOptions {
@@ -24,6 +26,7 @@ interface Progress {
 export const useAnalyzeGames = () => {
   const { supabase, session } = useSupabase();
   const queryClient = useQueryClient();
+  const { platforms } = useChessPlatform();
   const [progress, setProgress] = useState<Record<string, Progress>>({});
 
   const analyzeGames = useMutation({
@@ -104,6 +107,18 @@ export const useAnalyzeGames = () => {
               completed: true,
             },
           }));
+
+          // Générer les exercices en différé (pour ne pas bloquer l'analyse)
+          setTimeout(() => {
+            generateExercisesForGame(
+              supabase,
+              game.id,
+              game,
+              platforms,
+              queryClient,
+              "useAnalyzeGames",
+            );
+          }, 100);
 
           results.push({ gameId: game.id, success: true });
         } catch (error: any) {
