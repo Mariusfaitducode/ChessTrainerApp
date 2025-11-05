@@ -30,6 +30,19 @@ interface ChessApiResponse {
 }
 
 /**
+ * Valide un FEN en essayant de le charger dans chess.js
+ */
+const isValidFen = (fen: string): boolean => {
+  try {
+    const tempGame = new Chess();
+    tempGame.load(fen);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
  * Analyse une position avec l'API Chess-API.com (Stockfish en temps réel)
  */
 export const analyzePosition = async (
@@ -37,6 +50,14 @@ export const analyzePosition = async (
   depth: number = 13,
 ): Promise<AnalysisResult> => {
   const apiDepth = Math.min(depth, 20);
+
+  // Valider le FEN avant d'appeler l'API
+  if (!isValidFen(fen)) {
+    console.error(
+      `[Analyzer] FEN invalide: ${fen.substring(0, 50)}... (tronqué)`,
+    );
+    return { bestMove: null, evaluation: 0, depth: 0 };
+  }
 
   try {
     const response = await fetch("https://chess-api.com/v1", {
@@ -55,16 +76,19 @@ export const analyzePosition = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(
-        `Erreur API: ${response.status} ${errorText || response.statusText}`,
+      console.error(
+        `[Analyzer] Erreur HTTP ${response.status}: ${errorText || response.statusText}`,
       );
+      return { bestMove: null, evaluation: 0, depth: 0 };
     }
 
     const data: ChessApiResponse = await response.json();
 
-    // Vérifier les erreurs
+    // Vérifier les erreurs de l'API
     if (data.error) {
-      console.error("[Analyzer] Erreur API:", data.error);
+      console.error(
+        `[Analyzer] Erreur API: ${data.error} (FEN: ${fen.substring(0, 50)}...)`,
+      );
       return { bestMove: null, evaluation: 0, depth: 0 };
     }
 
@@ -183,14 +207,42 @@ export const analyzeGame = async (
     const currentFen = tempGame.fen();
     const isWhiteMove = i % 2 === 0;
 
+    // Vérifier que le FEN avant est valide
+    if (!isValidFen(currentFen)) {
+      console.error(
+        `[Analyzer] FEN invalide avant le coup ${i + 1}: ${currentFen.substring(0, 50)}...`,
+      );
+      // Continuer avec le coup suivant
+      continue;
+    }
+
     // Analyser la position AVANT le coup
     const analysisBefore = await analyzePosition(currentFen, depth);
     const evalBefore = analysisBefore.evaluation;
 
     // Jouer le coup
-    tempGame.move(move);
+    try {
+      tempGame.move(move);
+    } catch (error: any) {
+      console.error(
+        `[Analyzer] Erreur lors du coup ${i + 1} (${move.san}):`,
+        error,
+      );
+      // Continuer avec le coup suivant
+      continue;
+    }
+
     const playedMoveSan = move.san;
     const fenAfter = tempGame.fen();
+
+    // Vérifier que le FEN après est valide
+    if (!isValidFen(fenAfter)) {
+      console.error(
+        `[Analyzer] FEN invalide après le coup ${i + 1}: ${fenAfter.substring(0, 50)}...`,
+      );
+      // Continuer avec le coup suivant
+      continue;
+    }
 
     // Analyser la position APRÈS le coup joué
     const analysisAfter = await analyzePosition(fenAfter, depth);
