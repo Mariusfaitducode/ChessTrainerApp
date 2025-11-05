@@ -216,7 +216,7 @@ const ChessboardWrapperComponent = ({
               white: "#F0D9B5",
               lastMoveHighlight: "rgba(255, 255, 0, 0.4)",
             }}
-            durations={{ move: 150 }}
+            durations={{ move: 20 }}
           />
         </View>
       )}

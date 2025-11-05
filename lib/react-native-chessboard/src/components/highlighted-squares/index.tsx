@@ -1,16 +1,17 @@
-import React, { useMemo } from 'react';
+/* eslint-disable react/display-name */
+import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useChessboardProps } from '../../context/props-context/hooks';
 
-import { useChessEngine } from '../../context/chess-engine-context/hooks';
+import { useBoard } from '../../context/board-context/hooks';
 import { useReversePiecePosition } from '../../notation';
 import { HighlightedSquare } from './highlighted-square';
 import { useSquareRefs } from '../../context/board-refs-context/hooks';
 
 const HighlightedSquares: React.FC = React.memo(() => {
-  const chess = useChessEngine();
-  const board = useMemo(() => chess.board(), [chess]);
+  // Utiliser le board du contexte pour éviter les re-renders inutiles
+  const board = useBoard();
   const { pieceSize } = useChessboardProps();
   const { toPosition, toTranslation } = useReversePiecePosition();
   const refs = useSquareRefs();
@@ -21,8 +22,8 @@ const HighlightedSquares: React.FC = React.memo(() => {
         ...StyleSheet.absoluteFillObject,
       }}
     >
-      {board.map((row, y) =>
-        row.map((_, x) => {
+      {board.map((row: any[], y: number) =>
+        row.map((_: any, x: number) => {
           const square = toPosition({ x: x * pieceSize, y: y * pieceSize });
           const translation = toTranslation(square);
 

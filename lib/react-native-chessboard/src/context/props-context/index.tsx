@@ -1,3 +1,4 @@
+/* eslint-disable react/display-name */
 import type { Move } from 'chess.js';
 import React, { useMemo } from 'react';
 import { Dimensions } from 'react-native';
@@ -73,7 +74,11 @@ type ChessboardContextType = ChessboardProps &
   Required<
     Pick<
       ChessboardProps,
-      'gestureEnabled' | 'withLetters' | 'withNumbers' | 'boardSize' | 'visualizationMode'
+      | 'gestureEnabled'
+      | 'withLetters'
+      | 'withNumbers'
+      | 'boardSize'
+      | 'visualizationMode'
     >
   > & { pieceSize: number } & {
     colors: Required<ChessboardColorsType>;
@@ -94,7 +99,7 @@ const defaultChessboardProps: ChessboardContextType = {
     promotionPieceButton: '#FF9B71',
   },
   durations: {
-    move: 150,
+    move: 60,
   },
   withLetters: true,
   withNumbers: true,
@@ -106,8 +111,12 @@ const ChessboardPropsContext = React.createContext<ChessboardContextType>(
   defaultChessboardProps
 );
 
-const ChessboardPropsContextProvider: React.FC<ChessboardProps> = React.memo(
-  ({ children, ...rest }) => {
+interface ChessboardPropsProviderProps extends ChessboardProps {
+  children?: React.ReactNode;
+}
+
+const ChessboardPropsContextProvider: React.FC<ChessboardPropsProviderProps> =
+  React.memo(({ children, ...rest }) => {
     const value = useMemo(() => {
       const data = {
         ...defaultChessboardProps,
@@ -123,9 +132,8 @@ const ChessboardPropsContextProvider: React.FC<ChessboardProps> = React.memo(
         {children}
       </ChessboardPropsContext.Provider>
     );
-  }
-);
+  });
 
 export { ChessboardPropsContextProvider, ChessboardPropsContext };
-// eslint-disable-next-line no-undef
+
 export type { ChessboardProps };

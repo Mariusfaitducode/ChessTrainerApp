@@ -31,12 +31,9 @@ const HighlightedSquareComponent = React.forwardRef<
     ref,
     () => ({
       reset: () => {
-        // Différer pour éviter les warnings Reanimated pendant le render
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            isHighlighted.value = false;
-          });
-        });
+        // Appliquer immédiatement pour éviter les effets de clignotement
+        isHighlighted.value = false;
+        backgroundColor.value = lastMoveHighlight;
       },
       highlight: ({ backgroundColor: bg } = {}) => {
         // Appliquer immédiatement - pas besoin de différer ici

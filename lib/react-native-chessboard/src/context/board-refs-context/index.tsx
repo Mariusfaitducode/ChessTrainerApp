@@ -149,42 +149,42 @@ const BoardRefsContextProviderComponent = React.forwardRef<
             // Attendre un peu pour que le board se mette à jour
             await new Promise((resolve) => setTimeout(resolve, 50));
 
+            // Réinitialiser tous les highlights avant de jouer les coups
+            // Faire cela de manière synchrone pour éviter les clignotements
+            const currentBoardBefore = chess.board();
+            for (let x = 0; x < currentBoardBefore.length; x++) {
+              const row = currentBoardBefore[x];
+              for (let y = 0; y < row.length; y++) {
+                const col = String.fromCharCode(97 + Math.round(x));
+                const rowStr = `${8 - Math.round(y)}`;
+                const square = `${col}${rowStr}` as Square;
+                squareRefs.current?.[square]?.current?.reset();
+              }
+            }
+
+            // Petit délai pour s'assurer que les resets sont appliqués
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
             // Jouer seulement les nouveaux coups avec animations
             for (let i = currentIndex + 1; i <= targetIndex; i++) {
               const move = moveHistory[i];
               if (move && pieceRefs?.current?.[move.from]?.current) {
+                // Réinitialiser le highlight du coup précédent
+                if (i > currentIndex + 1) {
+                  const prevMove = moveHistory[i - 1];
+                  if (prevMove) {
+                    squareRefs.current?.[prevMove.from]?.current?.reset();
+                    squareRefs.current?.[prevMove.to]?.current?.reset();
+                  }
+                }
+
                 // Jouer le coup avec animation
                 await pieceRefs.current[move.from].current.moveTo(move.to);
                 // Mettre à jour le chess engine
                 chess.move(move);
-                // Délai entre les coups pour permettre les animations
-                await new Promise((resolve) => setTimeout(resolve, 80));
-              }
-            }
 
-            // Appliquer le highlight du dernier coup après les animations
-            if (targetIndex >= 0) {
-              const lastMove = moveHistory[targetIndex];
-              if (lastMove) {
-                await new Promise((resolve) => setTimeout(resolve, 100));
-                // Réinitialiser tous les highlights d'abord
-                const currentBoard = chess.board();
-                for (let x = 0; x < currentBoard.length; x++) {
-                  const row = currentBoard[x];
-                  for (let y = 0; y < row.length; y++) {
-                    const col = String.fromCharCode(97 + Math.round(x));
-                    const rowStr = `${8 - Math.round(y)}`;
-                    const square = `${col}${rowStr}` as Square;
-                    squareRefs.current?.[square]?.current?.reset();
-                  }
-                }
-                await new Promise((resolve) => setTimeout(resolve, 50));
-                squareRefs.current?.[lastMove.from]?.current?.highlight({
-                  backgroundColor: undefined,
-                });
-                squareRefs.current?.[lastMove.to]?.current?.highlight({
-                  backgroundColor: undefined,
-                });
+                // Délai minimal entre les coups - juste assez pour que l'animation commence
+                await new Promise((resolve) => setTimeout(resolve, 20));
               }
             }
 
@@ -194,6 +194,27 @@ const BoardRefsContextProviderComponent = React.forwardRef<
                 setBoard(chess.board());
               });
             });
+
+            // Attendre que le re-render soit terminé avant d'appliquer le highlight
+            // Appliquer le highlight UNE SEULE FOIS après tous les mouvements et le setBoard
+            await new Promise((resolve) => setTimeout(resolve, 100));
+
+            // Appliquer le highlight du dernier coup après que tout soit stabilisé
+            if (targetIndex >= 0) {
+              const lastMove = moveHistory[targetIndex];
+              if (lastMove) {
+                const fromRef = squareRefs.current?.[lastMove.from]?.current;
+                const toRef = squareRefs.current?.[lastMove.to]?.current;
+                if (fromRef && toRef) {
+                  fromRef.highlight({
+                    backgroundColor: undefined,
+                  });
+                  toRef.highlight({
+                    backgroundColor: undefined,
+                  });
+                }
+              }
+            }
           } else if (targetIndex < currentIndex) {
             // Retour en arrière : charger directement la FEN (plus rapide)
             chess.reset();
