@@ -40,6 +40,7 @@ export default function GameDetailScreen() {
     isAtStart,
     isAtEnd,
     error: chessError,
+    moveHistory,
   } = useChessGame(game?.pgn || null);
 
   // Déterminer si l'utilisateur joue les blancs ou les noirs
@@ -216,6 +217,8 @@ export default function GameDetailScreen() {
             <View style={styles.chessboardContainer}>
               <ChessboardWrapper
                 fen={currentFen}
+                moveHistory={moveHistory}
+                currentMoveIndex={currentMoveIndex}
                 boardOrientation={boardOrientation}
               />
             </View>

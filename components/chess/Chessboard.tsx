@@ -1,13 +1,18 @@
 import { useEffect, useRef, memo, useState } from "react";
 import { View, StyleSheet, Image } from "react-native";
-import Chessboard, { type ChessboardRef } from "react-native-chessboard";
-import type { PieceType } from "react-native-chessboard/lib/typescript/types";
+import Chessboard, {
+  type ChessboardRef,
+} from "@/lib/react-native-chessboard/src";
+import type { PieceType } from "@/lib/react-native-chessboard/src/types";
+import type { Move } from "chess.js";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const PIECES = require("react-native-chessboard/lib/commonjs/constants").PIECES;
+const PIECES =
+  require("@/lib/react-native-chessboard/lib/commonjs/constants").PIECES;
 
 interface ChessboardWrapperProps {
   fen?: string;
+  moveHistory?: Move[];
+  currentMoveIndex?: number;
   onMove?: (move: { from: string; to: string; promotion?: string }) => boolean;
   boardOrientation?: "white" | "black";
   showCoordinates?: boolean;
@@ -17,6 +22,8 @@ interface ChessboardWrapperProps {
 
 const ChessboardWrapperComponent = ({
   fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+  moveHistory = [],
+  currentMoveIndex = -1,
   onMove,
   boardOrientation = "white",
   showCoordinates = true,
@@ -26,10 +33,12 @@ const ChessboardWrapperComponent = ({
   const chessboardRef = useRef<ChessboardRef>(null);
   const containerRef = useRef<View>(null);
   const [boardSize, setBoardSize] = useState<number>(0);
-  // FEN initial pour l'initialisation uniquement - ne change jamais après le montage
-  const [initialFen] = useState(() => fen);
-  const currentFenRef = useRef<string>(fen);
+  const initialFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   const isMountedRef = useRef(false);
+  const currentFenRef = useRef<string>(fen);
+  const currentIndexRef = useRef<number>(currentMoveIndex);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isNavigatingRef = useRef(false);
 
   // Mesurer la taille du container avec onLayout
   const handleLayout = (event: any) => {
@@ -43,31 +52,28 @@ const ChessboardWrapperComponent = ({
   useEffect(() => {
     if (boardSize > 0 && chessboardRef.current && !isMountedRef.current) {
       isMountedRef.current = true;
-      currentFenRef.current = initialFen;
+      currentFenRef.current = fen;
+      currentIndexRef.current = currentMoveIndex;
       // Initialiser avec le FEN initial
       requestAnimationFrame(() => {
         if (chessboardRef.current) {
-          chessboardRef.current.resetBoard(initialFen);
+          chessboardRef.current.resetBoard(fen);
         }
       });
     }
-  }, [boardSize, initialFen]);
+  }, [boardSize, fen, currentMoveIndex]);
 
-  // Mettre à jour la position quand le FEN change (après le montage initial)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingFenRef = useRef<string | null>(null);
-
+  // Navigation avec animations
   useEffect(() => {
     if (
       !isMountedRef.current ||
       !chessboardRef.current ||
-      fen === currentFenRef.current
+      isNavigatingRef.current ||
+      (fen === currentFenRef.current &&
+        currentMoveIndex === currentIndexRef.current)
     ) {
       return;
     }
-
-    // Stocker le FEN en attente
-    pendingFenRef.current = fen;
 
     // Annuler l'appel précédent s'il existe
     if (timeoutRef.current) {
@@ -75,32 +81,41 @@ const ChessboardWrapperComponent = ({
     }
 
     // Debounce : attendre un peu avant d'appliquer la mise à jour
-    // Cela évite les appels multiples rapides
-    timeoutRef.current = setTimeout(() => {
-      const fenToApply = pendingFenRef.current;
-      if (
-        fenToApply &&
-        chessboardRef.current &&
-        fenToApply !== currentFenRef.current
-      ) {
-        currentFenRef.current = fenToApply;
-        pendingFenRef.current = null;
+    // Utiliser requestAnimationFrame pour s'assurer qu'on n'est pas pendant le render
+    requestAnimationFrame(() => {
+      timeoutRef.current = setTimeout(async () => {
+        if (
+          !chessboardRef.current ||
+          (fen === currentFenRef.current &&
+            currentMoveIndex === currentIndexRef.current)
+        ) {
+          return;
+        }
 
-        // Utiliser double requestAnimationFrame pour s'assurer que l'appel se fait après le render complet
-        // Cela évite d'accéder aux shared values Reanimated pendant le render
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (chessboardRef.current) {
-              try {
-                chessboardRef.current.resetBoard(fenToApply);
-              } catch (err) {
-                console.error("[Chessboard] Erreur lors du resetBoard:", err);
-              }
-            }
+        isNavigatingRef.current = true;
+        currentFenRef.current = fen;
+        const previousIndex = currentIndexRef.current;
+        currentIndexRef.current = currentMoveIndex;
+
+        try {
+          // Utiliser navigateToPosition pour avoir les animations quand possible
+          await chessboardRef.current.navigateToPosition({
+            targetFen: fen,
+            moveHistory: moveHistory.length > 0 ? moveHistory : undefined,
+            currentIndex: previousIndex,
+            targetIndex: currentMoveIndex,
           });
-        });
-      }
-    }, 16); // ~1 frame à 60fps
+        } catch (err) {
+          console.error("[Chessboard] Erreur lors de la navigation:", err);
+          // Fallback : utiliser resetBoard
+          if (chessboardRef.current) {
+            chessboardRef.current.resetBoard(fen);
+          }
+        } finally {
+          isNavigatingRef.current = false;
+        }
+      }, 16); // ~1 frame à 60fps
+    });
 
     return () => {
       if (timeoutRef.current) {
@@ -108,7 +123,7 @@ const ChessboardWrapperComponent = ({
         timeoutRef.current = null;
       }
     };
-  }, [fen]);
+  }, [fen, currentMoveIndex, moveHistory]);
 
   // Highlight des cases spécifiées (si nécessaire) - seulement si highlightSquares change
   const previousHighlightSquaresRef = useRef<string>("");
@@ -147,6 +162,7 @@ const ChessboardWrapperComponent = ({
             ref={chessboardRef}
             fen={initialFen}
             gestureEnabled={!!onMove}
+            visualizationMode={!onMove}
             withLetters={showCoordinates && boardOrientation === "white"}
             withNumbers={showCoordinates && boardOrientation === "white"}
             boardSize={boardSize}

@@ -206,6 +206,7 @@ export const useChessGame = (pgn: string | null) => {
   return {
     chess,
     moves,
+    moveHistory,
     currentFen,
     currentMoveIndex,
     currentMove,
