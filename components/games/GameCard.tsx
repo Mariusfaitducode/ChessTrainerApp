@@ -10,6 +10,7 @@ import {
   Minus,
   CheckCircle2,
   Loader2,
+  AlertTriangle,
 } from "lucide-react-native";
 
 import type { Game } from "@/types/games";
@@ -183,7 +184,7 @@ export const GameCard = ({
           )}
         </View>
 
-        {/* Statut analyse */}
+        {/* Statut analyse et blunders */}
         <View style={styles.analysisStatus}>
           {isAnalyzing ? (
             <Loader2
@@ -192,11 +193,21 @@ export const GameCard = ({
               style={styles.analysisIcon}
             />
           ) : game.analyzed_at ? (
-            <CheckCircle2
-              size={16}
-              color={colors.orange[600]}
-              style={styles.analysisIcon}
-            />
+            <>
+              <CheckCircle2
+                size={16}
+                color={colors.orange[600]}
+                style={styles.analysisIcon}
+              />
+              {game.blunders_count !== undefined && game.blunders_count > 0 && (
+                <View style={styles.blundersBadge}>
+                  <AlertTriangle size={12} color={colors.error.main} />
+                  <Text style={styles.blundersText}>
+                    {game.blunders_count}
+                  </Text>
+                </View>
+              )}
+            </>
           ) : null}
         </View>
 
@@ -247,13 +258,29 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   analysisStatus: {
-    width: 32,
+    minWidth: 32,
     height: 32,
     justifyContent: "center",
     alignItems: "center",
+    flexDirection: "row",
+    gap: spacing[1],
   },
   analysisIcon: {
     // Animation automatique pour Loader2
+  },
+  blundersBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.error.light,
+    paddingHorizontal: spacing[1],
+    paddingVertical: spacing[0.5],
+    borderRadius: borders.radius.sm,
+    gap: spacing[0.5],
+  },
+  blundersText: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.error.main,
   },
   resultContainer: {
     width: 32,

@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  SectionList,
   RefreshControl,
   TouchableOpacity,
 } from "react-native";
@@ -15,6 +15,11 @@ import { useExercises } from "@/hooks/useExercises";
 import { ExerciseCard } from "@/components/exercises/ExerciseCard";
 import type { Exercise } from "@/types/exercises";
 import { colors, spacing, typography, borders } from "@/theme";
+
+interface ExerciseSection {
+  title: string;
+  data: Exercise[];
+}
 
 export default function ExercisesScreen() {
   const insets = useSafeAreaInsets();
@@ -31,6 +36,38 @@ export default function ExercisesScreen() {
         ? exercises.filter((e) => !e.completed)
         : exercises.filter((e) => e.completed);
 
+  // Grouper les exercices par adversaire
+  const groupedExercises = useMemo(() => {
+    const grouped = new Map<string, Exercise[]>();
+
+    filteredExercises.forEach((exercise) => {
+      const opponentKey = exercise.opponent || "Adversaire inconnu";
+
+      if (!grouped.has(opponentKey)) {
+        grouped.set(opponentKey, []);
+      }
+      grouped.get(opponentKey)!.push(exercise);
+    });
+
+    // Convertir en tableau et trier par nombre d'exercices (plus d'exercices en premier)
+    const sections: ExerciseSection[] = Array.from(grouped.entries())
+      .map(([opponent, exercisesList]) => ({
+        title: opponent,
+        data: exercisesList.sort((a, b) => {
+          // Trier par date de création (plus récent en premier)
+          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return dateB - dateA;
+        }),
+      }))
+      .sort((a, b) => {
+        // Trier les sections par nombre d'exercices (plus d'exercices en premier)
+        return b.data.length - a.data.length;
+      });
+
+    return sections;
+  }, [filteredExercises]);
+
   const handleExercisePress = (exerciseId: string) => {
     router.push(`/(protected)/exercise/${exerciseId}` as any);
   };
@@ -40,6 +77,15 @@ export default function ExercisesScreen() {
       exercise={item}
       onPress={() => handleExercisePress(item.id)}
     />
+  );
+
+  const renderSectionHeader = ({ section }: { section: ExerciseSection }) => (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>{section.title}</Text>
+      <Text style={styles.sectionCount}>
+        {section.data.length} exercice{section.data.length > 1 ? "s" : ""}
+      </Text>
+    </View>
   );
 
   return (
@@ -92,11 +138,15 @@ export default function ExercisesScreen() {
         </View>
       </View>
 
-      <FlatList
-        data={filteredExercises}
+      <SectionList
+        sections={groupedExercises}
         renderItem={renderExercise}
+        renderSectionHeader={renderSectionHeader}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[
+          styles.list,
+          filteredExercises.length === 0 && styles.listEmpty,
+        ]}
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={refetch} />
         }
@@ -114,6 +164,8 @@ export default function ExercisesScreen() {
             </Text>
           </View>
         }
+        showsVerticalScrollIndicator={false}
+        stickySectionHeadersEnabled={false}
       />
     </View>
   );
@@ -159,6 +211,30 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: spacing[4],
+    paddingBottom: spacing[8],
+  },
+  listEmpty: {
+    flexGrow: 1,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    marginTop: spacing[4],
+    marginBottom: spacing[2],
+    backgroundColor: colors.background.primary,
+  },
+  sectionTitle: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text.primary,
+  },
+  sectionCount: {
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
+    fontWeight: typography.fontWeight.medium,
   },
   emptyContainer: {
     padding: spacing[8],

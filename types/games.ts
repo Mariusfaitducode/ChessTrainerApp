@@ -15,6 +15,7 @@ export interface Game {
   played_at: string | null;
   imported_at: string;
   analyzed_at: string | null;
+  blunders_count?: number; // Nombre de blunders (ajouté côté client)
 }
 
 export interface GameAnalysis {

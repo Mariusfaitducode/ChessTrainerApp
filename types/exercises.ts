@@ -18,6 +18,9 @@ export interface Exercise {
   attempts: number;
   created_at: string;
   completed_at: string | null;
+  // Champs enrichis côté client
+  opponent?: string | null;
+  evaluation_loss?: number; // Perte d'évaluation en centipawns
 }
 
 export interface ExerciseAttempt {

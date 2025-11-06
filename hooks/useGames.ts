@@ -29,12 +29,21 @@ export const useGames = () => {
       const gameIds = gamesData.map((g) => g.id);
       const { data: analysesData } = await supabase
         .from("game_analyses")
-        .select("game_id")
+        .select("game_id, mistake_level")
         .in("game_id", gameIds);
 
       const gamesWithAnalyses = new Set(
         (analysesData || []).map((a) => a.game_id),
       );
+
+      // Compter les blunders par partie
+      const blundersCountByGame = new Map<string, number>();
+      (analysesData || []).forEach((analysis) => {
+        if (analysis.mistake_level === "blunder") {
+          const current = blundersCountByGame.get(analysis.game_id) || 0;
+          blundersCountByGame.set(analysis.game_id, current + 1);
+        }
+      });
 
       // Synchroniser analyzed_at avec la présence d'analyses
       // On fait une seule requête batch pour optimiser
@@ -42,6 +51,7 @@ export const useGames = () => {
 
       const gamesWithCorrectStatus = gamesData.map((game) => {
         const hasAnalyses = gamesWithAnalyses.has(game.id);
+        const blundersCount = blundersCountByGame.get(game.id) || 0;
 
         if (hasAnalyses !== !!game.analyzed_at) {
           gamesToUpdate.push({
@@ -51,10 +61,14 @@ export const useGames = () => {
           return {
             ...game,
             analyzed_at: hasAnalyses ? new Date().toISOString() : null,
+            blunders_count: blundersCount,
           };
         }
 
-        return game;
+        return {
+          ...game,
+          blunders_count: blundersCount,
+        };
       });
 
       // Mettre à jour en batch si nécessaire
