@@ -43,6 +43,26 @@ const isValidFen = (fen: string): boolean => {
 };
 
 /**
+ * Normalise un FEN pour l'API Chess-API.com
+ * L'API peut être sensible au format exact, donc on normalise :
+ * - On s'assure d'avoir exactement 6 champs
+ * - On nettoie les espaces
+ * - On reconstruit le FEN depuis chess.js pour garantir le format
+ */
+const normalizeFenForApi = (fen: string): string => {
+  try {
+    // Recharger le FEN dans chess.js pour obtenir un format standardisé
+    const tempGame = new Chess();
+    tempGame.load(fen);
+    // chess.js génère toujours un FEN standardisé avec 6 champs
+    return tempGame.fen();
+  } catch {
+    // Si le FEN est invalide, on retourne l'original (sera rejeté par isValidFen)
+    return fen;
+  }
+};
+
+/**
  * Analyse une position avec l'API Chess-API.com (Stockfish en temps réel)
  */
 export const analyzePosition = async (
@@ -59,6 +79,9 @@ export const analyzePosition = async (
     return { bestMove: null, evaluation: 0, depth: 0 };
   }
 
+  // Normaliser le FEN pour l'API (format standardisé)
+  const normalizedFen = normalizeFenForApi(fen);
+
   try {
     const response = await fetch("https://chess-api.com/v1", {
       method: "POST",
@@ -67,7 +90,7 @@ export const analyzePosition = async (
         Accept: "application/json",
       },
       body: JSON.stringify({
-        fen,
+        fen: normalizedFen,
         depth: apiDepth,
         variants: 1,
         maxThinkingTime: 30,
@@ -87,7 +110,7 @@ export const analyzePosition = async (
     // Vérifier les erreurs de l'API
     if (data.error) {
       console.error(
-        `[Analyzer] Erreur API: ${data.error} (FEN: ${fen.substring(0, 50)}...)`,
+        `[Analyzer] Erreur API: ${data.error} (FEN original: ${fen.substring(0, 50)}..., FEN normalisé: ${normalizedFen.substring(0, 50)}...)`,
       );
       return { bestMove: null, evaluation: 0, depth: 0 };
     }
@@ -216,9 +239,28 @@ export const analyzeGame = async (
       continue;
     }
 
+    // Vérifier si la partie est terminée (checkmate/stalemate)
+    // Dans ce cas, on peut utiliser une évaluation par défaut
+    const isGameOver =
+      tempGame.isCheckmate() || tempGame.isStalemate() || tempGame.isDraw();
+
     // Analyser la position AVANT le coup
-    const analysisBefore = await analyzePosition(currentFen, depth);
-    const evalBefore = analysisBefore.evaluation;
+    let analysisBefore: AnalysisResult;
+    let evalBefore: number;
+
+    if (isGameOver) {
+      // Pour les positions terminées, utiliser une évaluation par défaut
+      // Checkmate = très grande évaluation, Stalemate/Draw = 0
+      if (tempGame.isCheckmate()) {
+        evalBefore = tempGame.turn() === "w" ? -10000 : 10000; // Le joueur qui doit jouer est mat
+      } else {
+        evalBefore = 0; // Stalemate ou draw
+      }
+      analysisBefore = { bestMove: null, evaluation: evalBefore, depth: 0 };
+    } else {
+      analysisBefore = await analyzePosition(currentFen, depth);
+      evalBefore = analysisBefore.evaluation;
+    }
 
     // Jouer le coup
     try {
@@ -244,9 +286,26 @@ export const analyzeGame = async (
       continue;
     }
 
+    // Vérifier si la partie est terminée après ce coup
+    const isGameOverAfter =
+      tempGame.isCheckmate() || tempGame.isStalemate() || tempGame.isDraw();
+
     // Analyser la position APRÈS le coup joué
-    const analysisAfter = await analyzePosition(fenAfter, depth);
-    const evalAfter = analysisAfter.evaluation;
+    let analysisAfter: AnalysisResult;
+    let evalAfter: number;
+
+    if (isGameOverAfter) {
+      // Pour les positions terminées, utiliser une évaluation par défaut
+      if (tempGame.isCheckmate()) {
+        evalAfter = tempGame.turn() === "w" ? -10000 : 10000; // Le joueur qui doit jouer est mat
+      } else {
+        evalAfter = 0; // Stalemate ou draw
+      }
+      analysisAfter = { bestMove: null, evaluation: evalAfter, depth: 0 };
+    } else {
+      analysisAfter = await analyzePosition(fenAfter, depth);
+      evalAfter = analysisAfter.evaluation;
+    }
 
     // Classifier l'erreur
     const mistakeLevel = classifyMistake(evalBefore, evalAfter, isWhiteMove);
