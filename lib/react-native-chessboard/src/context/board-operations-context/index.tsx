@@ -1,12 +1,13 @@
-import type { PieceType, Square } from 'chess.js';
+import type { Square } from 'chess.js';
 import React, {
   createContext,
   useCallback,
   useImperativeHandle,
   useMemo,
 } from 'react';
-import type Animated from 'react-native-reanimated';
+import type { SharedValue } from 'react-native-reanimated';
 import { useSharedValue } from 'react-native-reanimated';
+import type { PieceType } from '../../types';
 import { getChessboardState } from '../../helpers/get-chessboard-state';
 
 import { useReversePiecePosition } from '../../notation';
@@ -18,13 +19,13 @@ import { useChessEngine } from '../chess-engine-context/hooks';
 import { useChessboardProps } from '../props-context/hooks';
 
 type BoardOperationsContextType = {
-  selectableSquares: Animated.SharedValue<Square[]>;
+  selectableSquares: SharedValue<Square[]>;
   onMove: (from: Square, to: Square) => void;
   onSelectPiece: (square: Square) => void;
   moveTo: (to: Square) => void;
   isPromoting: (from: Square, to: Square) => boolean;
-  selectedSquare: Animated.SharedValue<Square | null>;
-  turn: Animated.SharedValue<'w' | 'b'>;
+  selectedSquare: SharedValue<Square | null>;
+  turn: SharedValue<'w' | 'b'>;
 };
 
 const BoardOperationsContext = createContext<BoardOperationsContextType>(
@@ -36,10 +37,13 @@ export type BoardOperationsRef = {
   resetHighlights: () => void;
 };
 
-const BoardOperationsContextProviderComponent = React.forwardRef<
-  BoardOperationsRef,
-  { controller?: ChessboardRef; children?: React.ReactNode }
->(({ children, controller }, ref) => {
+function BoardOperationsContextProviderComponent(
+  {
+    children,
+    controller,
+  }: { controller?: ChessboardRef; children?: React.ReactNode },
+  ref: React.ForwardedRef<BoardOperationsRef>
+) {
   const chess = useChessEngine();
   const setBoard = useSetBoard();
   const {
@@ -140,7 +144,8 @@ const BoardOperationsContextProviderComponent = React.forwardRef<
       const isCheckmate = chess.in_checkmate();
 
       if (isCheckmate) {
-        const square = findKing(`${chess.turn()}k`);
+        const kingType = chess.turn() === 'w' ? 'wk' : 'bk';
+        const square = findKing(kingType);
         if (!square) return;
         controller?.highlight({ square, color: checkmateHighlight });
       }
@@ -218,23 +223,21 @@ const BoardOperationsContextProviderComponent = React.forwardRef<
 
   const onSelectPiece = useCallback(
     (square: Square) => {
+      // Calculer les coups valides AVANT de différer
+      const validMoves = chess.moves({ square }) ?? [];
+      const validSquares = validMoves.map((move: string) => {
+        const splittedSquare = move.split('x');
+        if (splittedSquare.length === 0) {
+          return move;
+        }
+        return splittedSquare[splittedSquare.length - 1] as Square;
+      });
+
       // Différer les mises à jour des shared values pour éviter les warnings
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           selectedSquare.value = square;
-
-          const validSquares = (chess.moves({
-            square,
-          }) ?? []) as Square[];
-
-          selectableSquares.value = validSquares.map((square) => {
-            const splittedSquare = square.split('x');
-            if (splittedSquare.length === 0) {
-              return square;
-            }
-
-            return splittedSquare[splittedSquare.length - 1] as Square;
-          });
+          selectableSquares.value = validSquares;
         });
       });
     },
@@ -280,10 +283,18 @@ const BoardOperationsContextProviderComponent = React.forwardRef<
       {children}
     </BoardOperationsContext.Provider>
   );
-});
+}
+
+const BoardOperationsContextProviderComponentWithRef = React.forwardRef<
+  BoardOperationsRef,
+  { controller?: ChessboardRef; children?: React.ReactNode }
+>(BoardOperationsContextProviderComponent);
+
+BoardOperationsContextProviderComponentWithRef.displayName =
+  'BoardOperationsContextProvider';
 
 const BoardOperationsContextProvider = React.memo(
-  BoardOperationsContextProviderComponent
+  BoardOperationsContextProviderComponentWithRef
 );
 
 export { BoardOperationsContextProvider, BoardOperationsContext };

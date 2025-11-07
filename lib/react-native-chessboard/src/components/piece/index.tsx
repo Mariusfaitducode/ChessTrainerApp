@@ -1,8 +1,14 @@
 import type { Move, Square } from 'chess.js';
-import React, { useCallback, useImperativeHandle } from 'react';
+import React, {
+  useCallback,
+  useImperativeHandle,
+  useState,
+  useEffect,
+} from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
+  runOnUI,
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
@@ -35,7 +41,13 @@ const Piece = React.memo(
     ({ id, startPosition, square, size }, ref) => {
       const chess = useChessEngine();
       const refs = usePieceRefs();
+      // Utiliser un état JS normal au lieu d'un SharedValue pour éviter les problèmes dans .enabled()
+      const [pieceEnabledState, setPieceEnabledState] = useState(true);
       const pieceEnabled = useSharedValue(true);
+      // Synchroniser pieceEnabled avec pieceEnabledState
+      useEffect(() => {
+        pieceEnabled.value = pieceEnabledState;
+      }, [pieceEnabledState, pieceEnabled]);
       const { isPromoting } = useBoardPromotion();
       const { onSelectPiece, onMove, selectedSquare, turn } =
         useBoardOperations();
@@ -48,7 +60,9 @@ const Piece = React.memo(
       const gestureEnabled = useDerivedValue(
         () => {
           'worklet';
-          return turn.value === id.charAt(0) && gestureEnabledFromChessboardProps;
+          return (
+            turn.value === id.charAt(0) && gestureEnabledFromChessboardProps
+          );
         },
         // Les shared values ne doivent pas être dans les dépendances
         // Le worklet accède toujours à la valeur actuelle
@@ -69,7 +83,7 @@ const Piece = React.memo(
         (from: Square, to: Square) => {
           return chess
             .moves({ verbose: true })
-            .find((m) => m.from === from && m.to === to);
+            .find((m: any) => m.from === from && m.to === to);
         },
         [chess]
       );
@@ -124,40 +138,50 @@ const Piece = React.memo(
         ]
       );
 
-      const movePiece = useCallback(
-        (to: Square) => {
-          'worklet';
-          const from = toPosition({ x: offsetX.value, y: offsetY.value });
-          runOnJS(moveTo)(from, to);
+      // Fonction JS normale pour appeler moveTo avec les bonnes coordonnées
+      const movePieceJS = useCallback(
+        (from: Square, to: Square) => {
+          moveTo(from, to);
         },
-        // Ne pas mettre offsetX/offsetY dans les dépendances car ce sont des shared values
+        [moveTo]
+      );
+
+      // Fonction worklet pour calculer la position de départ et appeler la fonction JS
+      const movePieceWorklet = useCallback(() => {
+        'worklet';
+        // Calculer la position de départ dans le worklet
+        const from = toPosition({ x: offsetX.value, y: offsetY.value });
+        // Calculer la position de fin (déjà calculée dans onEnd)
+        const endPos = toPosition({
+          x: translateX.value,
+          y: translateY.value,
+        });
+        // Appeler la fonction JS avec les deux positions
+        runOnJS(movePieceJS)(from, endPos);
+        // Ne pas mettre offsetX/offsetY/translateX/translateY dans les dépendances car ce sont des shared values
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [moveTo, toPosition]
-      );
+      }, [movePieceJS, toPosition]);
 
-      useImperativeHandle(
-        ref,
-        () => {
-          return {
-            moveTo: (to: Square) => {
-              return moveTo(square, to);
-            },
-            enable: (active: boolean) => {
-              pieceEnabled.value = active;
-            },
-          };
-        },
-        [moveTo, pieceEnabled, square]
-      );
+      useImperativeHandle(ref, () => {
+        return {
+          moveTo: (to: Square) => {
+            return moveTo(square, to);
+          },
+          enable: (active: boolean) => {
+            setPieceEnabledState(active);
+            pieceEnabled.value = active;
+          },
+        };
+      }, [moveTo, pieceEnabled, square]);
 
+      // onStartTap ne doit PAS être un worklet car il est appelé depuis handleOnBeginJS (JS)
+      // Il doit être une fonction JS normale qui appelle onSelectPiece directement
       const onStartTap = useCallback(
-        // eslint-disable-next-line no-shadow
-        (square: Square) => {
-          'worklet';
+        (squareParam: Square) => {
           if (!onSelectPiece) {
             return;
           }
-          runOnJS(onSelectPiece)(square);
+          onSelectPiece(squareParam);
         },
         [onSelectPiece]
       );
@@ -169,62 +193,113 @@ const Piece = React.memo(
         [refs]
       );
 
-      const handleOnBegin = useCallback(() => {
+      // Fonction pour mettre à jour le scale (doit être un worklet)
+      const updateScale = useCallback(() => {
         'worklet';
-        const currentSquare = toPosition({
-          x: translateX.value,
-          y: translateY.value,
+        scale.value = withTiming(1.2);
+      }, [scale]);
+
+      // Fonction JS séparée pour la logique qui nécessite des fonctions JS
+      const handleOnBeginJS = useCallback(
+        ({
+          currentSquare,
+          previousSquare,
+          isEnabled,
+        }: {
+          currentSquare: Square;
+          previousSquare: Square | null;
+          isEnabled: boolean;
+        }) => {
+          // Valider le coup si une pièce était déjà sélectionnée
+          if (previousSquare) {
+            const move = validateMove(previousSquare, currentSquare);
+            if (move) {
+              globalMoveTo(move);
+              return;
+            }
+          }
+
+          // Si le geste n'est pas activé, ne rien faire
+          if (!isEnabled) {
+            return;
+          }
+
+          // Appeler onStartTap d'abord (JS)
+          onStartTap(square);
+
+          // Mettre à jour le scale via runOnUI (worklet) APRÈS onStartTap
+          // pour éviter les problèmes de timing
+          runOnUI(updateScale)();
+        },
+        [globalMoveTo, onStartTap, square, validateMove, updateScale]
+      );
+
+      // handleOnBegin doit être un worklet mais ne peut pas utiliser directement
+      // des fonctions JS. On doit séparer la logique worklet de la logique JS.
+      const handleOnBeginWorklet = useCallback(() => {
+        'worklet';
+        // Lire les valeurs dans le worklet
+        const currentTranslateX = translateX.value;
+        const currentTranslateY = translateY.value;
+        const prevSquare = selectedSquare.value;
+        const isEnabled = gestureEnabled.value;
+
+        // Calculer la position actuelle dans le worklet
+        const currentPos = toPosition({
+          x: currentTranslateX,
+          y: currentTranslateY,
         });
 
-        const previousTappedSquare = selectedSquare.value;
-        const move =
-          previousTappedSquare &&
-          validateMove(previousTappedSquare, currentSquare);
-
-        if (move) {
-          runOnJS(globalMoveTo)(move);
-          return;
-        }
-        if (!gestureEnabled.value) return;
-        scale.value = withTiming(1.2);
-        runOnJS(onStartTap)(square);
+        // Passer les valeurs nécessaires à la fonction JS
+        runOnJS(handleOnBeginJS)({
+          currentSquare: currentPos,
+          previousSquare: prevSquare,
+          isEnabled,
+        });
       }, [
-        globalMoveTo,
-        onStartTap,
-        scale,
-        square,
-        toPosition,
-        validateMove,
         gestureEnabled,
         selectedSquare,
         translateX,
         translateY,
+        toPosition,
+        handleOnBeginJS,
       ]);
 
+      // Calculer enabled avec une valeur JS normale (pas de SharedValue)
+      // pour éviter les problèmes dans .enabled() sur mobile
+      const gestureEnabledForCreation = !isPromoting && pieceEnabledState;
+
       const gesture = Gesture.Pan()
-        .enabled(!isPromoting && pieceEnabled.value)
+        .enabled(gestureEnabledForCreation)
         .onBegin(() => {
           'worklet';
           offsetX.value = translateX.value;
           offsetY.value = translateY.value;
-          runOnJS(handleOnBegin)();
+          handleOnBeginWorklet();
         })
         .onStart(() => {
-          if (!gestureEnabled.value) return;
+          'worklet';
+          if (!gestureEnabled.value) {
+            return;
+          }
           isGestureActive.value = true;
         })
         .onUpdate(({ translationX, translationY }) => {
+          'worklet';
           if (!gestureEnabled.value) return;
           translateX.value = offsetX.value + translationX;
           translateY.value = offsetY.value + translationY;
         })
         .onEnd(() => {
-          if (!gestureEnabled.value) return;
-          runOnJS(movePiece)(
-            toPosition({ x: translateX.value, y: translateY.value })
-          );
+          'worklet';
+          if (!gestureEnabled.value) {
+            return;
+          }
+          // Appeler le worklet qui gère le calcul et l'appel JS
+          movePieceWorklet();
         })
         .onFinalize(() => {
+          'worklet';
           scale.value = withTiming(1);
         });
 
