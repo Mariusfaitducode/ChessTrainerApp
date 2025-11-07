@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGame } from "@/hooks/useGame";
 import { useChessGame } from "@/hooks/useChessGame";
 import { useChessPlatform } from "@/hooks/useChessPlatform";
-import { ChessboardWrapper } from "@/components/chess/Chessboard";
+import { Chessboard } from "@/components/chess/Chessboard";
 import { MoveList } from "@/components/chess/MoveList";
 import { GameControls } from "@/components/chess/GameControls";
 import { AnalysisBar } from "@/components/chess/AnalysisBar";
@@ -215,7 +215,8 @@ export default function GameDetailScreen() {
             </View>
 
             <View style={styles.chessboardContainer}>
-              <ChessboardWrapper
+              <Chessboard
+                mode="visualization"
                 fen={currentFen}
                 moveHistory={moveHistory}
                 currentMoveIndex={currentMoveIndex}
