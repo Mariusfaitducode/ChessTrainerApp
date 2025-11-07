@@ -1,3 +1,4 @@
+/* eslint-disable react/display-name */
 import { Chess } from 'chess.js';
 import React, { useImperativeHandle, useMemo, useRef, useState } from 'react';
 import type { ChessboardState } from '../helpers/get-chessboard-state';
@@ -37,17 +38,6 @@ const ChessboardContextProviderComponent = React.forwardRef<
       resetBoard: (params) => {
         chessboardRef.current?.resetBoard(params);
         boardOperationsRef.current?.reset();
-      },
-      navigateToPosition: async (params) => {
-        await chessboardRef.current?.navigateToPosition?.(params);
-        // Ne pas reset les highlights car navigateToPosition gère déjà le highlight du dernier coup
-        // Juste reset les selectable squares et le selected square
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            // Reset seulement les sélections, pas les highlights
-            // Les highlights sont gérés par navigateToPosition
-          });
-        });
       },
     };
   }, []);

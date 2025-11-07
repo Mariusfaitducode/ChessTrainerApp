@@ -57,6 +57,12 @@ export const ChessboardCore = React.forwardRef<
   useEffect(() => {
     if (boardSize > 0 && chessboardRef.current && !isMountedRef.current) {
       isMountedRef.current = true;
+      if (__DEV__) {
+        console.log(
+          "[ChessboardCore] Initialisation du board avec FEN initial",
+          fen.substring(0, 20),
+        );
+      }
       requestAnimationFrame(() => {
         if (chessboardRef.current) {
           chessboardRef.current.resetBoard(fen);
@@ -68,16 +74,18 @@ export const ChessboardCore = React.forwardRef<
     }
   }, [boardSize, fen, onRefReady]);
 
-  // Mettre à jour le FEN quand il change
-  useEffect(() => {
-    if (isMountedRef.current && chessboardRef.current && fen) {
-      requestAnimationFrame(() => {
-        if (chessboardRef.current) {
-          chessboardRef.current.resetBoard(fen);
-        }
-      });
-    }
-  }, [fen]);
+  // NE PAS mettre à jour automatiquement le FEN quand il change
+  // NavigationController gère ça manuellement pour éviter les doubles appels
+  // Le FEN initial est déjà géré dans le premier useEffect
+  // useEffect(() => {
+  //   if (isMountedRef.current && chessboardRef.current && fen) {
+  //     requestAnimationFrame(() => {
+  //       if (chessboardRef.current) {
+  //         chessboardRef.current.resetBoard(fen);
+  //       }
+  //     });
+  //   }
+  // }, [fen]);
 
   // Gérer la rotation des pièces si le board est inversé
   const renderPiece =

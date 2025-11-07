@@ -11,6 +11,7 @@ export function VisualizationMode({
   currentMoveIndex,
   boardOrientation,
   showCoordinates = true,
+  previousFen,
 }: VisualizationModeProps) {
   const chessboardRef = useRef<ChessboardRef | null>(null);
 
@@ -20,6 +21,7 @@ export function VisualizationMode({
     moveHistory,
     currentIndex: currentMoveIndex,
     targetFen: fen,
+    previousFen,
     enabled: true,
   });
 

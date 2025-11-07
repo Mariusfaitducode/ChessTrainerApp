@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
   },
 });
 
-const Chessboard: React.FC = React.memo(() => {
+const Chessboard: React.FC = React.memo(function Chessboard() {
   const { boardSize } = useChessboardProps();
 
   return (
@@ -36,7 +36,7 @@ const Chessboard: React.FC = React.memo(() => {
 const ChessboardContainerComponent = React.forwardRef<
   ChessboardRef,
   ChessboardProps
->((props, ref) => {
+>(function ChessboardContainer(props, ref) {
   const chessboardRef = useRef<ChessboardRef>(null);
 
   useImperativeHandle(
@@ -48,8 +48,6 @@ const ChessboardContainerComponent = React.forwardRef<
         chessboardRef.current?.resetAllHighlightedSquares(),
       getState: () => chessboardRef?.current?.getState() as ChessboardState,
       resetBoard: (params) => chessboardRef.current?.resetBoard(params),
-      navigateToPosition: (params) =>
-        chessboardRef.current?.navigateToPosition?.(params),
     }),
     []
   );

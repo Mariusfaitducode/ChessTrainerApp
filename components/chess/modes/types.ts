@@ -15,6 +15,7 @@ export interface CommonChessboardProps {
 export interface VisualizationModeProps extends CommonChessboardProps {
   moveHistory: Move[];
   currentMoveIndex: number;
+  previousFen?: string; // FEN de la position précédente pour synchroniser le chess engine
   onNavigate?: (index: number) => void;
 }
 

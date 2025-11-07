@@ -27,16 +27,28 @@ export function useHighlightController({
     }
 
     const squaresKey = squares.join(",");
-    const lastMoveKey = lastMove
-      ? `${lastMove.from}-${lastMove.to}`
-      : "";
+    const lastMoveKey = lastMove ? `${lastMove.from}-${lastMove.to}` : "";
 
     // Si rien n'a changé, ne rien faire
     if (
       squaresKey === previousSquaresRef.current &&
       lastMoveKey === previousLastMoveRef.current
     ) {
+      if (__DEV__) {
+        console.log(
+          "[HighlightController] Rien changé, skip",
+          `squares=${squaresKey}, lastMove=${lastMoveKey}`,
+        );
+      }
       return;
+    }
+
+    if (__DEV__) {
+      console.log(
+        "[HighlightController] Mise à jour highlights",
+        `squares=${squaresKey}, lastMove=${lastMoveKey}`,
+        new Error().stack?.split("\n").slice(0, 5).join("\n"),
+      );
     }
 
     previousSquaresRef.current = squaresKey;
@@ -62,6 +74,12 @@ export function useHighlightController({
 
         // Highlight du dernier coup si demandé
         if (autoHighlightLastMove && lastMove) {
+          if (__DEV__) {
+            console.log(
+              "[HighlightController] Highlight dernier coup",
+              `${lastMove.from} -> ${lastMove.to}`,
+            );
+          }
           chessboardRef.current.highlight({
             square: lastMove.from as any,
           });
@@ -73,4 +91,3 @@ export function useHighlightController({
     });
   }, [squares, lastMove, autoHighlightLastMove, chessboardRef]);
 }
-

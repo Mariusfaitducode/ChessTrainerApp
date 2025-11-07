@@ -53,8 +53,9 @@ type ChessboardProps = {
   renderPiece?: (piece: PieceType) => React.ReactElement | null;
   /**
    * It's a particularly useful callback if you want to execute an instruction after a move.
+   * If it returns false, the move will be undone.
    */
-  onMove?: (info: ChessMoveInfo) => void;
+  onMove?: (info: ChessMoveInfo) => boolean | void;
   /**
    * Useful if you want to customise the default colors used in the chessboard.
    */

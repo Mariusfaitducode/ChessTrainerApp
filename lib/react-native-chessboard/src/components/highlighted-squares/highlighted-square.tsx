@@ -31,13 +31,25 @@ const HighlightedSquareComponent = React.forwardRef<
     ref,
     () => ({
       reset: () => {
-        // Appliquer immédiatement pour éviter les effets de clignotement
+        if (__DEV__) {
+          console.log(
+            `[HighlightedSquare] reset appelé pour ${JSON.stringify(ref)}`,
+            new Error().stack?.split('\n').slice(0, 5).join('\n')
+          );
+        }
+        // Utiliser runOnUI pour s'assurer qu'on est dans un worklet
+        // Mais en fait, on peut accéder à .value ici car c'est dans useImperativeHandle
+        // qui n'est pas appelé pendant le render
         isHighlighted.value = false;
         backgroundColor.value = lastMoveHighlight;
       },
       highlight: ({ backgroundColor: bg } = {}) => {
-        // Appliquer immédiatement - pas besoin de différer ici
-        // car c'est appelé depuis navigateToPosition qui est déjà dans un contexte asynchrone
+        if (__DEV__) {
+          console.log(
+            `[HighlightedSquare] highlight appelé: bg=${bg}`,
+            new Error().stack?.split('\n').slice(0, 5).join('\n')
+          );
+        }
         backgroundColor.value = bg ?? lastMoveHighlight;
         isHighlighted.value = true;
       },

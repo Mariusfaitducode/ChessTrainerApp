@@ -203,6 +203,14 @@ export const useChessGame = (pgn: string | null) => {
 
   const currentMove = moves[Math.floor((currentMoveIndex + 1) / 2)] || null;
 
+  // Fonction pour obtenir le FEN d'un index spécifique
+  const getFenForIndex = useCallback(
+    (index: number): string | undefined => {
+      return fenCache.get(index);
+    },
+    [fenCache],
+  );
+
   return {
     chess,
     moves,
@@ -216,6 +224,7 @@ export const useChessGame = (pgn: string | null) => {
     goToEnd,
     goToPrevious,
     goToNext,
+    getFenForIndex,
     error,
     isAtStart: currentMoveIndex === -1,
     isAtEnd: currentMoveIndex >= moveHistory.length - 1,

@@ -41,6 +41,7 @@ export default function GameDetailScreen() {
     isAtEnd,
     error: chessError,
     moveHistory,
+    getFenForIndex,
   } = useChessGame(game?.pgn || null);
 
   // Déterminer si l'utilisateur joue les blancs ou les noirs
@@ -95,6 +96,12 @@ export default function GameDetailScreen() {
     if (currentMoveIndex === -1) return analyses[0];
     return analyses.find((a) => a.move_number === currentMoveIndex + 1);
   }, [currentMoveIndex, analyses]);
+
+  // Calculer le FEN de la position précédente pour synchroniser le chess engine
+  const previousFen = useMemo(() => {
+    if (currentMoveIndex <= 0) return undefined;
+    return getFenForIndex(currentMoveIndex - 1);
+  }, [currentMoveIndex, getFenForIndex]);
 
   const [readyToRenderHeavy, setReadyToRenderHeavy] = useState(false);
 
@@ -220,6 +227,7 @@ export default function GameDetailScreen() {
                 fen={currentFen}
                 moveHistory={moveHistory}
                 currentMoveIndex={currentMoveIndex}
+                previousFen={previousFen}
                 boardOrientation={boardOrientation}
               />
             </View>

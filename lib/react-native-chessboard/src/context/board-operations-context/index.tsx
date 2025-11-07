@@ -107,7 +107,6 @@ const BoardOperationsContextProviderComponent = React.forwardRef<
         for (let y = 0; y < row.length; y++) {
           const col = String.fromCharCode(97 + Math.round(x));
 
-          // eslint-disable-next-line no-shadow
           const row = `${8 - Math.round(y)}`;
           const square = `${col}${row}` as Square;
 
@@ -146,13 +145,22 @@ const BoardOperationsContextProviderComponent = React.forwardRef<
         controller?.highlight({ square, color: checkmateHighlight });
       }
 
-      onChessboardMoveCallback?.({
-        move,
-        state: {
-          ...getChessboardState(chess),
-          in_promotion: promotionPiece != null,
-        },
-      });
+      // Appeler le callback et vérifier si le coup doit être défait
+      const shouldUndo =
+        onChessboardMoveCallback?.({
+          move,
+          state: {
+            ...getChessboardState(chess),
+            in_promotion: promotionPiece != null,
+          },
+        }) === false;
+
+      // Si le callback retourne false, défaire le coup
+      if (shouldUndo) {
+        chess.undo();
+        setBoard(chess.board());
+        return;
+      }
 
       setBoard(chess.board());
     },
@@ -219,7 +227,6 @@ const BoardOperationsContextProviderComponent = React.forwardRef<
             square,
           }) ?? []) as Square[];
 
-          // eslint-disable-next-line no-shadow
           selectableSquares.value = validSquares.map((square) => {
             const splittedSquare = square.split('x');
             if (splittedSquare.length === 0) {
@@ -237,7 +244,7 @@ const BoardOperationsContextProviderComponent = React.forwardRef<
   const moveTo = useCallback(
     (to: Square) => {
       // Accès à .value dans le corps du callback, pas dans les dépendances
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+
       const currentSquare = selectedSquare.value;
       if (currentSquare != null) {
         controller?.move({ from: currentSquare, to: to });
