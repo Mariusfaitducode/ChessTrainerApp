@@ -1,1 +1,0 @@
-{"version":3,"names":["ChessEngineContext","createContext"],"sources":["index.ts"],"sourcesContent":["import type { ChessInstance } from 'chess.js';\nimport { createContext } from 'react';\n\nconst ChessEngineContext = createContext<ChessInstance>({} as any);\n\nexport { ChessEngineContext };\n"],"mappings":";;;;;;;AACA;;AAEA,MAAMA,kBAAkB,gBAAG,IAAAC,oBAAA,EAA6B,EAA7B,CAA3B"}
