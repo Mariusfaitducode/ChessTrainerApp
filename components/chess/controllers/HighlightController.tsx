@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { ChessboardRef } from "@/lib/react-native-chessboard/src";
+import type { ChessboardRef } from "@/components/chess/react-native-chessboard/src";
 
 interface HighlightControllerProps {
   chessboardRef: React.RefObject<ChessboardRef | null>;
@@ -41,14 +41,6 @@ export function useHighlightController({
         );
       }
       return;
-    }
-
-    if (__DEV__) {
-      console.log(
-        "[HighlightController] Mise à jour highlights",
-        `squares=${squaresKey}, lastMove=${lastMoveKey}`,
-        new Error().stack?.split("\n").slice(0, 5).join("\n"),
-      );
     }
 
     previousSquaresRef.current = squaresKey;

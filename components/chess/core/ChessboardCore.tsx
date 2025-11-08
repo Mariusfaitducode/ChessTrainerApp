@@ -2,11 +2,9 @@ import React, { useRef, useState, useEffect } from "react";
 import { View, StyleSheet, Image } from "react-native";
 import Chessboard, {
   type ChessboardRef,
-} from "@/lib/react-native-chessboard/src";
-import type { PieceType } from "@/lib/react-native-chessboard/src/types";
-
-const PIECES =
-  require("@/lib/react-native-chessboard/lib/commonjs/constants").PIECES;
+} from "@/components/chess/react-native-chessboard/src";
+import type { PieceType } from "@/components/chess/react-native-chessboard/src/types";
+import { PIECES } from "@/components/chess/react-native-chessboard/src/constants";
 
 interface ChessboardCoreProps {
   fen: string;
@@ -94,7 +92,7 @@ export const ChessboardCore = React.forwardRef<
           const pieceSize = boardSize / 8;
           return (
             <Image
-              source={PIECES[piece]}
+              source={PIECES[piece] as any}
               style={[
                 { width: pieceSize, height: pieceSize },
                 styles.pieceFlipped,

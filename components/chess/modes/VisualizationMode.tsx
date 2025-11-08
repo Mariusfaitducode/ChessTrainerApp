@@ -3,7 +3,7 @@ import { ChessboardCore } from "../core/ChessboardCore";
 import { useNavigationController } from "../controllers/NavigationController";
 import { useHighlightController } from "../controllers/HighlightController";
 import type { VisualizationModeProps } from "./types";
-import type { ChessboardRef } from "@/lib/react-native-chessboard/src";
+import type { ChessboardRef } from "@/components/chess/react-native-chessboard/src";
 
 export function VisualizationMode({
   fen,
@@ -56,4 +56,3 @@ export function VisualizationMode({
     />
   );
 }
-

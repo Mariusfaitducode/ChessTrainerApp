@@ -31,12 +31,6 @@ const HighlightedSquareComponent = React.forwardRef<
     ref,
     () => ({
       reset: () => {
-        if (__DEV__) {
-          console.log(
-            `[HighlightedSquare] reset appelé pour ${JSON.stringify(ref)}`,
-            new Error().stack?.split('\n').slice(0, 5).join('\n')
-          );
-        }
         // Utiliser runOnUI pour s'assurer qu'on est dans un worklet
         // Mais en fait, on peut accéder à .value ici car c'est dans useImperativeHandle
         // qui n'est pas appelé pendant le render
@@ -44,12 +38,6 @@ const HighlightedSquareComponent = React.forwardRef<
         backgroundColor.value = lastMoveHighlight;
       },
       highlight: ({ backgroundColor: bg } = {}) => {
-        if (__DEV__) {
-          console.log(
-            `[HighlightedSquare] highlight appelé: bg=${bg}`,
-            new Error().stack?.split('\n').slice(0, 5).join('\n')
-          );
-        }
         backgroundColor.value = bg ?? lastMoveHighlight;
         isHighlighted.value = true;
       },
@@ -58,6 +46,8 @@ const HighlightedSquareComponent = React.forwardRef<
         return isHighlighted.value;
       },
     }),
+    // ref ne doit pas être dans les dépendances car c'est un ForwardedRef
+
     [backgroundColor, isHighlighted, lastMoveHighlight]
   );
 

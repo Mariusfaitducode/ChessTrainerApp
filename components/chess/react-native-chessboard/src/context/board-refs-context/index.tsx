@@ -78,12 +78,6 @@ const BoardRefsContextProviderComponent = React.forwardRef<
     // Différer pour éviter les warnings Reanimated
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if (__DEV__) {
-          console.log(
-            '[BoardRefs] resetAllHighlightedSquares appelé',
-            new Error().stack?.split('\n').slice(0, 5).join('\n')
-          );
-        }
         // Utiliser chess.board() au lieu de board pour éviter les dépendances
         const currentBoard = chess.board();
         for (let x = 0; x < currentBoard.length; x++) {
@@ -104,12 +98,6 @@ const BoardRefsContextProviderComponent = React.forwardRef<
       // Différer pour éviter les warnings Reanimated
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (__DEV__) {
-            console.log(
-              `[BoardRefs] highlight appelé: square=${square}, color=${color}`,
-              new Error().stack?.split('\n').slice(0, 5).join('\n')
-            );
-          }
           squareRefs.current?.[square]?.current?.highlight({
             backgroundColor: color,
           });
@@ -131,12 +119,6 @@ const BoardRefsContextProviderComponent = React.forwardRef<
         return getChessboardState(chess);
       },
       resetBoard: (fen) => {
-        if (__DEV__) {
-          console.log(
-            `[BoardRefs] resetBoard appelé: fen=${fen?.substring(0, 20)}...`,
-            new Error().stack?.split('\n').slice(0, 5).join('\n')
-          );
-        }
         chess.reset();
         if (fen) chess.load(fen);
         // Différer setBoard pour éviter les warnings Reanimated

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { ChessboardRef } from "@/lib/react-native-chessboard/src";
+import type { ChessboardRef } from "@/components/chess/react-native-chessboard/src";
 import type { Move } from "chess.js";
 
 interface NavigationControllerProps {
@@ -121,7 +121,7 @@ export function useNavigationController({
             } else {
               // Même position : ne rien faire, HighlightController gère déjà
             }
-          } catch (err) {
+          } catch {
             // Fallback : utiliser resetBoard
             if (chessboardRef.current) {
               chessboardRef.current.resetBoard(targetFen);

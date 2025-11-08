@@ -3,7 +3,7 @@ import { ChessboardCore } from "../core/ChessboardCore";
 import { useInteractionController } from "../controllers/InteractionController";
 import { useHighlightController } from "../controllers/HighlightController";
 import type { ExerciseModeProps } from "./types";
-import type { ChessboardRef } from "@/lib/react-native-chessboard/src";
+import type { ChessboardRef } from "@/components/chess/react-native-chessboard/src";
 
 export function ExerciseMode({
   fen,
