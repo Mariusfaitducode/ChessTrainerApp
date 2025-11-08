@@ -2,6 +2,7 @@
 import { Chess } from "chess.js";
 import type { GameAnalysis, Game } from "@/types/games";
 import type { Exercise } from "@/types/exercises";
+import { compareMoves } from "./move-comparison";
 
 interface ExerciseGenerationContext {
   game: Game;
@@ -102,8 +103,8 @@ const createExerciseFromAnalysis = (
   analysis: GameAnalysis,
   context: ExerciseGenerationContext,
 ): Omit<Exercise, "id" | "created_at"> | null => {
-  // Vérifier que c'est bien un blunder
-  if (analysis.mistake_level !== "blunder") {
+  // Vérifier que c'est bien un blunder (basé sur move_quality)
+  if (analysis.move_quality !== "blunder") {
     return null;
   }
 
@@ -121,20 +122,16 @@ const createExerciseFromAnalysis = (
   }
 
   // Vérifier que le meilleur coup est différent du coup joué
-  // Normaliser les deux coups pour la comparaison (retirer les annotations)
-  const normalizeMove = (move: string): string => {
-    return move
-      .replace(/[+#=!?]/g, "")
-      .trim()
-      .toLowerCase();
-  };
+  // Utiliser une comparaison robuste qui gère les différents formats (LAN vs SAN)
+  const movesAreEqual = compareMoves(
+    analysis.best_move,
+    analysis.played_move,
+    analysis.fen,
+  );
 
-  const normalizedBestMove = normalizeMove(analysis.best_move);
-  const normalizedPlayedMove = normalizeMove(analysis.played_move);
-
-  if (normalizedBestMove === normalizedPlayedMove) {
+  if (movesAreEqual) {
     console.log(
-      `[ExerciseGenerator] Le meilleur coup est le même que le coup joué pour l'analyse ${analysis.id}. Ignoré.`,
+      `[ExerciseGenerator] Le meilleur coup (${analysis.best_move}) est identique au coup joué (${analysis.played_move}) pour l'analyse ${analysis.id}. Ignoré.`,
     );
     return null;
   }
@@ -184,33 +181,36 @@ export const generateExercisesFromAnalyses = async (
     userUsernames,
   };
 
-  // Filtrer uniquement les blunders
-  const blunders = analyses.filter((a) => a.mistake_level === "blunder");
+  // Filtrer uniquement les blunders (basé sur move_quality)
+  const blunders = analyses.filter((a) => a.move_quality === "blunder");
   console.log(`[ExerciseGenerator] ${blunders.length} blunders trouvés`);
 
-  // Créer les exercices
-  const exercisesToCreate: Omit<Exercise, "id" | "created_at">[] = [];
+  // Créer les exercices avec leur analyse associée
+  const exercisesWithAnalysis: {
+    exercise: Omit<Exercise, "id" | "created_at">;
+    analysis: GameAnalysis;
+  }[] = [];
 
   for (const analysis of blunders) {
     const exercise = createExerciseFromAnalysis(analysis, context);
     if (exercise) {
-      exercisesToCreate.push(exercise);
+      exercisesWithAnalysis.push({ exercise, analysis });
     }
   }
 
-  if (exercisesToCreate.length === 0) {
+  if (exercisesWithAnalysis.length === 0) {
     console.log("[ExerciseGenerator] Aucun exercice à créer");
     return 0;
   }
 
   console.log(
-    `[ExerciseGenerator] ${exercisesToCreate.length} exercices à créer`,
+    `[ExerciseGenerator] ${exercisesWithAnalysis.length} exercices à créer`,
   );
 
   // Vérifier l'existence avant insertion pour éviter les doublons
   const exercisesToInsert: Omit<Exercise, "id" | "created_at">[] = [];
 
-  for (const exercise of exercisesToCreate) {
+  for (const { exercise, analysis } of exercisesWithAnalysis) {
     try {
       // Vérifier si un exercice existe déjà avec la même FEN et le même correct_move
       const { data: existing, error } = await supabase
@@ -234,6 +234,22 @@ export const generateExercisesFromAnalyses = async (
           `[ExerciseGenerator] Exercice déjà existant pour FEN ${exercise.fen} et move ${exercise.correct_move}`,
         );
         continue;
+      }
+
+      // Validation finale : vérifier une dernière fois que best_move ≠ played_move
+      // (sécurité supplémentaire au cas où la comparaison aurait échoué)
+      const finalCheck = compareMoves(
+        exercise.correct_move,
+        analysis.played_move,
+        exercise.fen,
+      );
+
+      if (finalCheck) {
+        console.error(
+          `[ExerciseGenerator] ERREUR: Tentative de créer un exercice avec best_move === played_move !`,
+          `best_move=${exercise.correct_move}, played_move=${analysis.played_move}, analysis_id=${analysis.id}`,
+        );
+        continue; // Ne pas insérer cet exercice
       }
 
       exercisesToInsert.push(exercise);

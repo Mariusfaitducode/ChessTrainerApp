@@ -29,17 +29,17 @@ export const useGames = () => {
       const gameIds = gamesData.map((g) => g.id);
       const { data: analysesData } = await supabase
         .from("game_analyses")
-        .select("game_id, mistake_level")
+        .select("game_id, move_quality")
         .in("game_id", gameIds);
 
       const gamesWithAnalyses = new Set(
         (analysesData || []).map((a) => a.game_id),
       );
 
-      // Compter les blunders par partie
+      // Compter les blunders par partie (basé sur move_quality)
       const blundersCountByGame = new Map<string, number>();
       (analysesData || []).forEach((analysis) => {
-        if (analysis.mistake_level === "blunder") {
+        if (analysis.move_quality === "blunder") {
           const current = blundersCountByGame.get(analysis.game_id) || 0;
           blundersCountByGame.set(analysis.game_id, current + 1);
         }

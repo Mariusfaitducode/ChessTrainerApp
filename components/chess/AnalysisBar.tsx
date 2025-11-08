@@ -5,7 +5,7 @@ interface AnalysisBarProps {
   evaluation: number; // en pawns (depuis la DB)
   isWhiteToMove?: boolean;
   bestMove?: string | null;
-  mistakeLevel?: "blunder" | "mistake" | "inaccuracy" | null;
+  moveQuality?: "best" | "excellent" | "good" | "inaccuracy" | "mistake" | "blunder" | null;
   orientation?: "horizontal" | "vertical";
   boardOrientation?: "white" | "black"; // Orientation du plateau (qui est en bas)
 }
@@ -14,7 +14,7 @@ export const AnalysisBar = ({
   evaluation,
   isWhiteToMove = true,
   bestMove,
-  mistakeLevel,
+  moveQuality,
   orientation = "horizontal",
   boardOrientation = "white",
 }: AnalysisBarProps) => {
@@ -49,14 +49,17 @@ export const AnalysisBar = ({
     return pawns > 0 ? `+${pawns.toFixed(2)}` : pawns.toFixed(2);
   };
 
-  const getMistakeLabel = () => {
-    if (!mistakeLevel) return null;
-    const labels = {
-      blunder: "Erreur grave",
-      mistake: "Erreur",
+  const getMoveQualityLabel = () => {
+    if (!moveQuality) return null;
+    const labels: Record<string, string> = {
+      best: "Meilleur",
+      excellent: "Excellent",
+      good: "Bon",
       inaccuracy: "Imprécision",
+      mistake: "Erreur",
+      blunder: "Erreur grave",
     };
-    return labels[mistakeLevel];
+    return labels[moveQuality] || null;
   };
 
   if (orientation === "vertical") {
@@ -95,9 +98,14 @@ export const AnalysisBar = ({
             Meilleur: {bestMove}
           </Text>
         )}
-        {mistakeLevel && (
-          <Text style={styles.mistakeLabel}>{getMistakeLabel()}</Text>
-        )}
+        {moveQuality &&
+          (moveQuality === "blunder" ||
+            moveQuality === "mistake" ||
+            moveQuality === "inaccuracy") && (
+            <Text style={styles.mistakeLabel}>
+              {getMoveQualityLabel()}
+            </Text>
+          )}
       </View>
     </View>
   );

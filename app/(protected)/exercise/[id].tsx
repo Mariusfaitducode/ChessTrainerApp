@@ -45,7 +45,7 @@ export default function ExerciseScreen() {
       if (!exercise?.game_analysis_id) return null;
       const { data, error } = await supabase
         .from("game_analyses")
-        .select("evaluation, best_move, mistake_level")
+        .select("evaluation, best_move, move_quality")
         .eq("id", exercise.game_analysis_id)
         .single();
       if (error) throw error;
@@ -414,7 +414,7 @@ export default function ExerciseScreen() {
               evaluation={currentEvaluation}
               isWhiteToMove={chess?.turn() === "w"}
               bestMove={analysisData.best_move}
-              mistakeLevel={analysisData.mistake_level}
+              moveQuality={analysisData.move_quality}
               orientation="vertical"
               boardOrientation={boardOrientation}
             />

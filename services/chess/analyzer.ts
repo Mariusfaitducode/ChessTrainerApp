@@ -1,7 +1,12 @@
 // Service d'analyse utilisant l'API Chess-API.com
 import { Chess } from "chess.js";
 import type { GameAnalysis } from "@/types/games";
-import type { MistakeLevel } from "@/types/chess";
+import {
+  classifyMove,
+  type MoveQuality,
+  type GamePhase,
+} from "./move-classification";
+import { compareMoves } from "./move-comparison";
 
 interface AnalysisResult {
   bestMove: string | null;
@@ -15,7 +20,9 @@ interface PositionAnalysis {
   playedMove: string;
   bestMove: string | null;
   evaluation: number;
-  mistakeLevel: MistakeLevel;
+  moveQuality: MoveQuality;
+  gamePhase: GamePhase;
+  evaluationLoss: number;
 }
 
 interface ChessApiResponse {
@@ -148,58 +155,8 @@ export const analyzePosition = async (
   }
 };
 
-/**
- * Détermine le niveau d'erreur en comparant l'évaluation avant et après le coup
- *
- * @param evalBefore Évaluation avant le coup (en centipawns, du point de vue du joueur qui joue)
- * @param evalAfter Évaluation après le coup joué (en centipawns, du point de vue du joueur qui vient de jouer)
- * @param isWhite True si c'est le joueur blanc qui a joué
- *
- * Seuils typiques (en centipawns):
- * - Blunder: perte > 200 centipawns (2 pawns)
- * - Mistake: perte entre 100-200 centipawns (1-2 pawns)
- * - Inaccuracy: perte entre 50-100 centipawns (0.5-1 pawn)
- */
-const classifyMistake = (
-  evalBefore: number,
-  evalAfter: number,
-  isWhite: boolean,
-): MistakeLevel => {
-  // Si pas d'évaluation, on ne peut pas classifier
-  if (evalBefore === 0 && evalAfter === 0) {
-    return null;
-  }
-
-  // L'API retourne toujours l'évaluation du point de vue des blancs
-  // (positif = avantage blanc, négatif = avantage noir)
-  //
-  // Pour calculer la perte du point de vue du joueur qui vient de jouer :
-  // - Avant le coup : évaluation du point de vue du joueur qui va jouer
-  // - Après le coup : évaluation du point de vue de l'adversaire (inversée)
-  //
-  // Pour blanc : perte = evalBefore - (-evalAfter) = evalBefore + evalAfter
-  // Pour noir : perte = (-evalBefore) - (-evalAfter) = evalAfter - evalBefore
-  const loss = isWhite
-    ? evalBefore + evalAfter // Blanc : avant + après (inversé)
-    : evalAfter - evalBefore; // Noir : après - avant (inversés)
-
-  // Si la perte est négative ou nulle, le coup n'a pas empiré la position
-  if (loss <= 0) {
-    return null;
-  }
-
-  // Classifier selon la perte (en centipawns)
-  if (loss > 200) {
-    return "blunder"; // Perte > 2 pawns
-  } else if (loss > 100) {
-    return "mistake"; // Perte entre 1-2 pawns
-  } else if (loss > 50) {
-    return "inaccuracy"; // Perte entre 0.5-1 pawn
-  }
-
-  // Perte < 50 centipawns, pas une erreur significative
-  return null;
-};
+// classifyMistake a été remplacé par classifyMove dans move-classification.ts
+// Cette fonction est conservée pour compatibilité mais ne devrait plus être utilisée
 
 /**
  * Analyse tous les coups d'une partie
@@ -307,8 +264,49 @@ export const analyzeGame = async (
       evalAfter = analysisAfter.evaluation;
     }
 
-    // Classifier l'erreur
-    const mistakeLevel = classifyMistake(evalBefore, evalAfter, isWhiteMove);
+    // Calculer l'évaluation après le meilleur coup (pour comparaison précise)
+    // Si bestMove existe et est différent du coup joué, analyser la position après le meilleur coup
+    let evalBestAfter: number | null = null;
+    if (
+      analysisBefore.bestMove &&
+      !compareMoves(playedMoveSan, analysisBefore.bestMove, currentFen)
+    ) {
+      try {
+        const tempGameForBest = new Chess(currentFen);
+        const bestMoveObj = tempGameForBest.move(analysisBefore.bestMove);
+        if (bestMoveObj) {
+          const fenBestAfter = tempGameForBest.fen();
+          if (
+            !tempGameForBest.isCheckmate() &&
+            !tempGameForBest.isStalemate() &&
+            !tempGameForBest.isDraw()
+          ) {
+            const analysisBestAfter = await analyzePosition(
+              fenBestAfter,
+              depth,
+            );
+            evalBestAfter = analysisBestAfter.evaluation;
+          }
+        }
+      } catch {
+        // Si l'analyse du meilleur coup échoue, utiliser l'approximation
+        console.warn(
+          `[Analyzer] Impossible d'analyser le meilleur coup pour le coup ${i + 1}`,
+        );
+      }
+    }
+
+    // Classifier le coup de manière complète
+    const classification = classifyMove(
+      evalBefore,
+      evalAfter,
+      evalBestAfter,
+      isWhiteMove,
+      playedMoveSan,
+      analysisBefore.bestMove,
+      currentFen,
+      i + 1,
+    );
 
     analyses.push({
       fen: currentFen,
@@ -317,7 +315,9 @@ export const analyzeGame = async (
       bestMove: analysisBefore.bestMove,
       // On stocke l'évaluation APRÈS le coup (position actuelle)
       evaluation: evalAfter,
-      mistakeLevel,
+      moveQuality: classification.move_quality,
+      gamePhase: classification.game_phase,
+      evaluationLoss: classification.evaluation_loss,
     });
 
     onProgress?.(i + 1, history.length);
@@ -340,7 +340,9 @@ export const prepareAnalysesForInsert = (
     evaluation: analysis.evaluation / 100, // centipawns → pawns
     best_move: analysis.bestMove,
     played_move: analysis.playedMove,
-    mistake_level: analysis.mistakeLevel,
+    move_quality: analysis.moveQuality,
+    game_phase: analysis.gamePhase,
+    evaluation_loss: analysis.evaluationLoss,
     analysis_data: null,
   }));
 };

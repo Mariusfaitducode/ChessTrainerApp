@@ -114,11 +114,13 @@ export type Database = {
           best_move: string | null;
           created_at: string | null;
           evaluation: number | null;
+          evaluation_loss: number | null;
           fen: string;
           game_id: string;
+          game_phase: string | null;
           id: string;
-          mistake_level: string | null;
           move_number: number;
+          move_quality: string | null;
           played_move: string;
         };
         Insert: {
@@ -126,11 +128,13 @@ export type Database = {
           best_move?: string | null;
           created_at?: string | null;
           evaluation?: number | null;
+          evaluation_loss?: number | null;
           fen: string;
           game_id: string;
+          game_phase?: string | null;
           id?: string;
-          mistake_level?: string | null;
           move_number: number;
+          move_quality?: string | null;
           played_move: string;
         };
         Update: {
@@ -138,11 +142,13 @@ export type Database = {
           best_move?: string | null;
           created_at?: string | null;
           evaluation?: number | null;
+          evaluation_loss?: number | null;
           fen?: string;
           game_id?: string;
+          game_phase?: string | null;
           id?: string;
-          mistake_level?: string | null;
           move_number?: number;
+          move_quality?: string | null;
           played_move?: string;
         };
         Relationships: [

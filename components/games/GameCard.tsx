@@ -202,9 +202,7 @@ export const GameCard = ({
               {game.blunders_count !== undefined && game.blunders_count > 0 && (
                 <View style={styles.blundersBadge}>
                   <AlertTriangle size={12} color={colors.error.main} />
-                  <Text style={styles.blundersText}>
-                    {game.blunders_count}
-                  </Text>
+                  <Text style={styles.blundersText}>{game.blunders_count}</Text>
                 </View>
               )}
             </>
@@ -273,9 +271,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.error.light,
     paddingHorizontal: spacing[1],
-    paddingVertical: spacing[0.5],
+    paddingVertical: spacing[1],
     borderRadius: borders.radius.sm,
-    gap: spacing[0.5],
+    gap: spacing[1],
   },
   blundersText: {
     fontSize: typography.fontSize.xs,

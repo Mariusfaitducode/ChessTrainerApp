@@ -55,10 +55,10 @@ export const MoveList = ({
             const isWhiteMove = index % 2 === 0;
             const isCurrent = currentMove === index;
 
-            // Déterminer le style selon le niveau d'erreur
-            const getMistakeStyle = () => {
-              if (!analysis?.mistake_level) return null;
-              switch (analysis.mistake_level) {
+            // Déterminer le style selon la qualité du coup
+            const getMoveQualityStyle = () => {
+              if (!analysis?.move_quality) return null;
+              switch (analysis.move_quality) {
                 case "blunder":
                   return styles.blunderMove;
                 case "mistake":
@@ -70,14 +70,14 @@ export const MoveList = ({
               }
             };
 
-            const mistakeStyle = getMistakeStyle();
+            const moveQualityStyle = getMoveQualityStyle();
 
             return (
               <TouchableOpacity
                 key={index}
                 style={[
                   styles.move,
-                  mistakeStyle,
+                  moveQualityStyle,
                   isCurrent && styles.currentMove,
                   isWhiteMove && styles.moveNumber,
                 ]}

@@ -195,13 +195,38 @@ export default function GameDetailScreen() {
                   Meilleur: {currentAnalysis.best_move}
                 </Text>
               )}
-              {currentAnalysis.mistake_level && (
-                <Text style={styles.analysisMistakeText}>
-                  {currentAnalysis.mistake_level === "blunder"
-                    ? "Erreur grave"
-                    : currentAnalysis.mistake_level === "mistake"
-                      ? "Erreur"
-                      : "Imprécision"}
+              {currentAnalysis.move_quality && (
+                <Text
+                  style={[
+                    currentAnalysis.move_quality === "blunder" ||
+                    currentAnalysis.move_quality === "mistake" ||
+                    currentAnalysis.move_quality === "inaccuracy"
+                      ? styles.analysisMistakeText
+                      : styles.analysisQualityText,
+                  ]}
+                >
+                  {currentAnalysis.move_quality === "best"
+                    ? "⭐ Meilleur coup"
+                    : currentAnalysis.move_quality === "excellent"
+                      ? "✨ Excellent"
+                      : currentAnalysis.move_quality === "good"
+                        ? "✓ Bon"
+                        : currentAnalysis.move_quality === "inaccuracy"
+                          ? "⚠️ Imprécision"
+                          : currentAnalysis.move_quality === "mistake"
+                            ? "❌ Erreur"
+                            : currentAnalysis.move_quality === "blunder"
+                              ? "💥 Erreur grave"
+                              : ""}
+                </Text>
+              )}
+              {currentAnalysis.game_phase && (
+                <Text style={styles.analysisPhaseText}>
+                  {currentAnalysis.game_phase === "opening"
+                    ? "📖 Ouverture"
+                    : currentAnalysis.game_phase === "middlegame"
+                      ? "⚔️ Milieu"
+                      : "🏁 Finale"}
                 </Text>
               )}
             </View>
@@ -214,7 +239,7 @@ export default function GameDetailScreen() {
                   evaluation={currentAnalysis.evaluation || 0}
                   isWhiteToMove={isWhiteTurn}
                   bestMove={currentAnalysis.best_move}
-                  mistakeLevel={currentAnalysis.mistake_level}
+                  moveQuality={currentAnalysis.move_quality}
                   orientation="vertical"
                   boardOrientation={boardOrientation}
                 />
@@ -335,6 +360,16 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.medium,
     color: colors.error.main,
+  },
+  analysisQualityText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.success.main,
+  },
+  analysisPhaseText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.text.secondary,
   },
   chessboardWrapper: {
     flexDirection: "row",

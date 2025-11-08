@@ -4,6 +4,10 @@ import type { Database } from "@/types/supabase";
 
 // Types enrichis (avec champs calculés côté client)
 import type { Platform, GameResult } from "./chess";
+import type {
+  MoveQuality,
+  GamePhase,
+} from "@/services/chess/move-classification";
 
 // Types de base depuis Supabase
 export type GameRow = Database["public"]["Tables"]["games"]["Row"];
@@ -38,8 +42,13 @@ export interface Game extends GameRow {
   blunders_count?: number;
 }
 
-// GameAnalysis est identique à GameAnalysisRow
-export type GameAnalysis = GameAnalysisRow;
+// GameAnalysis étend GameAnalysisRow avec les nouveaux champs
+// On retire mistake_level car on utilise uniquement move_quality maintenant
+export interface GameAnalysis extends Omit<GameAnalysisRow, "mistake_level"> {
+  move_quality?: MoveQuality | null;
+  game_phase?: GamePhase | null;
+  evaluation_loss?: number | null; // Perte d'évaluation en centipawns
+}
 
 export interface Exercise extends Omit<ExerciseRow, "hints"> {
   // Champs enrichis côté client
