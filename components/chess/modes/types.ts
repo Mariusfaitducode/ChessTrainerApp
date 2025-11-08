@@ -20,8 +20,9 @@ export interface VisualizationModeProps extends CommonChessboardProps {
 }
 
 export interface ExerciseModeProps extends CommonChessboardProps {
-  onMove: (move: MoveInfo) => boolean;
+  onMove: (move: MoveInfo) => boolean | Promise<boolean>;
   highlightSquares?: string[];
+  onRefReady?: (ref: any) => void;
 }
 
 export interface GameModeProps extends CommonChessboardProps {
@@ -29,4 +30,3 @@ export interface GameModeProps extends CommonChessboardProps {
   moveHistory?: Move[];
   currentMoveIndex?: number;
 }
-

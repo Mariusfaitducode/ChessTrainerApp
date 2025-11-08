@@ -17,6 +17,14 @@ export default function ProtectedLayout() {
           presentation: "card",
         }}
       />
+      <Stack.Screen
+        name="exercise/[id]"
+        options={{
+          headerShown: true,
+          headerBackTitle: "Retour",
+          presentation: "card",
+        }}
+      />
     </Stack>
   );
 }

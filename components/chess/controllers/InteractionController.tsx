@@ -7,7 +7,7 @@ interface MoveInfo {
 }
 
 interface InteractionControllerProps {
-  onMove: (move: MoveInfo) => boolean | void;
+  onMove: (move: MoveInfo) => boolean | void | Promise<boolean>;
   enabled: boolean;
 }
 
@@ -20,13 +20,15 @@ export function useInteractionController({
   enabled,
 }: InteractionControllerProps) {
   const handleMove = useCallback(
-    (info: { move: { from: string; to: string; promotion?: string } }) => {
+    async (info: {
+      move: { from: string; to: string; promotion?: string };
+    }) => {
       if (!enabled || !onMove) {
         return false;
       }
 
       try {
-        const result = onMove({
+        const result = await onMove({
           from: info.move.from,
           to: info.move.to,
           promotion: info.move.promotion,
@@ -48,4 +50,3 @@ export function useInteractionController({
     onMove: handleMove,
   };
 }
-

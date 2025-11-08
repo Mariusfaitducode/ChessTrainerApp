@@ -14,7 +14,7 @@ interface ChessboardCoreProps {
   onRefReady?: (ref: ChessboardRef | null) => void;
   onMove?: (info: {
     move: { from: string; to: string; promotion?: string };
-  }) => boolean | void;
+  }) => boolean | void | Promise<boolean>;
 }
 
 export const ChessboardCore = React.forwardRef<

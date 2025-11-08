@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,26 +8,73 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
-import { useLocalSearchParams, useNavigation } from "expo-router";
+import { useLocalSearchParams, useRouter, useNavigation } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Chess } from "chess.js";
-import { CheckCircle2, XCircle, Lightbulb } from "lucide-react-native";
+import {
+  CheckCircle2,
+  XCircle,
+  Lightbulb,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+} from "lucide-react-native";
 
 import { useExercise } from "@/hooks/useExercise";
+import { useExercises } from "@/hooks/useExercises";
+import { useSupabase } from "@/hooks/useSupabase";
+import { useQuery } from "@tanstack/react-query";
 import { Chessboard } from "@/components/chess/Chessboard";
+import { AnalysisBar } from "@/components/chess/AnalysisBar";
+import type { ChessboardRef } from "@/components/chess/react-native-chessboard/src";
 import { colors, spacing, typography, shadows, borders } from "@/theme";
 
 export default function ExerciseScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const navigation = useNavigation();
+  const { supabase } = useSupabase();
   const { exercise, isLoading, error } = useExercise(id);
+  const { completeExercise, exercises } = useExercises(false);
+
+  // Récupérer l'évaluation pour la barre d'analyse
+  const { data: analysisData } = useQuery({
+    queryKey: ["exercise-analysis", exercise?.game_analysis_id],
+    queryFn: async () => {
+      if (!exercise?.game_analysis_id) return null;
+      const { data, error } = await supabase
+        .from("game_analyses")
+        .select("evaluation, best_move, mistake_level")
+        .eq("id", exercise.game_analysis_id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!exercise?.game_analysis_id,
+  });
+
+  // Calculer l'évaluation à partir de l'analyse
+  // L'évaluation dans la DB est déjà en pawns (convertie lors de l'insertion)
+  const currentEvaluation = useMemo(() => {
+    if (
+      analysisData?.evaluation === null ||
+      analysisData?.evaluation === undefined
+    ) {
+      return 0;
+    }
+    // L'évaluation est déjà en pawns dans la DB
+    return analysisData.evaluation;
+  }, [analysisData]);
+  const chessboardRef = useRef<ChessboardRef | null>(null);
   const [selectedMove, setSelectedMove] = useState<{
     from: string;
     to: string;
   } | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showHint, setShowHint] = useState(false);
+  const [showSolution, setShowSolution] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   // Créer une instance Chess pour valider les coups
   const chess = useMemo(() => {
@@ -47,14 +94,30 @@ export default function ExerciseScreen() {
     return chess.turn() === "w" ? "white" : "black";
   }, [chess]);
 
-  // Mettre à jour le header
-  useEffect(() => {
-    if (exercise) {
-      navigation.setOptions({
-        title: exercise.position_description || "Exercice",
-      });
-    }
-  }, [exercise, navigation]);
+  // Trouver les exercices précédent et suivant
+  const { previousExercise, nextExercise, currentIndex, totalExercises } =
+    useMemo(() => {
+      if (!exercise) {
+        return {
+          previousExercise: null,
+          nextExercise: null,
+          currentIndex: -1,
+          totalExercises: 0,
+        };
+      }
+      const pendingExercises = exercises.filter((e) => !e.completed);
+      const index = pendingExercises.findIndex((e) => e.id === exercise.id);
+
+      return {
+        previousExercise: index > 0 ? pendingExercises[index - 1] : null,
+        nextExercise:
+          index >= 0 && index < pendingExercises.length - 1
+            ? pendingExercises[index + 1]
+            : null,
+        currentIndex: index,
+        totalExercises: pendingExercises.length,
+      };
+    }, [exercise, exercises]);
 
   // Normaliser un coup pour la comparaison
   const normalizeMove = (move: string): string => {
@@ -82,13 +145,93 @@ export default function ExerciseScreen() {
     }
   };
 
+  // Navigation - utiliser replace pour éviter le rechargement complet
+  const goToPrevious = useCallback(() => {
+    if (previousExercise) {
+      router.replace(`/(protected)/exercise/${previousExercise.id}` as any);
+    }
+  }, [previousExercise, router]);
+
+  const goToNext = useCallback(() => {
+    if (nextExercise) {
+      router.replace(`/(protected)/exercise/${nextExercise.id}` as any);
+    } else {
+      router.replace("/(protected)/(tabs)/exercises" as any);
+    }
+  }, [nextExercise, router]);
+
+  // Afficher la solution
+  const handleShowSolution = () => {
+    setShowSolution(true);
+    Alert.alert(
+      "Solution",
+      `Le meilleur coup est : ${exercise?.correct_move || "N/A"}`,
+      [{ text: "OK" }],
+    );
+  };
+
+  // Mettre à jour le header avec les informations de l'exercice
+  useEffect(() => {
+    if (exercise) {
+      const headerTitle = exercise.opponent || "Exercice";
+      const headerSubtitle =
+        exercise.evaluation_loss !== undefined && exercise.evaluation_loss > 0
+          ? `-${(exercise.evaluation_loss / 100).toFixed(1)} pawns`
+          : undefined;
+
+      navigation.setOptions({
+        title: headerTitle,
+        headerTitle: () => (
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {headerTitle}
+            </Text>
+            {headerSubtitle && (
+              <Text style={styles.headerSubtitle} numberOfLines={1}>
+                {headerSubtitle}
+              </Text>
+            )}
+          </View>
+        ),
+        headerTitleStyle: {
+          width: "100%",
+        },
+      });
+    }
+  }, [exercise, navigation]);
+
+  // Réinitialiser le plateau quand on change d'exercice
+  useEffect(() => {
+    if (chessboardRef.current && exercise?.fen) {
+      setTimeout(() => {
+        try {
+          chessboardRef.current?.resetBoard(exercise.fen);
+          setIsCorrect(null);
+          setSelectedMove(null);
+          setShowSolution(false);
+          setShowHint(false);
+        } catch (error) {
+          console.error("[Exercise] Erreur réinitialisation:", error);
+        }
+      }, 100);
+    }
+  }, [exercise?.id, exercise?.fen]);
+
   // Gérer un coup joué
-  const handleMove = (move: {
+  const handleMove = async (move: {
     from: string;
     to: string;
     promotion?: string;
-  }): boolean => {
-    if (!chess || !exercise || exercise.completed) return false;
+  }): Promise<boolean> => {
+    if (
+      !chess ||
+      !exercise ||
+      exercise.completed ||
+      isCompleting ||
+      showSolution
+    ) {
+      return false;
+    }
 
     setSelectedMove({ from: move.from, to: move.to });
 
@@ -96,17 +239,72 @@ export default function ExerciseScreen() {
     setIsCorrect(correct);
 
     if (correct) {
-      // Coup correct
-      Alert.alert("Bravo !", "Vous avez trouvé le meilleur coup !", [
-        {
-          text: "OK",
-          onPress: () => {
-            // TODO: Marquer l'exercice comme complété
-          },
-        },
-      ]);
+      // Coup correct - marquer comme complété
+      setIsCompleting(true);
+      try {
+        // Calculer le score (100 points de base, moins les tentatives)
+        const score = Math.max(0, 100 - exercise.attempts * 10);
+
+        await completeExercise({
+          exerciseId: exercise.id,
+          score,
+          currentAttempts: exercise.attempts,
+        });
+
+        // Réinitialiser le feedback
+        setIsCorrect(null);
+        setSelectedMove(null);
+
+        // Afficher un message de succès et passer au suivant
+        Alert.alert(
+          "Bravo !",
+          "Vous avez trouvé le meilleur coup !",
+          [
+            {
+              text: nextExercise ? "Exercice suivant" : "Terminé",
+              onPress: () => {
+                if (nextExercise) {
+                  // Naviguer vers le prochain exercice
+                  router.replace(
+                    `/(protected)/exercise/${nextExercise.id}` as any,
+                  );
+                } else {
+                  // Retourner à la liste des exercices
+                  router.replace("/(protected)/(tabs)/exercises" as any);
+                }
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+      } catch (error) {
+        console.error(
+          "[Exercise] Erreur lors du marquage comme complété:",
+          error,
+        );
+        Alert.alert(
+          "Erreur",
+          "Impossible de marquer l'exercice comme complété.",
+        );
+        setIsCompleting(false);
+      }
     } else {
-      // Coup incorrect
+      // Coup incorrect - réinitialiser le plateau
+      setIsCorrect(false);
+
+      // Réinitialiser le plateau après un court délai
+      setTimeout(() => {
+        if (chessboardRef.current && exercise.fen) {
+          try {
+            chessboardRef.current.resetBoard(exercise.fen);
+            setIsCorrect(null);
+            setSelectedMove(null);
+          } catch (error) {
+            console.error("[Exercise] Erreur réinitialisation:", error);
+          }
+        }
+      }, 1500); // Délai pour voir le feedback
+
       Alert.alert(
         "Coup incorrect",
         "Ce n'est pas le meilleur coup. Essayez encore !",
@@ -157,19 +355,118 @@ export default function ExerciseScreen() {
         </View>
       )}
 
-      {/* Plateau d'échecs */}
-      <View style={styles.boardContainer}>
-        <Chessboard
-          mode="exercise"
-          fen={exercise.fen}
-          onMove={handleMove}
-          boardOrientation={boardOrientation}
-          showCoordinates={true}
-          highlightSquares={
-            selectedMove ? [selectedMove.from, selectedMove.to] : []
-          }
-        />
+      {/* Plateau d'échecs avec barre d'analyse */}
+      <View style={styles.chessboardWrapper}>
+        <View style={styles.analysisBarContainer}>
+          {analysisData && (
+            <AnalysisBar
+              evaluation={currentEvaluation}
+              isWhiteToMove={chess?.turn() === "w"}
+              bestMove={analysisData.best_move}
+              mistakeLevel={analysisData.mistake_level}
+              orientation="vertical"
+              boardOrientation={boardOrientation}
+            />
+          )}
+        </View>
+        <View style={styles.chessboardContainer}>
+          <Chessboard
+            mode="exercise"
+            fen={exercise.fen}
+            onMove={handleMove}
+            boardOrientation={boardOrientation}
+            showCoordinates={true}
+            highlightSquares={
+              selectedMove ? [selectedMove.from, selectedMove.to] : []
+            }
+            onRefReady={(ref) => {
+              chessboardRef.current = ref;
+            }}
+          />
+        </View>
       </View>
+
+      {/* Navigation et boutons d'aide */}
+      <View style={styles.actionsContainer}>
+        {/* Navigation */}
+        <View style={styles.navigationContainer}>
+          <TouchableOpacity
+            style={[
+              styles.navButton,
+              !previousExercise && styles.navButtonDisabled,
+            ]}
+            onPress={goToPrevious}
+            disabled={!previousExercise}
+          >
+            <ChevronLeft
+              size={20}
+              color={
+                previousExercise ? colors.text.primary : colors.text.tertiary
+              }
+            />
+          </TouchableOpacity>
+
+          <View style={styles.exerciseCounter}>
+            <Text style={styles.counterText}>
+              {currentIndex >= 0
+                ? `${currentIndex + 1} / ${totalExercises}`
+                : "-"}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.navButton,
+              !nextExercise && styles.navButtonDisabled,
+            ]}
+            onPress={goToNext}
+            disabled={!nextExercise}
+          >
+            <ChevronRight
+              size={20}
+              color={nextExercise ? colors.text.primary : colors.text.tertiary}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Boutons indice et solution */}
+        <View style={styles.helpButtonsContainer}>
+          {exercise.hints && exercise.hints.length > 0 && (
+            <TouchableOpacity
+              style={styles.hintButton}
+              onPress={() => setShowHint(!showHint)}
+              activeOpacity={0.7}
+            >
+              <Lightbulb size={16} color={colors.warning.main} />
+              <Text style={styles.hintButtonText}>
+                {showHint ? "Masquer l'indice" : "Indice"}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={[
+              styles.solutionButton,
+              showSolution && styles.solutionButtonActive,
+            ]}
+            onPress={handleShowSolution}
+            disabled={showSolution}
+          >
+            <Eye size={16} color={colors.orange[600]} />
+            <Text style={styles.solutionButtonText}>
+              {showSolution ? "Solution affichée" : "Solution"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Solution affichée */}
+      {showSolution && (
+        <View style={styles.solutionContainer}>
+          <Text style={styles.solutionLabel}>Solution :</Text>
+          <Text style={styles.solutionText}>{exercise.correct_move}</Text>
+        </View>
+      )}
 
       {/* Feedback visuel */}
       {isCorrect !== null && (
@@ -197,53 +494,24 @@ export default function ExerciseScreen() {
         </View>
       )}
 
-      {/* Indices */}
-      {exercise.hints && exercise.hints.length > 0 && (
-        <View style={styles.hintsContainer}>
-          <TouchableOpacity
-            style={styles.hintButton}
-            onPress={() => setShowHint(!showHint)}
-            activeOpacity={0.7}
-          >
-            <Lightbulb size={16} color={colors.warning.main} />
-            <Text style={styles.hintButtonText}>
-              {showHint ? "Masquer l'indice" : "Afficher un indice"}
-            </Text>
-          </TouchableOpacity>
-          {showHint && (
-            <View style={styles.hintContent}>
-              <Text style={styles.hintText}>
-                {exercise.hints[0] || "Aucun indice disponible"}
-              </Text>
-            </View>
-          )}
+      {/* Indice affiché */}
+      {showHint && exercise.hints && exercise.hints.length > 0 && (
+        <View style={styles.hintContent}>
+          <Text style={styles.hintText}>
+            {exercise.hints[0] || "Aucun indice disponible"}
+          </Text>
         </View>
       )}
 
       {/* Informations supplémentaires */}
-      <View style={styles.infoContainer}>
-        {exercise.opponent && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Adversaire :</Text>
-            <Text style={styles.infoValue}>{exercise.opponent}</Text>
-          </View>
-        )}
-        {exercise.evaluation_loss !== undefined &&
-          exercise.evaluation_loss > 0 && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Perte d&apos;évaluation :</Text>
-              <Text style={styles.infoValue}>
-                -{(exercise.evaluation_loss / 100).toFixed(1)} pawns
-              </Text>
-            </View>
-          )}
-        {exercise.attempts > 0 && (
+      {exercise.attempts > 0 && (
+        <View style={styles.infoContainer}>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Tentatives :</Text>
             <Text style={styles.infoValue}>{exercise.attempts}</Text>
           </View>
-        )}
-      </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -254,8 +522,126 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   content: {
-    padding: spacing[4],
     paddingBottom: spacing[8],
+  },
+  header: {
+    marginBottom: spacing[4],
+    backgroundColor: colors.background.secondary,
+    padding: spacing[4],
+    borderRadius: borders.radius.lg,
+    ...shadows.sm,
+  },
+  headerInfo: {
+    gap: spacing[2],
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[2],
+  },
+  headerLabel: {
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
+    fontWeight: typography.fontWeight.medium,
+  },
+  headerValue: {
+    fontSize: typography.fontSize.sm,
+    color: colors.text.primary,
+    fontWeight: typography.fontWeight.semibold,
+  },
+  actionsContainer: {
+    marginBottom: spacing[4],
+    gap: spacing[3],
+  },
+  navigationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.background.secondary,
+    padding: spacing[3],
+    borderRadius: borders.radius.lg,
+    ...shadows.sm,
+  },
+  helpButtonsContainer: {
+    flexDirection: "row",
+    gap: spacing[3],
+  },
+  navButton: {
+    padding: spacing[2],
+    borderRadius: borders.radius.md,
+    backgroundColor: colors.background.tertiary,
+  },
+  navButtonDisabled: {
+    opacity: 0.5,
+  },
+  exerciseCounter: {
+    flex: 1,
+    alignItems: "center",
+  },
+  counterText: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text.primary,
+  },
+  solutionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing[2],
+    padding: spacing[3],
+    backgroundColor: colors.orange[50],
+    borderRadius: borders.radius.md,
+    borderWidth: 1,
+    borderColor: colors.orange[200],
+  },
+  solutionButtonActive: {
+    backgroundColor: colors.orange[100],
+    opacity: 0.8,
+  },
+  solutionButtonText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.orange[600],
+  },
+  solutionContainer: {
+    backgroundColor: colors.orange[50],
+    padding: spacing[4],
+    borderRadius: borders.radius.lg,
+    marginBottom: spacing[4],
+    borderWidth: 1,
+    borderColor: colors.orange[200],
+  },
+  solutionLabel: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.orange[600],
+    marginBottom: spacing[2],
+  },
+  solutionText: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.orange[600],
+    fontFamily: "monospace",
+  },
+  headerTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    paddingHorizontal: spacing[2],
+  },
+  headerTitle: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text.primary,
+    flex: 1,
+  },
+  headerSubtitle: {
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
+    fontWeight: typography.fontWeight.medium,
+    marginLeft: spacing[2],
   },
   loadingContainer: {
     flex: 1,
@@ -290,8 +676,19 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     lineHeight: typography.fontSize.base * typography.lineHeight.normal,
   },
-  boardContainer: {
+  chessboardWrapper: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    width: "100%",
     marginBottom: spacing[4],
+  },
+  analysisBarContainer: {
+    width: 12,
+    alignSelf: "stretch",
+  },
+  chessboardContainer: {
+    flex: 1,
+    minWidth: 0,
     alignItems: "center",
   },
   feedbackContainer: {
@@ -318,17 +715,15 @@ const styles = StyleSheet.create({
   feedbackTextIncorrect: {
     color: colors.error.dark,
   },
-  hintsContainer: {
-    marginBottom: spacing[4],
-  },
   hintButton: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: spacing[2],
     padding: spacing[3],
     backgroundColor: colors.warning.light,
     borderRadius: borders.radius.md,
-    marginBottom: spacing[2],
   },
   hintButtonText: {
     fontSize: typography.fontSize.sm,
