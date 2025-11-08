@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useSupabase } from "./useSupabase";
 import { useChessPlatform } from "./useChessPlatform";
 import type { Exercise } from "@/types/exercises";
+import type { Game, GameAnalysis, UserPlatform } from "@/types/database";
+import { enrichExercise } from "@/utils/exercise-enrichment";
 
 export const useExercise = (exerciseId: string | undefined) => {
   const { supabase } = useSupabase();
@@ -18,91 +20,48 @@ export const useExercise = (exerciseId: string | undefined) => {
     queryFn: async () => {
       if (!exerciseId) return null;
 
+      // 1. Récupérer l'exercice avec JOINs pour game et analysis
       const { data, error } = await supabase
         .from("exercises")
-        .select("*")
+        .select(
+          `
+          *,
+          games (*),
+          game_analyses!exercises_game_analysis_id_fkey (*)
+        `,
+        )
         .eq("id", exerciseId)
         .single();
 
       if (error) throw error;
       if (!data) return null;
 
-      const enriched: Exercise = { ...data };
+      const game = (data.games as unknown as Game) || null;
+      const analysis = (data.game_analyses as unknown as GameAnalysis) || null;
 
-      // Enrichir avec les informations de la partie si game_id existe
-      if (data.game_id) {
-        const { data: game } = await supabase
-          .from("games")
-          .select("*")
-          .eq("id", data.game_id)
-          .single();
-
-        if (game) {
-          // Déterminer l'adversaire
-          const userUsernames = platforms
-            .map((p) => p.platform_username?.toLowerCase().trim())
-            .filter((u): u is string => !!u);
-
-          const whitePlayer = game.white_player?.toLowerCase().trim() || "";
-          const blackPlayer = game.black_player?.toLowerCase().trim() || "";
-
-          const isUserWhite = userUsernames.some((u) => u === whitePlayer);
-          const isUserBlack = userUsernames.some((u) => u === blackPlayer);
-
-          if (isUserWhite) {
-            enriched.opponent = game.black_player || "Noirs";
-          } else if (isUserBlack) {
-            enriched.opponent = game.white_player || "Blancs";
-          } else {
-            enriched.opponent = game.white_player || game.black_player || null;
-          }
-        }
-      }
-
-      // Récupérer l'analyse pour calculer la perte d'évaluation
-      if (data.game_analysis_id && data.game_id) {
-        const { data: analysis } = await supabase
+      // 2. Récupérer l'analyse précédente si nécessaire
+      let previousAnalysis: GameAnalysis | null = null;
+      if (analysis && analysis.move_number > 1 && analysis.game_id) {
+        const { data: prevData } = await supabase
           .from("game_analyses")
           .select("*")
-          .eq("id", data.game_analysis_id)
+          .eq("game_id", analysis.game_id)
+          .eq("move_number", analysis.move_number - 1)
           .single();
 
-        if (
-          analysis &&
-          analysis.evaluation !== null &&
-          analysis.move_number > 1
-        ) {
-          const { data: previousAnalysis } = await supabase
-            .from("game_analyses")
-            .select("*")
-            .eq("game_id", analysis.game_id)
-            .eq("move_number", analysis.move_number - 1)
-            .single();
-
-          if (
-            previousAnalysis &&
-            previousAnalysis.evaluation !== null &&
-            analysis.evaluation !== null
-          ) {
-            const isWhiteMove = analysis.move_number % 2 === 1;
-            // Les évaluations sont en pawns dans la DB, on les convertit en centipawns pour le calcul
-            const evalBefore = previousAnalysis.evaluation * 100;
-            const evalAfter = analysis.evaluation * 100;
-
-            // Utiliser la même formule que classifyMistake (qui attend des centipawns)
-            const loss = isWhiteMove
-              ? evalBefore + evalAfter // Blanc : avant + après (inversé)
-              : evalAfter - evalBefore; // Noir : après - avant (inversés)
-
-            // Convertir en centipawns pour le stockage (evaluation_loss est en centipawns)
-            if (loss > 0) {
-              enriched.evaluation_loss = Math.round(loss);
-            }
-          }
+        if (prevData) {
+          previousAnalysis = prevData as GameAnalysis;
         }
       }
 
-      return enriched;
+      // 3. Enrichir l'exercice
+      return enrichExercise(
+        data as Exercise,
+        game,
+        analysis,
+        previousAnalysis,
+        platforms as UserPlatform[],
+      );
     },
     enabled: !!exerciseId,
   });

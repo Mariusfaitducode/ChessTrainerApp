@@ -1,11 +1,9 @@
-import { Platform } from "./chess";
+// Types pour les plateformes
+// Réexport depuis database.ts (types générés depuis Supabase)
 
-export interface UserPlatform {
-  id: string;
-  user_id: string;
-  platform: Platform;
-  platform_username: string;
-  last_sync_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export type {
+  UserPlatform,
+  UserPlatformRow,
+  UserPlatformInsert,
+  UserPlatformUpdate,
+} from "./database";

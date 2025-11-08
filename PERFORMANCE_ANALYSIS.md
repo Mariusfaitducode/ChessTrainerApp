@@ -138,3 +138,4 @@ const flattenedMoves = useMemo(() => {
 
 5. **Calcul flattenedMoves** (5-20ms)
 6. **Render initial** (30-100ms)
+
