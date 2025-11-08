@@ -119,28 +119,64 @@ export default function ExerciseScreen() {
       };
     }, [exercise, exercises]);
 
-  // Normaliser un coup pour la comparaison
-  const normalizeMove = (move: string): string => {
-    return move
-      .replace(/[+#=!?]/g, "")
-      .trim()
-      .toLowerCase();
-  };
-
   // Vérifier si un coup est correct
-  const checkMove = (from: string, to: string): boolean => {
+  // Les coordonnées arrivent dans le système standard (blancs en bas)
+  // react-native-chessboard garantit que seuls les coups valides peuvent être joués
+  const checkMove = (from: string, to: string, promotion?: string): boolean => {
     if (!exercise?.correct_move || !chess) return false;
 
     try {
-      // Vérifier si le coup est légal
-      const move = chess.move({ from, to, promotion: "q" });
-      if (!move) return false;
+      const correctMove = exercise.correct_move.trim();
+      const tempChess = new Chess(chess.fen());
 
-      // Comparer avec le coup correct
-      const playedMove = move.san;
-      const correctMove = exercise.correct_move;
-      return normalizeMove(playedMove) === normalizeMove(correctMove);
-    } catch {
+      // Essayer d'abord comme LAN (format le plus probable depuis l'API)
+      const lanPattern = /^([a-h][1-8])([a-h][1-8])([qrbn])?$/i;
+      const lanMatch = correctMove.match(lanPattern);
+
+      let correctMovePlayed: any = null;
+
+      if (lanMatch) {
+        const [, lanFrom, lanTo, lanPromotion] = lanMatch;
+        try {
+          const tempMoveOptions: {
+            from: string;
+            to: string;
+            promotion?: string;
+          } = {
+            from: lanFrom,
+            to: lanTo,
+          };
+          if (lanPromotion) {
+            tempMoveOptions.promotion = lanPromotion.toLowerCase();
+          }
+          correctMovePlayed = tempChess.move(tempMoveOptions);
+        } catch {
+          // Si ça échoue, essayer en SAN
+        }
+      }
+
+      // Si ce n'est pas en LAN ou que ça a échoué, essayer en SAN
+      if (!correctMovePlayed) {
+        try {
+          correctMovePlayed = tempChess.move(correctMove);
+        } catch {
+          return false;
+        }
+      }
+
+      if (!correctMovePlayed) return false;
+
+      // Comparer les coups joués (from/to/promotion)
+      return (
+        correctMovePlayed.from === from &&
+        correctMovePlayed.to === to &&
+        (correctMovePlayed.promotion || "") === (promotion || "")
+      );
+    } catch (error) {
+      console.error(
+        "[Exercise] Erreur lors de la vérification du coup:",
+        error,
+      );
       return false;
     }
   };
@@ -223,6 +259,12 @@ export default function ExerciseScreen() {
     to: string;
     promotion?: string;
   }): Promise<boolean> => {
+    if (__DEV__) {
+      console.log(
+        `[Exercise] handleMove appelé: from=${move.from}, to=${move.to}, promotion=${move.promotion}`,
+      );
+    }
+
     if (
       !chess ||
       !exercise ||
@@ -230,13 +272,22 @@ export default function ExerciseScreen() {
       isCompleting ||
       showSolution
     ) {
+      if (__DEV__) {
+        console.log(
+          `[Exercise] handleMove rejeté: chess=${!!chess}, exercise=${!!exercise}, completed=${exercise?.completed}, isCompleting=${isCompleting}, showSolution=${showSolution}`,
+        );
+      }
       return false;
     }
 
     setSelectedMove({ from: move.from, to: move.to });
 
-    const correct = checkMove(move.from, move.to);
+    const correct = checkMove(move.from, move.to, move.promotion);
     setIsCorrect(correct);
+
+    if (__DEV__) {
+      console.log(`[Exercise] Coup ${correct ? "correct" : "incorrect"}`);
+    }
 
     if (correct) {
       // Coup correct - marquer comme complété

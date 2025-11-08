@@ -120,6 +120,25 @@ const createExerciseFromAnalysis = (
     return null;
   }
 
+  // Vérifier que le meilleur coup est différent du coup joué
+  // Normaliser les deux coups pour la comparaison (retirer les annotations)
+  const normalizeMove = (move: string): string => {
+    return move
+      .replace(/[+#=!?]/g, "")
+      .trim()
+      .toLowerCase();
+  };
+
+  const normalizedBestMove = normalizeMove(analysis.best_move);
+  const normalizedPlayedMove = normalizeMove(analysis.played_move);
+
+  if (normalizedBestMove === normalizedPlayedMove) {
+    console.log(
+      `[ExerciseGenerator] Le meilleur coup est le même que le coup joué pour l'analyse ${analysis.id}. Ignoré.`,
+    );
+    return null;
+  }
+
   // Générer le hint
   const hint = generateHint(analysis.best_move);
   const hints = hint ? [hint] : null;

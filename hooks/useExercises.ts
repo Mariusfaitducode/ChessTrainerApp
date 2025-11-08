@@ -94,14 +94,16 @@ export const useExercises = (completed?: boolean) => {
               ) {
                 // move_number impair = blanc, pair = noir
                 const isWhiteMove = analysis.move_number % 2 === 1;
-                const evalBefore = previousAnalysis.evaluation;
-                const evalAfter = analysis.evaluation;
+                // Les évaluations sont en pawns dans la DB, on les convertit en centipawns pour le calcul
+                const evalBefore = previousAnalysis.evaluation * 100;
+                const evalAfter = analysis.evaluation * 100;
 
-                // Calculer la perte selon la formule de classifyMistake
+                // Utiliser la même formule que classifyMistake (qui attend des centipawns)
                 const loss = isWhiteMove
                   ? evalBefore + evalAfter // Blanc : avant + après (inversé)
                   : evalAfter - evalBefore; // Noir : après - avant (inversés)
 
+                // Convertir en centipawns pour le stockage (evaluation_loss est en centipawns)
                 if (loss > 0) {
                   enriched.evaluation_loss = Math.round(loss);
                 }

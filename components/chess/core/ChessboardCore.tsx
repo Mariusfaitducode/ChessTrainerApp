@@ -102,33 +102,21 @@ export const ChessboardCore = React.forwardRef<
         }
       : undefined;
 
-  // Gérer l'inversion des coordonnées des coups si le board est inversé
+  // Gérer les coups
+  // IMPORTANT: react-native-chessboard retourne TOUJOURS les coordonnées dans le système standard
+  // (blancs en bas), peu importe l'orientation visuelle du plateau. Donc on ne doit PAS inverser.
   const handleMove = onMove
     ? (info: {
         move: { from: string; to: string; promotion?: string };
       }): void => {
-        if (boardOrientation === "black") {
-          // Inverser les coordonnées : a1 -> h8, h8 -> a1, etc.
-          const flipSquare = (square: string): string => {
-            const file = square[0];
-            const rank = square[1];
-            const newFile = String.fromCharCode(
-              97 + (7 - (file.charCodeAt(0) - 97)),
-            );
-            const newRank = String(8 - parseInt(rank) + 1);
-            return newFile + newRank;
-          };
-
-          onMove({
-            move: {
-              from: flipSquare(info.move.from),
-              to: flipSquare(info.move.to),
-              promotion: info.move.promotion,
-            },
-          });
-        } else {
-          onMove(info);
+        if (__DEV__) {
+          console.log(
+            `[ChessboardCore] handleMove reçu: from=${info.move.from}, to=${info.move.to}, boardOrientation=${boardOrientation}`,
+          );
         }
+
+        // Pas d'inversion nécessaire : react-native-chessboard retourne déjà les coordonnées standard
+        onMove(info);
       }
     : undefined;
 
