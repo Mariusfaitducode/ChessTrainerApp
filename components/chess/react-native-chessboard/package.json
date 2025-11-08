@@ -47,7 +47,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "dependencies": {
-    "chess.js": "^0.12.1"
+    "chess.js": "^1.4.0"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^11.0.0",

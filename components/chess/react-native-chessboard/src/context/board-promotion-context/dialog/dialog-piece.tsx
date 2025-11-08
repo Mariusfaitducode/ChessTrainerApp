@@ -1,5 +1,4 @@
-import type { PieceType } from 'chess.js';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -8,7 +7,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import type { Player } from '../../../types';
+import type { PieceType, Player } from '../../../types';
 import { ChessPiece } from '../../../components/piece/visual-piece';
 import { useChessboardProps } from '../../props-context/hooks';
 
@@ -20,19 +19,29 @@ type DialogPieceProps = {
   onSelectPiece?: (piece: PieceType) => void;
 };
 
-const DialogPiece: React.FC<DialogPieceProps> = React.memo(
+const DialogPieceComponent: React.FC<DialogPieceProps> = React.memo(
   ({ index, width, type, piece, onSelectPiece }) => {
     const isTapActive = useSharedValue(false);
     const {
       colors: { promotionPieceButton },
     } = useChessboardProps();
 
+    const onSelectPieceRef = useRef(onSelectPiece);
+    useEffect(() => {
+      onSelectPieceRef.current = onSelectPiece;
+    }, [onSelectPiece]);
+
+    function callOnSelectPiece(pieceParam: PieceType) {
+      onSelectPieceRef.current?.(pieceParam);
+    }
+
     const gesture = Gesture.Tap()
       .onBegin(() => {
         isTapActive.value = true;
       })
       .onTouchesUp(() => {
-        if (onSelectPiece) runOnJS(onSelectPiece)(piece);
+        'worklet';
+        runOnJS(callOnSelectPiece)(piece);
       })
       .onFinalize(() => {
         isTapActive.value = false;
@@ -81,6 +90,10 @@ const DialogPiece: React.FC<DialogPieceProps> = React.memo(
     );
   }
 );
+
+DialogPieceComponent.displayName = 'DialogPiece';
+
+const DialogPiece = DialogPieceComponent;
 
 const styles = StyleSheet.create({
   pieceContainer: {

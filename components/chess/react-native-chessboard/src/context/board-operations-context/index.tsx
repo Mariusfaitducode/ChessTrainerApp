@@ -94,10 +94,12 @@ function BoardOperationsContextProviderComponent(
       const y = Math.floor(val.y / pieceSize);
       const piece = chess.board()[y][x];
 
+      // Adapter pour chess.js v1.x : les types sont des strings maintenant
+      // 'p' pour pawn, 'w' pour white, 'b' pour black
       return (
-        piece?.type === chess.PAWN &&
-        ((to.includes('8') && piece.color === chess.WHITE) ||
-          (to.includes('1') && piece.color === chess.BLACK))
+        piece?.type === 'p' &&
+        ((to.includes('8') && piece.color === 'w') ||
+          (to.includes('1') && piece.color === 'b'))
       );
     },
     [chess, pieceSize, toTranslation]
@@ -141,7 +143,7 @@ function BoardOperationsContextProviderComponent(
 
       if (move == null) return;
 
-      const isCheckmate = chess.in_checkmate();
+      const isCheckmate = chess.isCheckmate();
 
       if (isCheckmate) {
         const kingType = chess.turn() === 'w' ? 'wk' : 'bk';
