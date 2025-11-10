@@ -18,6 +18,7 @@ import { MoveList } from "@/components/chess/MoveList";
 import { GameControls } from "@/components/chess/GameControls";
 import { AnalysisBar } from "@/components/chess/AnalysisBar";
 import { formatDate } from "@/utils/date";
+import { uciToSan } from "@/utils/chess-move-format";
 import { colors, spacing, typography, shadows, borders } from "@/theme";
 
 export default function GameDetailScreen() {
@@ -238,7 +239,14 @@ export default function GameDetailScreen() {
                 <AnalysisBar
                   evaluation={currentAnalysis.evaluation || 0}
                   isWhiteToMove={isWhiteTurn}
-                  bestMove={currentAnalysis.best_move}
+                  bestMove={
+                    currentAnalysis.best_move
+                      ? uciToSan(
+                          currentAnalysis.best_move,
+                          previousFen || currentFen,
+                        ) || currentAnalysis.best_move
+                      : null
+                  }
                   moveQuality={currentAnalysis.move_quality}
                   orientation="vertical"
                   boardOrientation={boardOrientation}

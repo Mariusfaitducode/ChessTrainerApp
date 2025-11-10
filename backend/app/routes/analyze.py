@@ -5,8 +5,14 @@ from typing import Annotated, Callable
 import chess
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.models import AnalyzeRequest, AnalyzeResponse
+from app.models import (
+    AnalyzeRequest,
+    AnalyzeResponse,
+    AnalyzeGameRequest,
+    AnalyzeGameResponse,
+)
 from app.services.analysis import analyze_position, handle_terminal_position
+from app.services.game_analysis import analyze_game
 from app.services.stockfish_manager import StockfishManager
 
 logger = logging.getLogger(__name__)
@@ -59,6 +65,35 @@ async def analyze_position_endpoint(
     try:
         async with engine_manager.acquire() as engine:
             return await analyze_position(board, engine, payload.depth)
+    except RuntimeError as exc:
+        logger.error(f"[Analyze] Erreur runtime: {exc}")
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.error(f"[Analyze] Erreur inattendue: {exc}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {exc}") from exc
+
+
+@router.post("/analyze-game", response_model=AnalyzeGameResponse)
+async def analyze_game_endpoint(
+    payload: AnalyzeGameRequest,
+    engine_manager: Annotated[StockfishManager, Depends(get_engine_manager)],
+) -> AnalyzeGameResponse:
+    """
+    Analyse complète d'une partie d'échecs
+    
+    Retourne toutes les analyses prêtes à être insérées dans la DB
+    """
+    logger.info(
+        f"[Analyze] Requête analyse partie reçue - depth: {payload.depth}, PGN length: {len(payload.pgn)}"
+    )
+
+    try:
+        async with engine_manager.acquire() as engine:
+            analyses = await analyze_game(payload.pgn, engine, payload.depth)
+            return AnalyzeGameResponse(analyses=analyses)
+    except ValueError as exc:
+        logger.error(f"[Analyze] Erreur validation: {exc}")
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
         logger.error(f"[Analyze] Erreur runtime: {exc}")
         raise HTTPException(status_code=500, detail=str(exc)) from exc

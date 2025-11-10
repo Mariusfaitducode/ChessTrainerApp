@@ -11,6 +11,7 @@ import {
 import { useLocalSearchParams, useRouter, useNavigation } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Chess } from "chess.js";
+import { uciToSan, convertUciToSanInText } from "@/utils/chess-move-format";
 import {
   CheckCircle2,
   XCircle,
@@ -120,58 +121,20 @@ export default function ExerciseScreen() {
     }, [exercise, exercises]);
 
   // Vérifier si un coup est correct
+  // correct_move est maintenant en UCI (format: "e2e4", "g1f3", "e7e8q")
   // Les coordonnées arrivent dans le système standard (blancs en bas)
   // react-native-chessboard garantit que seuls les coups valides peuvent être joués
   const checkMove = (from: string, to: string, promotion?: string): boolean => {
     if (!exercise?.correct_move || !chess) return false;
 
     try {
-      const correctMove = exercise.correct_move.trim();
-      const tempChess = new Chess(chess.fen());
+      const correctMoveUci = exercise.correct_move.trim().toLowerCase();
 
-      // Essayer d'abord comme LAN (format le plus probable depuis l'API)
-      const lanPattern = /^([a-h][1-8])([a-h][1-8])([qrbn])?$/i;
-      const lanMatch = correctMove.match(lanPattern);
+      // Construire le coup UCI joué
+      const playedMoveUci = (from + to + (promotion || "")).toLowerCase();
 
-      let correctMovePlayed: any = null;
-
-      if (lanMatch) {
-        const [, lanFrom, lanTo, lanPromotion] = lanMatch;
-        try {
-          const tempMoveOptions: {
-            from: string;
-            to: string;
-            promotion?: string;
-          } = {
-            from: lanFrom,
-            to: lanTo,
-          };
-          if (lanPromotion) {
-            tempMoveOptions.promotion = lanPromotion.toLowerCase();
-          }
-          correctMovePlayed = tempChess.move(tempMoveOptions);
-        } catch {
-          // Si ça échoue, essayer en SAN
-        }
-      }
-
-      // Si ce n'est pas en LAN ou que ça a échoué, essayer en SAN
-      if (!correctMovePlayed) {
-        try {
-          correctMovePlayed = tempChess.move(correctMove);
-        } catch {
-          return false;
-        }
-      }
-
-      if (!correctMovePlayed) return false;
-
-      // Comparer les coups joués (from/to/promotion)
-      return (
-        correctMovePlayed.from === from &&
-        correctMovePlayed.to === to &&
-        (correctMovePlayed.promotion || "") === (promotion || "")
-      );
+      // Comparaison directe UCI (simple et rapide)
+      return playedMoveUci === correctMoveUci;
     } catch (error) {
       console.error(
         "[Exercise] Erreur lors de la vérification du coup:",
@@ -198,12 +161,34 @@ export default function ExerciseScreen() {
 
   // Afficher la solution
   const handleShowSolution = () => {
-    setShowSolution(true);
-    Alert.alert(
-      "Solution",
-      `Le meilleur coup est : ${exercise?.correct_move || "N/A"}`,
-      [{ text: "OK" }],
-    );
+    if (!exercise?.correct_move || !chess) return;
+
+    try {
+      const correctMoveUci = exercise.correct_move.trim();
+      const tempChess = new Chess(chess.fen());
+
+      // Jouer le coup UCI directement
+      tempChess.move(correctMoveUci);
+
+      // Mettre à jour le chessboard avec la position après le bon coup
+      if (chessboardRef.current) {
+        chessboardRef.current.resetBoard(tempChess.fen());
+      }
+
+      setShowSolution(true);
+    } catch (error) {
+      console.error(
+        "[Exercise] Erreur lors de l'affichage de la solution:",
+        error,
+      );
+      // Fallback : afficher juste le texte
+      const correctMoveSan =
+        uciToSan(exercise.correct_move, exercise.fen) || exercise.correct_move;
+      Alert.alert("Solution", `Le meilleur coup est : ${correctMoveSan}`, [
+        { text: "OK" },
+      ]);
+      setShowSolution(true);
+    }
   };
 
   // Mettre à jour le header avec les informations de l'exercice
@@ -294,12 +279,13 @@ export default function ExerciseScreen() {
       setIsCompleting(true);
       try {
         // Calculer le score (100 points de base, moins les tentatives)
-        const score = Math.max(0, 100 - exercise.attempts * 10);
+        const attempts = exercise.attempts ?? 0;
+        const score = Math.max(0, 100 - attempts * 10);
 
         await completeExercise({
           exerciseId: exercise.id,
           score,
-          currentAttempts: exercise.attempts,
+          currentAttempts: attempts,
         });
 
         // Réinitialiser le feedback
@@ -401,7 +387,7 @@ export default function ExerciseScreen() {
       {exercise.position_description && (
         <View style={styles.descriptionContainer}>
           <Text style={styles.description}>
-            {exercise.position_description}
+            {convertUciToSanInText(exercise.position_description, exercise.fen)}
           </Text>
         </View>
       )}
@@ -413,7 +399,12 @@ export default function ExerciseScreen() {
             <AnalysisBar
               evaluation={currentEvaluation}
               isWhiteToMove={chess?.turn() === "w"}
-              bestMove={analysisData.best_move}
+              bestMove={
+                analysisData.best_move
+                  ? uciToSan(analysisData.best_move, exercise.fen) ||
+                    analysisData.best_move
+                  : null
+              }
               moveQuality={analysisData.move_quality}
               orientation="vertical"
               boardOrientation={boardOrientation}
@@ -512,10 +503,13 @@ export default function ExerciseScreen() {
       </View>
 
       {/* Solution affichée */}
-      {showSolution && (
+      {showSolution && exercise?.correct_move && (
         <View style={styles.solutionContainer}>
           <Text style={styles.solutionLabel}>Solution :</Text>
-          <Text style={styles.solutionText}>{exercise.correct_move}</Text>
+          <Text style={styles.solutionText}>
+            {uciToSan(exercise.correct_move, exercise.fen) ||
+              exercise.correct_move}
+          </Text>
         </View>
       )}
 
@@ -555,7 +549,7 @@ export default function ExerciseScreen() {
       )}
 
       {/* Informations supplémentaires */}
-      {exercise.attempts > 0 && (
+      {exercise.attempts !== null && exercise.attempts > 0 && (
         <View style={styles.infoContainer}>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Tentatives :</Text>

@@ -72,7 +72,13 @@ export function classifyMove(
 
   // Vérifier d'abord si le coup joué est le meilleur coup
   // (même si l'évaluation change, si c'est le meilleur coup, c'est "best")
-  if (bestMove && compareMoves(playedMove, bestMove, fen)) {
+  // Si les deux sont en UCI, comparaison directe (plus rapide)
+  // Sinon, fallback sur compareMoves pour compatibilité
+  const movesAreEqual =
+    playedMove.toLowerCase() === bestMove?.toLowerCase() ||
+    (bestMove && compareMoves(playedMove, bestMove, fen));
+
+  if (movesAreEqual) {
     return {
       move_quality: "best",
       game_phase,

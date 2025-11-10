@@ -1,8 +1,24 @@
 // Utilitaires pour comparer des coups d'échecs de manière robuste
+// NOTE: Maintenant que nous stockons en UCI, la plupart des comparaisons peuvent être directes
 import { Chess } from "chess.js";
 
 /**
+ * Compare deux coups UCI (comparaison directe, très rapide)
+ * @param move1Uci Premier coup en UCI
+ * @param move2Uci Deuxième coup en UCI
+ * @returns true si les coups sont identiques
+ */
+export function areUciMovesEqual(
+  move1Uci: string | null,
+  move2Uci: string | null,
+): boolean {
+  if (!move1Uci || !move2Uci) return false;
+  return move1Uci.toLowerCase() === move2Uci.toLowerCase();
+}
+
+/**
  * Compare deux coups d'échecs en les jouant dans une position
+ * Utile pour comparer des formats différents (SAN vs UCI) ou pour compatibilité
  * Retourne true si les coups sont identiques (même from, to, promotion)
  */
 export function areMovesEqual(
@@ -38,6 +54,7 @@ export function areMovesEqual(
 /**
  * Normalise un coup en retirant les annotations
  * Ex: "Nf3+" -> "Nf3", "b8=Q#" -> "b8=Q"
+ * NOTE: Pour UCI, cette fonction n'est plus vraiment nécessaire
  */
 export function normalizeMove(move: string): string {
   return move
@@ -50,6 +67,8 @@ export function normalizeMove(move: string): string {
  * Compare deux coups avec plusieurs méthodes pour plus de robustesse
  * 1. Comparaison directe normalisée (rapide)
  * 2. Comparaison en jouant les coups dans chess.js (précise)
+ *
+ * NOTE: Si les deux coups sont en UCI, utilisez areUciMovesEqual() à la place (plus rapide)
  */
 export function compareMoves(
   move1: string,
@@ -65,6 +84,6 @@ export function compareMoves(
   }
 
   // Méthode 2: Comparaison précise en jouant les coups
-  // (nécessaire car les formats peuvent différer: LAN vs SAN)
+  // (nécessaire car les formats peuvent différer: SAN vs UCI)
   return areMovesEqual(move1, move2, fen);
 }

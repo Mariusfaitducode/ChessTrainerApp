@@ -40,45 +40,40 @@ const isUserMove = (
 };
 
 /**
- * Extrait la pièce du coup SAN pour générer un hint
- * Ex: "Nf3" -> "Déplacez le cavalier"
+ * Extrait la pièce du coup UCI pour générer un hint
+ * Ex: "g1f3" -> "Déplacez le cavalier"
  */
-const getPieceFromMove = (move: string): string => {
-  // Retirer les annotations (+, #, =, etc.)
-  const cleanMove = move.replace(/[+#=!?]/g, "");
+const getPieceFromUci = (moveUci: string, fen: string): string => {
+  try {
+    const game = new Chess(fen);
+    const moveObj = game.move(moveUci);
+    if (!moveObj) return "pièce";
 
-  // Détecter le type de pièce
-  if (cleanMove.startsWith("O-O")) {
-    return "roque";
-  }
-
-  // Extraire la première lettre (ou la case si c'est un pion)
-  const firstChar = cleanMove[0];
-
-  // Si c'est une majuscule, c'est une pièce
-  if (firstChar >= "A" && firstChar <= "Z") {
+    // Déterminer la pièce déplacée
+    const piece = moveObj.piece;
     const pieceMap: Record<string, string> = {
-      K: "roi",
-      Q: "dame",
-      R: "tour",
-      B: "fou",
-      N: "cavalier",
-      P: "pion",
+      p: "pion",
+      n: "cavalier",
+      b: "fou",
+      r: "tour",
+      q: "dame",
+      k: "roi",
     };
-    return pieceMap[firstChar] || "pièce";
+    return pieceMap[piece] || "pièce";
+  } catch {
+    return "pièce";
   }
-
-  // Sinon, c'est un coup de pion
-  return "pion";
 };
 
 /**
- * Génère un hint basique à partir du meilleur coup
+ * Génère un hint basique à partir du meilleur coup (UCI)
  */
-const generateHint = (bestMove: string | null): string | null => {
-  if (!bestMove) return null;
-
-  const piece = getPieceFromMove(bestMove);
+const generateHint = (
+  bestMoveUci: string | null,
+  fen: string,
+): string | null => {
+  if (!bestMoveUci) return null;
+  const piece = getPieceFromUci(bestMoveUci, fen);
   return `Déplacez le ${piece}`;
 };
 
@@ -122,12 +117,9 @@ const createExerciseFromAnalysis = (
   }
 
   // Vérifier que le meilleur coup est différent du coup joué
-  // Utiliser une comparaison robuste qui gère les différents formats (LAN vs SAN)
-  const movesAreEqual = compareMoves(
-    analysis.best_move,
-    analysis.played_move,
-    analysis.fen,
-  );
+  // Les deux sont maintenant en UCI, comparaison directe
+  const movesAreEqual =
+    analysis.best_move?.toLowerCase() === analysis.played_move?.toLowerCase();
 
   if (movesAreEqual) {
     console.log(
@@ -136,14 +128,14 @@ const createExerciseFromAnalysis = (
     return null;
   }
 
-  // Générer le hint
-  const hint = generateHint(analysis.best_move);
+  // Générer le hint (basé sur UCI, pas besoin de SAN)
+  const hint = generateHint(analysis.best_move, analysis.fen);
   const hints = hint ? [hint] : null;
 
-  // Générer la description
+  // Générer la description (utiliser directement UCI, conversion en SAN côté frontend si nécessaire)
   const description = generateDescription(
     analysis.move_number,
-    analysis.played_move,
+    analysis.played_move, // UCI - conversion en SAN côté frontend si nécessaire
   );
 
   return {
@@ -153,7 +145,7 @@ const createExerciseFromAnalysis = (
     fen: analysis.fen,
     position_description: description,
     exercise_type: "find_best_move",
-    correct_move: analysis.best_move,
+    correct_move: analysis.best_move, // Stocker en UCI
     hints,
     difficulty: null, // Pas utilisé pour l'instant
     completed: false,
