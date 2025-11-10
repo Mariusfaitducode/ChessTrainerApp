@@ -158,8 +158,11 @@ async def analyze_game(
         fen_after = board.fen()
 
         # Analyser la position APRÈS le coup
+        # IMPORTANT: L'évaluation doit toujours être du point de vue des blancs
         if board.is_game_over():
             if board.is_checkmate():
+                # Si les blancs sont mat, évaluation très négative
+                # Si les noirs sont mat, évaluation très positive
                 eval_after = -10000 if board.turn == chess.WHITE else 10000
             else:
                 eval_after = 0
@@ -208,6 +211,9 @@ async def analyze_game(
                 # Continuer sans eval_best_after
 
         # Classifier le coup
+        # IMPORTANT: On passe les évaluations originales (du point de vue des blancs)
+        # classify_move va les inverser localement pour le calcul de la perte, mais
+        # on stocke toujours eval_after du point de vue des blancs
         move_quality, game_phase, evaluation_loss = classify_move(
             eval_before,
             eval_after,
@@ -219,6 +225,7 @@ async def analyze_game(
         )
 
         # Convertir l'évaluation en pawns (pour la DB)
+        # IMPORTANT: Toujours stocker du point de vue des blancs (positif = avantage blanc)
         evaluation_pawns = eval_after / 100.0
 
         analyses.append(

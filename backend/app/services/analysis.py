@@ -55,22 +55,25 @@ async def analyze_position(
     logger.info(f"[Analysis] Meilleur coup UCI: {best_move_uci}")
 
     # Extraire l'évaluation
+    # IMPORTANT: Utiliser score.white() pour toujours avoir l'évaluation du point de vue des blancs
+    # score.relative retourne l'évaluation du point de vue du joueur qui doit jouer (change selon le trait)
     score = info.get("score")
     evaluation_type = "cp"
     evaluation = 0
     mate_in: Optional[int] = None
 
     if score:
-        relative = score.relative
-        if relative.is_mate():
+        # Toujours utiliser white() pour avoir l'évaluation du point de vue des blancs
+        white_score = score.white()
+        if white_score.is_mate():
             evaluation_type = "mate"
-            mate_in = relative.mate()
+            mate_in = white_score.mate()
             evaluation = 0
             logger.info(f"[Analysis] Mate détecté: mate_in={mate_in}")
         else:
-            evaluation = relative.score(mate_score=100000) or 0
+            evaluation = white_score.score(mate_score=100000) or 0
             evaluation_type = "cp"
-            logger.info(f"[Analysis] Évaluation: {evaluation} centipawns")
+            logger.info(f"[Analysis] Évaluation: {evaluation} centipawns (du point de vue des blancs)")
 
     result = AnalyzeResponse(
         best_move=best_move_uci,  # Toujours en UCI (format standard)

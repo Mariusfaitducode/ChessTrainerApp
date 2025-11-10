@@ -5,7 +5,14 @@ interface AnalysisBarProps {
   evaluation: number; // en pawns (depuis la DB)
   isWhiteToMove?: boolean;
   bestMove?: string | null;
-  moveQuality?: "best" | "excellent" | "good" | "inaccuracy" | "mistake" | "blunder" | null;
+  moveQuality?:
+    | "best"
+    | "excellent"
+    | "good"
+    | "inaccuracy"
+    | "mistake"
+    | "blunder"
+    | null;
   orientation?: "horizontal" | "vertical";
   boardOrientation?: "white" | "black"; // Orientation du plateau (qui est en bas)
 }
@@ -19,24 +26,26 @@ export const AnalysisBar = ({
   boardOrientation = "white",
 }: AnalysisBarProps) => {
   // L'évaluation est déjà en pawns depuis la DB
+  // IMPORTANT: L'évaluation est TOUJOURS du point de vue des blancs
+  // Positif = avantage blanc, Négatif = avantage noir
   const pawns = evaluation || 0;
 
   // Normaliser pour l'affichage (max ±10 pawns)
   const normalized = Math.max(-10, Math.min(10, pawns));
+
+  // Calculer le pourcentage : +10 pawns = 100% (haut), -10 pawns = 0% (bas)
   const percentage = ((normalized + 10) / 20) * 100;
 
-  // Adapter selon le joueur au trait et l'orientation du plateau
-  // L'évaluation est toujours du point de vue des blancs (positif = blanc gagne)
-  // Pour vertical :
-  //   - Si boardOrientation = "white" : haut = avantage blanc (100%), bas = avantage noir (0%)
-  //   - Si boardOrientation = "black" : haut = avantage blanc (100%), bas = avantage noir (0%)
-  //     (même logique, car l'évaluation est toujours du point de vue des blancs)
+  // Pour l'orientation verticale, l'évaluation est toujours du point de vue des blancs
+  // donc on n'a pas besoin d'ajuster selon isWhiteToMove
+  // Pour l'orientation horizontale, on ajuste selon le joueur au trait
   const adjustedPercentage =
     orientation === "vertical"
-      ? percentage // Pour vertical, on garde la logique normale (haut = blanc, bas = noir)
+      ? percentage // Toujours du point de vue des blancs (haut = blanc, bas = noir)
       : isWhiteToMove
-        ? percentage
-        : 100 - percentage;
+        ? percentage // Blanc au trait : positif = avantage blanc (droite)
+        : 100 - percentage; // Noir au trait : positif = avantage noir (gauche), donc on inverse
+
   const barColor =
     adjustedPercentage > 50 ? colors.success.main : colors.error.main;
 
@@ -102,9 +111,7 @@ export const AnalysisBar = ({
           (moveQuality === "blunder" ||
             moveQuality === "mistake" ||
             moveQuality === "inaccuracy") && (
-            <Text style={styles.mistakeLabel}>
-              {getMoveQualityLabel()}
-            </Text>
+            <Text style={styles.mistakeLabel}>{getMoveQualityLabel()}</Text>
           )}
       </View>
     </View>
