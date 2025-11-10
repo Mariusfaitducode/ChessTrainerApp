@@ -262,6 +262,7 @@ export default function GameDetailScreen() {
                 currentMoveIndex={currentMoveIndex}
                 previousFen={previousFen}
                 boardOrientation={boardOrientation}
+                analysisData={currentAnalysis}
               />
             </View>
           </View>

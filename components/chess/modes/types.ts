@@ -1,4 +1,5 @@
 import type { Move } from "chess.js";
+import type { GameAnalysis } from "@/types/database";
 
 export interface MoveInfo {
   from: string;
@@ -10,6 +11,7 @@ export interface CommonChessboardProps {
   fen: string;
   boardOrientation: "white" | "black";
   showCoordinates?: boolean;
+  analysisData?: GameAnalysis | null;
 }
 
 export interface VisualizationModeProps extends CommonChessboardProps {

@@ -13,6 +13,7 @@ export function GameMode({
   currentMoveIndex = -1,
   boardOrientation,
   showCoordinates = true,
+  analysisData,
 }: GameModeProps) {
   const chessboardRef = useRef<ChessboardRef | null>(null);
 
@@ -54,6 +55,9 @@ export function GameMode({
       showCoordinates={showCoordinates}
       gestureEnabled={gestureEnabled}
       onMove={handleMove}
+      analysisData={analysisData}
+      moveHistory={moveHistory}
+      currentMoveIndex={currentMoveIndex}
       onRefReady={(ref) => {
         // S'assurer que le ref est bien mis à jour
         if (ref) {

@@ -1,0 +1,258 @@
+import React, { useMemo } from "react";
+import { View, Text, StyleSheet } from "react-native";
+import Svg, { Path } from "react-native-svg";
+import type { GameAnalysis } from "@/types/database";
+import { colors } from "@/theme";
+
+interface MoveAnalysisProps {
+  analysis: GameAnalysis | null;
+  boardSize: number;
+  boardOrientation: "white" | "black";
+  lastMove?: { from: string; to: string };
+}
+
+// Helper pour convertir un square (ex: "e2") en coordonnées pixel
+// Note: Le boardWrapper a déjà un transform rotate(180deg) si boardOrientation === "black"
+// Donc on calcule toujours dans le système standard (blancs en bas)
+// et le transform CSS gère la rotation automatiquement
+const squareToCoords = (
+  square: string,
+  boardSize: number,
+): { x: number; y: number } => {
+  const col = square[0].charCodeAt(0) - "a".charCodeAt(0);
+  const row = parseInt(square[1], 10) - 1;
+
+  const squareSize = boardSize / 8;
+  const x = col * squareSize;
+  const y = (7 - row) * squareSize;
+
+  // Centrer sur la case
+  return {
+    x: x + squareSize / 2,
+    y: y + squareSize / 2,
+  };
+};
+
+// Helper pour parser un move UCI (ex: "e2e4") en from/to
+const parseUciMove = (uci: string): { from: string; to: string } | null => {
+  if (!uci || uci.length < 4) return null;
+  return {
+    from: uci.substring(0, 2),
+    to: uci.substring(2, 4),
+  };
+};
+
+// Couleurs pour les badges selon move_quality
+const getQualityColor = (
+  quality: string | null | undefined,
+): { bg: string; text: string } => {
+  switch (quality) {
+    case "best":
+      return { bg: colors.success.main, text: "#fff" };
+    case "excellent":
+      return { bg: colors.success.light, text: "#fff" };
+    case "good":
+      return { bg: colors.info.main, text: "#fff" };
+    case "inaccuracy":
+      return { bg: colors.warning.main, text: "#fff" };
+    case "mistake":
+      return { bg: colors.warning.dark, text: "#fff" };
+    case "blunder":
+      return { bg: colors.error.main, text: "#fff" };
+    default:
+      return { bg: "#666", text: "#fff" };
+  }
+};
+
+// Labels pour les badges
+const getQualityLabel = (quality: string | null | undefined): string => {
+  switch (quality) {
+    case "best":
+      return "✓";
+    case "excellent":
+      return "★";
+    case "good":
+      return "○";
+    case "inaccuracy":
+      return "?";
+    case "mistake":
+      return "!";
+    case "blunder":
+      return "!!";
+    default:
+      return "";
+  }
+};
+
+// Composant pour la flèche SVG
+const Arrow: React.FC<{
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+  color: string;
+  boardSize: number;
+}> = ({ from, to, color, boardSize }) => {
+  const squareSize = boardSize / 8;
+  const arrowWidth = Math.max(3, squareSize * 0.12);
+  const headLength = squareSize * 0.3;
+
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const length = Math.sqrt(dx * dx + dy * dy);
+
+  // Calculer les points de la flèche
+  const unitX = dx / length;
+  const unitY = dy / length;
+
+  // Point de départ (légèrement décalé du centre pour éviter de chevaucher la pièce)
+  const startOffset = squareSize * 0.15;
+  const startX = from.x + unitX * startOffset;
+  const startY = from.y + unitY * startOffset;
+
+  // Point d'arrivée (légèrement avant le centre pour éviter de chevaucher la pièce)
+  const endOffset = squareSize * 0.15;
+  const endX = to.x - unitX * endOffset;
+  const endY = to.y - unitY * endOffset;
+
+  // Points de la pointe de flèche
+  const perpX = -unitY;
+  const perpY = unitX;
+
+  const arrowHead1X = endX - unitX * headLength + perpX * headLength * 0.5;
+  const arrowHead1Y = endY - unitY * headLength + perpY * headLength * 0.5;
+  const arrowHead2X = endX - unitX * headLength - perpX * headLength * 0.5;
+  const arrowHead2Y = endY - unitY * headLength - perpY * headLength * 0.5;
+
+  const path = `M ${startX} ${startY} L ${endX} ${endY} L ${arrowHead1X} ${arrowHead1Y} M ${endX} ${endY} L ${arrowHead2X} ${arrowHead2Y}`;
+
+  return (
+    <Svg
+      style={StyleSheet.absoluteFill}
+      width={boardSize}
+      height={boardSize}
+      pointerEvents="none"
+    >
+      <Path
+        d={path}
+        stroke={color}
+        strokeWidth={arrowWidth}
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+};
+
+export const MoveAnalysis: React.FC<MoveAnalysisProps> = React.memo(
+  ({ analysis, boardSize, boardOrientation, lastMove }) => {
+    // Calculer la position du badge (coin en haut à droite de la case)
+    const badgePosition = useMemo(() => {
+      if (!lastMove?.to) return null;
+      const col = lastMove.to[0].charCodeAt(0) - "a".charCodeAt(0);
+      const row = parseInt(lastMove.to[1], 10) - 1;
+      const squareSize = boardSize / 8;
+      const badgeSize = 24; // Taille du badge
+      const padding = 8; // Padding depuis les bords
+
+      // Position de la case (coin supérieur gauche)
+      const squareX = col * squareSize;
+      const squareY = (7 - row) * squareSize;
+
+      // Badge dans le coin en haut à droite de la case
+      // left = coin droit de la case - taille du badge - padding
+      return {
+        x: squareX - padding,
+        y: squareY + badgeSize + padding,
+      };
+    }, [lastMove, boardSize]);
+
+    // Calculer la flèche du meilleur coup
+    const bestMoveArrow = useMemo(() => {
+      if (!analysis?.best_move) return null;
+
+      const bestMoveParsed = parseUciMove(analysis.best_move);
+      if (!bestMoveParsed) return null;
+
+      // Ne pas afficher si le meilleur coup est le même que le coup joué (si lastMove existe)
+      if (
+        lastMove &&
+        bestMoveParsed.from === lastMove.from &&
+        bestMoveParsed.to === lastMove.to
+      ) {
+        return null;
+      }
+
+      const fromCoords = squareToCoords(bestMoveParsed.from, boardSize);
+      const toCoords = squareToCoords(bestMoveParsed.to, boardSize);
+
+      return { from: fromCoords, to: toCoords };
+    }, [analysis?.best_move, lastMove, boardSize]);
+
+    const qualityColor = getQualityColor(analysis?.move_quality);
+    const qualityLabel = getQualityLabel(analysis?.move_quality);
+
+    if (!analysis) return null;
+
+    // Si pas de lastMove, on peut quand même afficher la flèche du meilleur coup
+    // mais pas le badge (qui nécessite un coup joué)
+
+    return (
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        {/* Badge de classification */}
+        {badgePosition && analysis.move_quality && (
+          <View
+            style={[
+              styles.badge,
+              {
+                left: badgePosition.x,
+                top: badgePosition.y,
+                backgroundColor: qualityColor.bg,
+                // Rotation inverse pour que le symbole reste lisible quand le board est inversé
+                transform: [
+                  { rotate: boardOrientation === "black" ? "180deg" : "0deg" },
+                ],
+              },
+            ]}
+          >
+            <Text style={[styles.badgeText, { color: qualityColor.text }]}>
+              {qualityLabel}
+            </Text>
+          </View>
+        )}
+
+        {/* Flèche du meilleur coup */}
+        {bestMoveArrow && (
+          <Arrow
+            from={bestMoveArrow.from}
+            to={bestMoveArrow.to}
+            color="rgba(0, 150, 255, 0.7)"
+            boardSize={boardSize}
+          />
+        )}
+      </View>
+    );
+  },
+);
+
+MoveAnalysis.displayName = "MoveAnalysis";
+
+const styles = StyleSheet.create({
+  badge: {
+    position: "absolute",
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  badgeText: {
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+});

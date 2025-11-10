@@ -1,10 +1,13 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import { View, StyleSheet, Image } from "react-native";
 import Chessboard, {
   type ChessboardRef,
 } from "@/components/chess/react-native-chessboard/src";
 import type { PieceType } from "@/components/chess/react-native-chessboard/src/types";
 import { PIECES } from "@/components/chess/react-native-chessboard/src/constants";
+import { MoveAnalysis } from "../MoveAnalysis";
+import type { GameAnalysis } from "@/types/database";
+import type { Move } from "chess.js";
 
 interface ChessboardCoreProps {
   fen: string;
@@ -15,6 +18,9 @@ interface ChessboardCoreProps {
   onMove?: (info: {
     move: { from: string; to: string; promotion?: string };
   }) => boolean | void | Promise<boolean>;
+  analysisData?: GameAnalysis | null;
+  moveHistory?: Move[];
+  currentMoveIndex?: number;
 }
 
 export const ChessboardCore = React.forwardRef<
@@ -28,6 +34,9 @@ export const ChessboardCore = React.forwardRef<
     gestureEnabled = false,
     onRefReady,
     onMove,
+    analysisData,
+    moveHistory,
+    currentMoveIndex,
   },
   ref,
 ) {
@@ -102,6 +111,21 @@ export const ChessboardCore = React.forwardRef<
         }
       : undefined;
 
+  // Calculer le dernier coup depuis moveHistory
+  const lastMove = useMemo(() => {
+    if (!moveHistory || moveHistory.length === 0) return undefined;
+    if (currentMoveIndex === undefined || currentMoveIndex < 0)
+      return undefined;
+
+    const move = moveHistory[currentMoveIndex];
+    if (!move) return undefined;
+
+    return {
+      from: move.from,
+      to: move.to,
+    };
+  }, [moveHistory, currentMoveIndex]);
+
   // Gérer les coups
   // IMPORTANT: react-native-chessboard retourne TOUJOURS les coordonnées dans le système standard
   // (blancs en bas), peu importe l'orientation visuelle du plateau. Donc on ne doit PAS inverser.
@@ -146,6 +170,14 @@ export const ChessboardCore = React.forwardRef<
             }}
             durations={{ move: 60 }}
           />
+          {analysisData && (
+            <MoveAnalysis
+              analysis={analysisData}
+              boardSize={boardSize}
+              boardOrientation={boardOrientation}
+              lastMove={lastMove}
+            />
+          )}
         </View>
       )}
     </View>

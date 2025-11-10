@@ -12,6 +12,7 @@ export function VisualizationMode({
   boardOrientation,
   showCoordinates = true,
   previousFen,
+  analysisData,
 }: VisualizationModeProps) {
   const chessboardRef = useRef<ChessboardRef | null>(null);
 
@@ -47,6 +48,9 @@ export function VisualizationMode({
       boardOrientation={boardOrientation}
       showCoordinates={showCoordinates}
       gestureEnabled={false}
+      analysisData={analysisData}
+      moveHistory={moveHistory}
+      currentMoveIndex={currentMoveIndex}
       onRefReady={(ref) => {
         // S'assurer que le ref est bien mis à jour
         if (ref) {

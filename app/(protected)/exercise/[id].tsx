@@ -421,6 +421,7 @@ export default function ExerciseScreen() {
             highlightSquares={
               selectedMove ? [selectedMove.from, selectedMove.to] : []
             }
+            analysisData={analysisData as any}
             onRefReady={(ref) => {
               chessboardRef.current = ref;
             }}
