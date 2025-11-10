@@ -41,7 +41,13 @@ bun install
 ```
 
 5. Update environment variables
-   - Update the `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` variables in the `.env` file with your Supabase URL and key respectively.
+   - Update the following variables in `.env`:
+
+```
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_KEY=your_supabase_anon_key
+EXPO_PUBLIC_ANALYSIS_API_URL=http://localhost:8000
+```
 
 6. Start the Expo development server
 

@@ -1,4 +1,4 @@
-// Service d'analyse utilisant l'API Chess-API.com
+// Service d'analyse via backend FastAPI + Stockfish
 import { Chess } from "chess.js";
 import type { GameAnalysis } from "@/types/games";
 import {
@@ -10,8 +10,9 @@ import { compareMoves } from "./move-comparison";
 
 interface AnalysisResult {
   bestMove: string | null;
-  evaluation: number; // en centipawns
+  evaluation: number; // en centipawns (du point de vue des blancs)
   depth: number;
+  mateIn?: number | null;
 }
 
 interface PositionAnalysis {
@@ -25,15 +26,17 @@ interface PositionAnalysis {
   evaluationLoss: number;
 }
 
-interface ChessApiResponse {
-  eval: number; // Évaluation en pawns (négatif = noir gagne, positif = blanc gagne)
-  move: string; // Meilleur coup en LAN (Long Algebraic Notation, ex: "b7b8q")
-  san?: string; // Meilleur coup en SAN (Standard Algebraic Notation, ex: "b8=Q+")
+interface BackendAnalysisResponse {
+  best_move: string | null; // Toujours en SAN maintenant
+  best_move_uci: string | null; // UCI pour référence
+  evaluation: number;
+  evaluation_type: "cp" | "mate";
   depth: number;
-  centipawns?: string; // Évaluation en centipawns (string)
-  text?: string;
-  type?: "move" | "bestmove" | "info";
+  mate_in?: number | null;
+  nodes?: number;
+  analysis_time_ms?: number;
   error?: string;
+  detail?: string;
 }
 
 /**
@@ -50,108 +53,120 @@ const isValidFen = (fen: string): boolean => {
 };
 
 /**
- * Normalise un FEN pour l'API Chess-API.com
- * L'API peut être sensible au format exact, donc on normalise :
+ * Normalise un FEN pour l'analyse
  * - On s'assure d'avoir exactement 6 champs
  * - On nettoie les espaces
  * - On reconstruit le FEN depuis chess.js pour garantir le format
  */
-const normalizeFenForApi = (fen: string): string => {
+const normalizeFenForAnalysis = (fen: string): string => {
   try {
-    // Recharger le FEN dans chess.js pour obtenir un format standardisé
     const tempGame = new Chess();
     tempGame.load(fen);
-    // chess.js génère toujours un FEN standardisé avec 6 champs
     return tempGame.fen();
   } catch {
-    // Si le FEN est invalide, on retourne l'original (sera rejeté par isValidFen)
     return fen;
   }
 };
 
+// convertEngineMoveToSan supprimé - le backend retourne maintenant toujours SAN
+
 /**
- * Analyse une position avec l'API Chess-API.com (Stockfish en temps réel)
+ * Analyse une position via le backend FastAPI (Stockfish natif)
  */
 export const analyzePosition = async (
   fen: string,
   depth: number = 13,
 ): Promise<AnalysisResult> => {
-  const apiDepth = Math.min(depth, 20);
+  // Depth fixe à 13 comme demandé
+  const apiDepth = 13;
 
-  // Valider le FEN avant d'appeler l'API
   if (!isValidFen(fen)) {
-    console.error(
-      `[Analyzer] FEN invalide: ${fen.substring(0, 50)}... (tronqué)`,
-    );
-    return { bestMove: null, evaluation: 0, depth: 0 };
+    const error = `FEN invalide: ${fen.substring(0, 50)}...`;
+    console.error(`[Analyzer] ${error}`);
+    throw new Error(error);
   }
 
-  // Normaliser le FEN pour l'API (format standardisé)
-  const normalizedFen = normalizeFenForApi(fen);
+  const normalizedFen = normalizeFenForAnalysis(fen);
+  const analysisApiUrl = process.env.EXPO_PUBLIC_ANALYSIS_API_URL;
+
+  if (!analysisApiUrl) {
+    const error = "EXPO_PUBLIC_ANALYSIS_API_URL manquant";
+    console.error(`[Analyzer] ${error}`);
+    throw new Error(error);
+  }
+
+  const endpoint = `${analysisApiUrl.replace(/\/$/, "")}/analyze-position`;
+
+  console.log(
+    `[Analyzer] Envoi requête à ${endpoint} - FEN: ${normalizedFen.substring(0, 50)}..., depth: ${apiDepth}`,
+  );
 
   try {
-    const response = await fetch("https://chess-api.com/v1", {
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
       },
       body: JSON.stringify({
         fen: normalizedFen,
         depth: apiDepth,
-        variants: 1,
-        maxThinkingTime: 30,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(
-        `[Analyzer] Erreur HTTP ${response.status}: ${errorText || response.statusText}`,
-      );
-      return { bestMove: null, evaluation: 0, depth: 0 };
+      const error = `Erreur HTTP ${response.status}: ${errorText || response.statusText}`;
+      console.error(`[Analyzer] ${error}`);
+      throw new Error(error);
     }
 
-    const data: ChessApiResponse = await response.json();
+    const data: BackendAnalysisResponse = await response.json();
 
-    // Vérifier les erreurs de l'API
-    if (data.error) {
-      console.error(
-        `[Analyzer] Erreur API: ${data.error} (FEN original: ${fen.substring(0, 50)}..., FEN normalisé: ${normalizedFen.substring(0, 50)}...)`,
-      );
-      return { bestMove: null, evaluation: 0, depth: 0 };
+    // Gestion des erreurs applicatives
+    if (data.error || data.detail) {
+      const error = `Erreur backend: ${data.error || data.detail}`;
+      console.error(`[Analyzer] ${error} (FEN: ${fen.substring(0, 50)}...)`);
+      throw new Error(error);
     }
 
-    // L'API retourne l'évaluation en pawns directement (eval)
-    // et le meilleur coup dans "move" (LAN) ou "san" (SAN)
-    if (!data.move || data.eval === undefined) {
-      console.warn("[Analyzer] Données incomplètes:", data);
-      return { bestMove: null, evaluation: 0, depth: 0 };
+    // Le backend retourne déjà best_move en SAN (plus besoin de conversion)
+    const bestMoveSan = data.best_move;
+
+    // Convertir l'évaluation en centipawns utilisables
+    let evaluation = Math.round(data.evaluation ?? 0);
+    let mateIn = data.mate_in ?? null;
+
+    if (data.evaluation_type === "mate") {
+      if (typeof mateIn === "number" && mateIn !== 0) {
+        const sign = mateIn > 0 ? 1 : -1;
+        // Utiliser une valeur très élevée pour représenter un mate imminent
+        evaluation = sign * (100000 - Math.min(Math.abs(mateIn), 100) * 10);
+      } else {
+        // Valeur par défaut si mate sans mate_in
+        evaluation = data.evaluation >= 0 ? 100000 : -100000;
+      }
     }
 
-    // Utiliser SAN si disponible (plus lisible), sinon LAN
-    const bestMove = data.san || data.move;
-
-    // Convertir l'évaluation en centipawns
-    const evaluationInCentipawns = Math.round(data.eval * 100);
-
-    // Log pour débogage (peut être retiré en production)
-    if (process.env.NODE_ENV === "development") {
+    if (
+      typeof __DEV__ !== "undefined"
+        ? __DEV__
+        : process.env.NODE_ENV !== "production"
+    ) {
       console.log(
-        `[Analyzer] Position analysée: eval=${data.eval} pawns (${evaluationInCentipawns} cp), bestMove=${bestMove}, depth=${data.depth}`,
+        `[Analyzer] Backend: eval=${evaluation} cp (type=${data.evaluation_type}), bestMove=${bestMoveSan}, depth=${data.depth}, mateIn=${mateIn}`,
       );
     }
 
     return {
-      bestMove,
-      // L'évaluation est déjà en pawns, on la convertit en centipawns pour la cohérence interne
-      // (même si on la reconvertira en pawns plus tard pour la DB)
-      evaluation: evaluationInCentipawns,
-      depth: data.depth || apiDepth,
+      bestMove: bestMoveSan,
+      evaluation,
+      depth: data.depth ?? apiDepth,
+      mateIn,
     };
   } catch (error: any) {
     console.error("[Analyzer] Erreur analyse position:", error);
-    return { bestMove: null, evaluation: 0, depth: 0 };
+    // Arrêter l'analyse en cas d'erreur (throw au lieu de retourner un résultat vide)
+    throw error;
   }
 };
 
@@ -215,8 +230,19 @@ export const analyzeGame = async (
       }
       analysisBefore = { bestMove: null, evaluation: evalBefore, depth: 0 };
     } else {
-      analysisBefore = await analyzePosition(currentFen, depth);
-      evalBefore = analysisBefore.evaluation;
+      try {
+        analysisBefore = await analyzePosition(currentFen, depth);
+        evalBefore = analysisBefore.evaluation;
+      } catch (error: any) {
+        console.error(
+          `[Analyzer] Erreur analyse position avant coup ${i + 1}:`,
+          error,
+        );
+        // Arrêter l'analyse en cas d'erreur
+        throw new Error(
+          `Erreur lors de l'analyse du coup ${i + 1}: ${error.message || error}`,
+        );
+      }
     }
 
     // Jouer le coup
@@ -260,8 +286,19 @@ export const analyzeGame = async (
       }
       analysisAfter = { bestMove: null, evaluation: evalAfter, depth: 0 };
     } else {
-      analysisAfter = await analyzePosition(fenAfter, depth);
-      evalAfter = analysisAfter.evaluation;
+      try {
+        analysisAfter = await analyzePosition(fenAfter, depth);
+        evalAfter = analysisAfter.evaluation;
+      } catch (error: any) {
+        console.error(
+          `[Analyzer] Erreur analyse position après coup ${i + 1}:`,
+          error,
+        );
+        // Arrêter l'analyse en cas d'erreur
+        throw new Error(
+          `Erreur lors de l'analyse du coup ${i + 1}: ${error.message || error}`,
+        );
+      }
     }
 
     // Calculer l'évaluation après le meilleur coup (pour comparaison précise)
@@ -281,18 +318,31 @@ export const analyzeGame = async (
             !tempGameForBest.isStalemate() &&
             !tempGameForBest.isDraw()
           ) {
-            const analysisBestAfter = await analyzePosition(
-              fenBestAfter,
-              depth,
-            );
-            evalBestAfter = analysisBestAfter.evaluation;
+            try {
+              const analysisBestAfter = await analyzePosition(
+                fenBestAfter,
+                depth,
+              );
+              evalBestAfter = analysisBestAfter.evaluation;
+            } catch (error: any) {
+              // Si l'analyse du meilleur coup échoue, arrêter l'analyse
+              console.error(
+                `[Analyzer] Erreur analyse meilleur coup pour le coup ${i + 1}:`,
+                error,
+              );
+              throw new Error(
+                `Erreur lors de l'analyse du meilleur coup pour le coup ${i + 1}: ${error.message || error}`,
+              );
+            }
           }
         }
-      } catch {
-        // Si l'analyse du meilleur coup échoue, utiliser l'approximation
-        console.warn(
-          `[Analyzer] Impossible d'analyser le meilleur coup pour le coup ${i + 1}`,
+      } catch (error: any) {
+        // Si erreur lors de la préparation de l'analyse du meilleur coup, arrêter
+        console.error(
+          `[Analyzer] Erreur préparation analyse meilleur coup pour le coup ${i + 1}:`,
+          error,
         );
+        throw error;
       }
     }
 

@@ -43,5 +43,9 @@ yarn-error.*
 # iOS
 ios/
 
-# android
+# android‡
 android/
+
+# backend
+backend/.venv/
+**/__pycache__/
