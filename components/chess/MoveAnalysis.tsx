@@ -1,8 +1,7 @@
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Image, StyleSheet } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import type { GameAnalysis } from "@/types/database";
-import { colors } from "@/theme";
 
 interface MoveAnalysisProps {
   analysis: GameAnalysis | null;
@@ -43,45 +42,32 @@ const parseUciMove = (uci: string): { from: string; to: string } | null => {
   };
 };
 
-// Couleurs pour les badges selon move_quality
-const getQualityColor = (
-  quality: string | null | undefined,
-): { bg: string; text: string } => {
+// Helper pour obtenir l'image du badge selon move_quality
+const getQualityBadgeImage = (quality: string | null | undefined): any => {
   switch (quality) {
     case "best":
-      return { bg: colors.success.main, text: "#fff" };
+      return require("@/assets/chess-badges/best.png");
     case "excellent":
-      return { bg: colors.success.light, text: "#fff" };
+      return require("@/assets/chess-badges/very_good.png");
     case "good":
-      return { bg: colors.info.main, text: "#fff" };
+      return require("@/assets/chess-badges/good.png");
     case "inaccuracy":
-      return { bg: colors.warning.main, text: "#fff" };
+      return require("@/assets/chess-badges/imprecise.png");
     case "mistake":
-      return { bg: colors.warning.dark, text: "#fff" };
+      return require("@/assets/chess-badges/mistake.png");
     case "blunder":
-      return { bg: colors.error.main, text: "#fff" };
+      return require("@/assets/chess-badges/blunder.png");
+    // Cas supplémentaires au cas où
+    case "brilliant":
+      return require("@/assets/chess-badges/brilliant.png");
+    case "ok":
+      return require("@/assets/chess-badges/ok.png");
+    case "theory":
+      return require("@/assets/chess-badges/theory.png");
+    case "miss":
+      return require("@/assets/chess-badges/miss.png");
     default:
-      return { bg: "#666", text: "#fff" };
-  }
-};
-
-// Labels pour les badges
-const getQualityLabel = (quality: string | null | undefined): string => {
-  switch (quality) {
-    case "best":
-      return "✓";
-    case "excellent":
-      return "★";
-    case "good":
-      return "○";
-    case "inaccuracy":
-      return "?";
-    case "mistake":
-      return "!";
-    case "blunder":
-      return "!!";
-    default:
-      return "";
+      return null;
   }
 };
 
@@ -158,8 +144,8 @@ export const MoveAnalysis: React.FC<MoveAnalysisProps> = React.memo(
       const col = lastMove.to[0].charCodeAt(0) - "a".charCodeAt(0);
       const row = parseInt(lastMove.to[1], 10) - 1;
       const squareSize = boardSize / 8;
-      const badgeSize = 24; // Taille du badge
-      const padding = 8; // Padding depuis les bords
+      const badgeSize = 28; // Taille du badge
+      const padding = 12; // Padding depuis les bords
 
       // Position de la case (coin supérieur gauche dans le système standard)
       const squareX = col * squareSize;
@@ -206,8 +192,7 @@ export const MoveAnalysis: React.FC<MoveAnalysisProps> = React.memo(
       return { from: fromCoords, to: toCoords };
     }, [analysis?.best_move, lastMove, boardSize]);
 
-    const qualityColor = getQualityColor(analysis?.move_quality);
-    const qualityLabel = getQualityLabel(analysis?.move_quality);
+    const qualityBadgeImage = getQualityBadgeImage(analysis?.move_quality);
 
     if (!analysis) return null;
 
@@ -217,25 +202,22 @@ export const MoveAnalysis: React.FC<MoveAnalysisProps> = React.memo(
     return (
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         {/* Badge de classification */}
-        {badgePosition && analysis.move_quality && (
-          <View
+        {badgePosition && analysis.move_quality && qualityBadgeImage && (
+          <Image
+            source={qualityBadgeImage}
             style={[
               styles.badge,
               {
                 left: badgePosition.x,
                 top: badgePosition.y,
-                backgroundColor: qualityColor.bg,
                 // Rotation inverse pour que le symbole reste lisible quand le board est inversé
                 transform: [
                   { rotate: boardOrientation === "black" ? "180deg" : "0deg" },
                 ],
               },
             ]}
-          >
-            <Text style={[styles.badgeText, { color: qualityColor.text }]}>
-              {qualityLabel}
-            </Text>
-          </View>
+            resizeMode="contain"
+          />
         )}
 
         {/* Flèche du meilleur coup */}
@@ -257,20 +239,10 @@ MoveAnalysis.displayName = "MoveAnalysis";
 const styles = StyleSheet.create({
   badge: {
     position: "absolute",
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
+    width: 28,
+    height: 28,
     zIndex: 1000,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
     shadowRadius: 3,
     elevation: 5,
-  },
-  badgeText: {
-    fontSize: 14,
-    fontWeight: "bold",
   },
 });
