@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { View, Image, StyleSheet } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import type { GameAnalysis } from "@/types/database";
+import { getQualityBadgeImage } from "@/utils/chess-badge";
 
 interface MoveAnalysisProps {
   analysis: GameAnalysis | null;
@@ -40,35 +41,6 @@ const parseUciMove = (uci: string): { from: string; to: string } | null => {
     from: uci.substring(0, 2),
     to: uci.substring(2, 4),
   };
-};
-
-// Helper pour obtenir l'image du badge selon move_quality
-const getQualityBadgeImage = (quality: string | null | undefined): any => {
-  switch (quality) {
-    case "best":
-      return require("@/assets/chess-badges/best.png");
-    case "excellent":
-      return require("@/assets/chess-badges/very_good.png");
-    case "good":
-      return require("@/assets/chess-badges/good.png");
-    case "inaccuracy":
-      return require("@/assets/chess-badges/imprecise.png");
-    case "mistake":
-      return require("@/assets/chess-badges/mistake.png");
-    case "blunder":
-      return require("@/assets/chess-badges/blunder.png");
-    // Cas supplémentaires au cas où
-    case "brilliant":
-      return require("@/assets/chess-badges/brilliant.png");
-    case "ok":
-      return require("@/assets/chess-badges/ok.png");
-    case "theory":
-      return require("@/assets/chess-badges/theory.png");
-    case "miss":
-      return require("@/assets/chess-badges/miss.png");
-    default:
-      return null;
-  }
 };
 
 // Composant pour la flèche SVG

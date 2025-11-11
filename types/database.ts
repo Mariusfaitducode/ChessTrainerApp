@@ -44,17 +44,21 @@ export interface Game extends GameRow {
 
 // GameAnalysis étend GameAnalysisRow avec les nouveaux champs
 // On retire mistake_level car on utilise uniquement move_quality maintenant
-export interface GameAnalysis extends Omit<GameAnalysisRow, "mistake_level"> {
+export type GameAnalysis = Omit<GameAnalysisRow, "mistake_level"> & {
   move_quality?: MoveQuality | null;
   game_phase?: GamePhase | null;
   evaluation_loss?: number | null; // Perte d'évaluation en centipawns
-}
+};
 
 export interface Exercise extends Omit<ExerciseRow, "hints"> {
   // Champs enrichis côté client
   opponent?: string | null;
   evaluation_loss?: number; // Perte d'évaluation en centipawns
   hints?: string[] | null; // Conversion depuis Json (ExerciseRow.hints est Json | null)
+  move_quality?: MoveQuality | null; // Qualité du coup depuis game_analyses
+  played_move?: string | null; // Coup joué depuis game_analyses
+  fen_before?: string | null; // FEN avant le coup depuis game_analyses (pour conversion SAN)
+  move_number?: number | null; // Numéro du coup depuis game_analyses
 }
 
 export interface UserPlatform extends UserPlatformRow {

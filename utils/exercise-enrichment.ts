@@ -105,5 +105,14 @@ export function enrichExercise(
     previousAnalysis,
   );
 
+  // Ajouter les données de l'analyse
+  if (analysis) {
+    enriched.move_quality = analysis.move_quality || null;
+    enriched.played_move = analysis.played_move || null;
+    // Le FEN dans game_analyses est le FEN avant le coup
+    enriched.fen_before = analysis.fen || null;
+    enriched.move_number = analysis.move_number || null;
+  }
+
   return enriched;
 }

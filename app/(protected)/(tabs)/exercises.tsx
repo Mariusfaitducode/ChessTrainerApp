@@ -24,17 +24,16 @@ interface ExerciseSection {
 export default function ExercisesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
+  // Ne garder que "pending" et "completed"
+  const [filter, setFilter] = useState<"pending" | "completed">("pending");
   const { exercises, isLoading, refetch } = useExercises(
-    filter === "all" ? undefined : filter === "completed",
+    filter === "completed",
   );
 
   const filteredExercises =
-    filter === "all"
-      ? exercises
-      : filter === "pending"
-        ? exercises.filter((e) => !e.completed)
-        : exercises.filter((e) => e.completed);
+    filter === "pending"
+      ? exercises.filter((e) => !e.completed)
+      : exercises.filter((e) => e.completed);
 
   // Grouper les exercices par adversaire
   const groupedExercises = useMemo(() => {
@@ -54,7 +53,13 @@ export default function ExercisesScreen() {
       .map(([opponent, exercisesList]) => ({
         title: opponent,
         data: exercisesList.sort((a, b) => {
-          // Trier par date de création (plus récent en premier)
+          // Trier d'abord par move_number (croissant)
+          const moveA = a.move_number ?? 0;
+          const moveB = b.move_number ?? 0;
+          if (moveA !== moveB) {
+            return moveA - moveB;
+          }
+          // Si même move_number, trier par date de création (plus récent en premier)
           const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
           const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
           return dateB - dateA;
@@ -93,19 +98,6 @@ export default function ExercisesScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Mes exercices</Text>
         <View style={styles.filters}>
-          <TouchableOpacity
-            style={[styles.filter, filter === "all" && styles.filterActive]}
-            onPress={() => setFilter("all")}
-          >
-            <Text
-              style={[
-                styles.filterText,
-                filter === "all" && styles.filterTextActive,
-              ]}
-            >
-              Tous
-            </Text>
-          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.filter, filter === "pending" && styles.filterActive]}
             onPress={() => setFilter("pending")}
@@ -155,9 +147,7 @@ export default function ExercisesScreen() {
             <Text style={styles.emptyText}>
               {filter === "pending"
                 ? "Aucun exercice en attente."
-                : filter === "completed"
-                  ? "Aucun exercice terminé."
-                  : "Aucun exercice disponible."}
+                : "Aucun exercice terminé."}
             </Text>
             <Text style={styles.emptySubtext}>
               Analyse tes parties pour générer des exercices personnalisés.
