@@ -145,7 +145,7 @@ const Arrow: React.FC<{
 
 export const MoveAnalysis: React.FC<MoveAnalysisProps> = React.memo(
   ({ analysis, boardSize, boardOrientation, lastMove }) => {
-    // Calculer la position du badge (coin en haut à droite de la case)
+    // Calculer la position du badge (toujours visuellement en haut à droite)
     const badgePosition = useMemo(() => {
       if (!lastMove?.to) return null;
       const col = lastMove.to[0].charCodeAt(0) - "a".charCodeAt(0);
@@ -154,17 +154,28 @@ export const MoveAnalysis: React.FC<MoveAnalysisProps> = React.memo(
       const badgeSize = 24; // Taille du badge
       const padding = 8; // Padding depuis les bords
 
-      // Position de la case (coin supérieur gauche)
+      // Position de la case (coin supérieur gauche dans le système standard)
       const squareX = col * squareSize;
       const squareY = (7 - row) * squareSize;
 
-      // Badge dans le coin en haut à droite de la case
-      // left = coin droit de la case - taille du badge - padding
-      return {
-        x: squareX - padding,
-        y: squareY + badgeSize + padding,
-      };
-    }, [lastMove, boardSize]);
+      // Badge toujours visuellement en haut à droite
+      // Si boardOrientation === "white": coin supérieur droit (x + squareSize - badgeSize - padding, y + padding)
+      // Si boardOrientation === "black": après rotation 180deg, pour avoir visuellement en haut à droite,
+      // il faut calculer comme coin inférieur gauche dans le système standard
+      if (boardOrientation === "white") {
+        return {
+          x: squareX + squareSize - badgeSize + padding,
+          y: squareY - padding,
+        };
+      } else {
+        // Pour boardOrientation === "black", après rotation 180deg,
+        // le coin inférieur gauche devient visuellement coin supérieur droit
+        return {
+          x: squareX - padding,
+          y: squareY + squareSize - badgeSize + padding,
+        };
+      }
+    }, [lastMove, boardSize, boardOrientation]);
 
     // Calculer la flèche du meilleur coup
     const bestMoveArrow = useMemo(() => {
