@@ -41,5 +41,20 @@ class AnalyzeGameResponse(BaseModel):
     analyses: list[GameAnalysisResponse]
 
 
+class ClassifyMoveRequest(BaseModel):
+    fen: str
+    move_uci: str  # Coup joué en UCI
+    depth: int = Field(default=13, ge=1, le=25)
+
+
+class ClassifyMoveResponse(BaseModel):
+    """Classification d'un coup"""
+    move_quality: str  # "best", "excellent", "good", "inaccuracy", "mistake", "blunder"
+    evaluation_loss: float  # En centipawns
+    best_move: Optional[str]  # UCI
+    evaluation_before: float  # En pawns (du point de vue des blancs)
+    evaluation_after: float  # En pawns (du point de vue des blancs)
+
+
 class HealthResponse(BaseModel):
     status: str

@@ -35,10 +35,6 @@ export const analyzeGame = async (
 
   const endpoint = `${analysisApiUrl.replace(/\/$/, "")}/analyze-game`;
 
-  console.log(
-    `[Analyzer] Envoi requête analyse partie à ${endpoint} - depth: ${depth}`,
-  );
-
   try {
     const response = await fetch(endpoint, {
       method: "POST",
@@ -109,4 +105,63 @@ export const prepareAnalysesForInsert = (
     evaluation_loss: analysis.evaluation_loss, // En centipawns
     analysis_data: null,
   }));
+};
+
+interface ClassifyMoveResponse {
+  move_quality:
+    | "best"
+    | "excellent"
+    | "good"
+    | "inaccuracy"
+    | "mistake"
+    | "blunder";
+  evaluation_loss: number; // En centipawns
+  best_move: string | null; // UCI
+  evaluation_before: number; // En pawns
+  evaluation_after: number; // En pawns
+}
+
+/**
+ * Classifie un coup joué dans une position
+ */
+export const classifyMove = async (
+  fen: string,
+  moveUci: string,
+  depth: number = 13,
+): Promise<ClassifyMoveResponse> => {
+  const analysisApiUrl = process.env.EXPO_PUBLIC_ANALYSIS_API_URL;
+  if (!analysisApiUrl) {
+    throw new Error("EXPO_PUBLIC_ANALYSIS_API_URL manquant");
+  }
+
+  const endpoint = `${analysisApiUrl.replace(/\/$/, "")}/classify-move`;
+
+  try {
+    const requestBody = {
+      fen,
+      move_uci: moveUci,
+      depth,
+    };
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      const error = `Erreur HTTP ${response.status}: ${errorText || response.statusText}`;
+      console.error(`[Analyzer] ${error}`);
+      throw new Error(error);
+    }
+
+    const data: ClassifyMoveResponse = await response.json();
+    return data;
+  } catch (error: any) {
+    console.error("[Analyzer] Erreur classification coup:", error);
+    throw error;
+  }
 };

@@ -10,9 +10,14 @@ from app.models import (
     AnalyzeResponse,
     AnalyzeGameRequest,
     AnalyzeGameResponse,
+    ClassifyMoveRequest,
+    ClassifyMoveResponse,
 )
 from app.services.analysis import analyze_position, handle_terminal_position
-from app.services.game_analysis import analyze_game
+from app.services.game_analysis import (
+    analyze_game,
+    classify_move_in_position,
+)
 from app.services.stockfish_manager import StockfishManager
 
 logger = logging.getLogger(__name__)
@@ -94,6 +99,62 @@ async def analyze_game_endpoint(
     except ValueError as exc:
         logger.error(f"[Analyze] Erreur validation: {exc}")
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        logger.error(f"[Analyze] Erreur runtime: {exc}")
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.error(f"[Analyze] Erreur inattendue: {exc}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {exc}") from exc
+
+
+@router.post("/classify-move", response_model=ClassifyMoveResponse)
+async def classify_move_endpoint(
+    payload: ClassifyMoveRequest,
+    engine_manager: Annotated[StockfishManager, Depends(get_engine_manager)],
+) -> ClassifyMoveResponse:
+    """
+    Classifie un coup joué dans une position
+    
+    Analyse la position avant et après le coup, puis classe le coup
+    """
+    logger.info(
+        f"[Analyze] Requête classification coup - FEN: {payload.fen[:50]}..., move: {payload.move_uci}"
+    )
+
+    try:
+        board = chess.Board(payload.fen)
+        logger.info("[Analyze] FEN valide, board créé")
+    except ValueError as exc:
+        logger.error(f"[Analyze] FEN invalide: {exc}")
+        raise HTTPException(status_code=400, detail=f"Invalid FEN: {exc}") from exc
+
+    try:
+        async with engine_manager.acquire() as engine:
+            try:
+                move_obj = chess.Move.from_uci(payload.move_uci)
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid move UCI: {exc}",
+                ) from exc
+
+            if move_obj not in board.legal_moves:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid move: {payload.move_uci}",
+                )
+
+            result = await classify_move_in_position(
+                board, payload.move_uci, engine, payload.depth
+            )
+
+            return ClassifyMoveResponse(
+                move_quality=result.move_quality,
+                evaluation_loss=result.evaluation_loss,
+                best_move=result.best_move,
+                evaluation_before=result.evaluation_before / 100.0,
+                evaluation_after=result.evaluation_after / 100.0,
+            )
     except RuntimeError as exc:
         logger.error(f"[Analyze] Erreur runtime: {exc}")
         raise HTTPException(status_code=500, detail=str(exc)) from exc

@@ -12,6 +12,7 @@ import { useLocalSearchParams, useRouter, useNavigation } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Chess } from "chess.js";
 import { uciToSan, convertUciToSanInText } from "@/utils/chess-move-format";
+import { classifyMove } from "@/services/chess/analyzer";
 import {
   CheckCircle2,
   XCircle,
@@ -73,6 +74,10 @@ export default function ExerciseScreen() {
     to: string;
   } | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [moveQuality, setMoveQuality] = useState<
+    "best" | "excellent" | "good" | "inaccuracy" | "mistake" | "blunder" | null
+  >(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [showSolution, setShowSolution] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -229,6 +234,8 @@ export default function ExerciseScreen() {
           chessboardRef.current?.resetBoard(exercise.fen);
           setIsCorrect(null);
           setSelectedMove(null);
+          setMoveQuality(null);
+          setIsAnalyzing(false);
           setShowSolution(false);
           setShowHint(false);
         } catch (error) {
@@ -244,12 +251,6 @@ export default function ExerciseScreen() {
     to: string;
     promotion?: string;
   }): Promise<boolean> => {
-    if (__DEV__) {
-      console.log(
-        `[Exercise] handleMove appelé: from=${move.from}, to=${move.to}, promotion=${move.promotion}`,
-      );
-    }
-
     if (
       !chess ||
       !exercise ||
@@ -257,96 +258,123 @@ export default function ExerciseScreen() {
       isCompleting ||
       showSolution
     ) {
-      if (__DEV__) {
-        console.log(
-          `[Exercise] handleMove rejeté: chess=${!!chess}, exercise=${!!exercise}, completed=${exercise?.completed}, isCompleting=${isCompleting}, showSolution=${showSolution}`,
-        );
-      }
       return false;
     }
 
     setSelectedMove({ from: move.from, to: move.to });
+    setIsAnalyzing(true);
+    setMoveQuality(null);
 
-    const correct = checkMove(move.from, move.to, move.promotion);
-    setIsCorrect(correct);
+    // Construire le coup UCI
+    const moveUci = (
+      move.from +
+      move.to +
+      (move.promotion || "")
+    ).toLowerCase();
 
-    if (__DEV__) {
-      console.log(`[Exercise] Coup ${correct ? "correct" : "incorrect"}`);
-    }
+    try {
+      // Classifier le coup via le backend
+      const classification = await classifyMove(exercise.fen, moveUci, 13);
 
-    if (correct) {
-      // Coup correct - marquer comme complété
-      setIsCompleting(true);
-      try {
-        // Calculer le score (100 points de base, moins les tentatives)
-        const attempts = exercise.attempts ?? 0;
-        const score = Math.max(0, 100 - attempts * 10);
+      setMoveQuality(classification.move_quality);
 
-        await completeExercise({
-          exerciseId: exercise.id,
-          score,
-          currentAttempts: attempts,
-        });
+      // Vérifier si c'est le meilleur coup
+      const correct =
+        classification.move_quality === "best" ||
+        (exercise.correct_move !== null &&
+          exercise.correct_move !== undefined &&
+          moveUci === exercise.correct_move.trim().toLowerCase());
 
-        // Réinitialiser le feedback
-        setIsCorrect(null);
-        setSelectedMove(null);
+      setIsCorrect(correct);
 
-        // Afficher un message de succès et passer au suivant
-        Alert.alert(
-          "Bravo !",
-          "Vous avez trouvé le meilleur coup !",
-          [
-            {
-              text: nextExercise ? "Exercice suivant" : "Terminé",
-              onPress: () => {
-                if (nextExercise) {
-                  // Naviguer vers le prochain exercice
-                  router.replace(
-                    `/(protected)/exercise/${nextExercise.id}` as any,
-                  );
-                } else {
-                  // Retourner à la liste des exercices
-                  router.replace("/(protected)/(tabs)/exercises" as any);
-                }
+      if (correct) {
+        // Coup correct - marquer comme complété
+        setIsCompleting(true);
+        try {
+          // Calculer le score (100 points de base, moins les tentatives)
+          const attempts = exercise.attempts ?? 0;
+          const score = Math.max(0, 100 - attempts * 10);
+
+          await completeExercise({
+            exerciseId: exercise.id,
+            score,
+            currentAttempts: attempts,
+          });
+
+          // Réinitialiser le feedback
+          setIsCorrect(null);
+          setSelectedMove(null);
+          setMoveQuality(null);
+
+          // Afficher un message de succès et passer au suivant
+          Alert.alert(
+            "Bravo !",
+            "Vous avez trouvé le meilleur coup !",
+            [
+              {
+                text: nextExercise ? "Exercice suivant" : "Terminé",
+                onPress: () => {
+                  if (nextExercise) {
+                    // Naviguer vers le prochain exercice
+                    router.replace(
+                      `/(protected)/exercise/${nextExercise.id}` as any,
+                    );
+                  } else {
+                    // Retourner à la liste des exercices
+                    router.replace("/(protected)/(tabs)/exercises" as any);
+                  }
+                },
               },
-            },
-          ],
-          { cancelable: false },
-        );
-      } catch (error) {
-        console.error(
-          "[Exercise] Erreur lors du marquage comme complété:",
-          error,
-        );
-        Alert.alert(
-          "Erreur",
-          "Impossible de marquer l'exercice comme complété.",
-        );
-        setIsCompleting(false);
-      }
-    } else {
-      // Coup incorrect - réinitialiser le plateau
-      setIsCorrect(false);
-
-      // Réinitialiser le plateau après un court délai
-      setTimeout(() => {
-        if (chessboardRef.current && exercise.fen) {
-          try {
-            chessboardRef.current.resetBoard(exercise.fen);
-            setIsCorrect(null);
-            setSelectedMove(null);
-          } catch (error) {
-            console.error("[Exercise] Erreur réinitialisation:", error);
-          }
+            ],
+            { cancelable: false },
+          );
+        } catch (error) {
+          console.error(
+            "[Exercise] Erreur lors du marquage comme complété:",
+            error,
+          );
+          Alert.alert(
+            "Erreur",
+            "Impossible de marquer l'exercice comme complété.",
+          );
+          setIsCompleting(false);
         }
-      }, 1500); // Délai pour voir le feedback
+      } else {
+        // Coup incorrect - réinitialiser le plateau après un délai
+        setTimeout(() => {
+          if (chessboardRef.current && exercise.fen) {
+            try {
+              chessboardRef.current.resetBoard(exercise.fen);
+              setIsCorrect(null);
+              setSelectedMove(null);
+              setMoveQuality(null);
+            } catch (error) {
+              console.error("[Exercise] Erreur réinitialisation:", error);
+            }
+          }
+        }, 2000); // Délai pour voir le feedback
+      }
+    } catch (error) {
+      console.error("[Exercise] Erreur classification coup:", error);
+      // Fallback : vérification simple
+      const correct = checkMove(move.from, move.to, move.promotion);
+      setIsCorrect(correct);
 
-      Alert.alert(
-        "Coup incorrect",
-        "Ce n'est pas le meilleur coup. Essayez encore !",
-        [{ text: "OK" }],
-      );
+      if (!correct) {
+        setTimeout(() => {
+          if (chessboardRef.current && exercise.fen) {
+            try {
+              chessboardRef.current.resetBoard(exercise.fen);
+              setIsCorrect(null);
+              setSelectedMove(null);
+            } catch (err) {
+              console.error("[Exercise] Erreur réinitialisation:", err);
+            }
+          }
+        }, 1500);
+      }
+    } finally {
+      setIsAnalyzing(false);
     }
 
     // Ne pas laisser le coup se jouer automatiquement
@@ -516,28 +544,69 @@ export default function ExerciseScreen() {
       )}
 
       {/* Feedback visuel */}
-      {isCorrect !== null && (
+      {(isCorrect !== null || moveQuality || isAnalyzing) && (
         <View
           style={[
             styles.feedbackContainer,
-            isCorrect ? styles.feedbackCorrect : styles.feedbackIncorrect,
+            isCorrect
+              ? styles.feedbackCorrect
+              : moveQuality === "excellent" || moveQuality === "good"
+                ? styles.feedbackGood
+                : isAnalyzing
+                  ? styles.feedbackAnalyzing
+                  : styles.feedbackIncorrect,
           ]}
         >
-          {isCorrect ? (
-            <CheckCircle2 size={20} color={colors.success.main} />
+          {isAnalyzing ? (
+            <>
+              <ActivityIndicator size="small" color={colors.orange[500]} />
+              <Text style={styles.feedbackText}>Analyse en cours...</Text>
+            </>
+          ) : isCorrect ? (
+            <>
+              <CheckCircle2 size={20} color={colors.success.main} />
+              <Text style={[styles.feedbackText, styles.feedbackTextCorrect]}>
+                Coup correct !
+              </Text>
+            </>
+          ) : moveQuality ? (
+            <>
+              {moveQuality === "excellent" || moveQuality === "good" ? (
+                <CheckCircle2 size={20} color={colors.success.main} />
+              ) : (
+                <XCircle size={20} color={colors.error.main} />
+              )}
+              <Text
+                style={[
+                  styles.feedbackText,
+                  moveQuality === "excellent" || moveQuality === "good"
+                    ? styles.feedbackTextGood
+                    : styles.feedbackTextIncorrect,
+                ]}
+              >
+                {moveQuality === "best"
+                  ? "Meilleur coup !"
+                  : moveQuality === "excellent"
+                    ? "Excellent coup !"
+                    : moveQuality === "good"
+                      ? "Bon coup"
+                      : moveQuality === "inaccuracy"
+                        ? "Imprécision"
+                        : moveQuality === "mistake"
+                          ? "Erreur"
+                          : moveQuality === "blunder"
+                            ? "Erreur grave"
+                            : "Coup incorrect"}
+              </Text>
+            </>
           ) : (
-            <XCircle size={20} color={colors.error.main} />
+            <>
+              <XCircle size={20} color={colors.error.main} />
+              <Text style={[styles.feedbackText, styles.feedbackTextIncorrect]}>
+                Coup incorrect
+              </Text>
+            </>
           )}
-          <Text
-            style={[
-              styles.feedbackText,
-              isCorrect
-                ? styles.feedbackTextCorrect
-                : styles.feedbackTextIncorrect,
-            ]}
-          >
-            {isCorrect ? "Coup correct !" : "Coup incorrect"}
-          </Text>
         </View>
       )}
 
@@ -749,6 +818,12 @@ const styles = StyleSheet.create({
   feedbackCorrect: {
     backgroundColor: colors.success.light,
   },
+  feedbackGood: {
+    backgroundColor: colors.success.light,
+  },
+  feedbackAnalyzing: {
+    backgroundColor: colors.orange[50],
+  },
   feedbackIncorrect: {
     backgroundColor: colors.error.light,
   },
@@ -757,6 +832,9 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.semibold,
   },
   feedbackTextCorrect: {
+    color: colors.success.dark,
+  },
+  feedbackTextGood: {
     color: colors.success.dark,
   },
   feedbackTextIncorrect: {
