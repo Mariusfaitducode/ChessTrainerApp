@@ -99,12 +99,6 @@ export function enrichExercise(
   // Déterminer l'adversaire
   enriched.opponent = determineOpponent(game, userPlatforms);
 
-  // Calculer la perte d'évaluation
-  enriched.evaluation_loss = calculateEvaluationLoss(
-    analysis,
-    previousAnalysis,
-  );
-
   // Ajouter les données de l'analyse
   if (analysis) {
     enriched.move_quality = analysis.move_quality || null;
@@ -112,6 +106,21 @@ export function enrichExercise(
     // Le FEN dans game_analyses est le FEN avant le coup
     enriched.fen_before = analysis.fen || null;
     enriched.move_number = analysis.move_number || null;
+    // Utiliser evaluation_loss directement depuis la DB (déjà calculé par le backend)
+    // Si non disponible, essayer de le calculer avec previousAnalysis comme fallback
+    if (
+      analysis.evaluation_loss !== null &&
+      analysis.evaluation_loss !== undefined
+    ) {
+      // Convertir de centipawns (stocké en DB) en centipawns (même unité)
+      enriched.evaluation_loss = Math.round(analysis.evaluation_loss);
+    } else {
+      // Fallback : calculer si non disponible dans la DB
+      enriched.evaluation_loss = calculateEvaluationLoss(
+        analysis,
+        previousAnalysis,
+      );
+    }
   }
 
   return enriched;
