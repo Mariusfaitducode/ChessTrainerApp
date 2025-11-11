@@ -9,6 +9,7 @@ interface MoveAnalysisProps {
   boardSize: number;
   boardOrientation: "white" | "black";
   lastMove?: { from: string; to: string };
+  showBestMoveArrow?: boolean;
 }
 
 // Helper pour convertir un square (ex: "e2") en coordonnées pixel
@@ -144,7 +145,13 @@ const Arrow: React.FC<{
 };
 
 export const MoveAnalysis: React.FC<MoveAnalysisProps> = React.memo(
-  ({ analysis, boardSize, boardOrientation, lastMove }) => {
+  ({
+    analysis,
+    boardSize,
+    boardOrientation,
+    lastMove,
+    showBestMoveArrow = true,
+  }) => {
     // Calculer la position du badge (toujours visuellement en haut à droite)
     const badgePosition = useMemo(() => {
       if (!lastMove?.to) return null;
@@ -232,7 +239,7 @@ export const MoveAnalysis: React.FC<MoveAnalysisProps> = React.memo(
         )}
 
         {/* Flèche du meilleur coup */}
-        {bestMoveArrow && (
+        {showBestMoveArrow && bestMoveArrow && (
           <Arrow
             from={bestMoveArrow.from}
             to={bestMoveArrow.to}

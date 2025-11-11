@@ -21,6 +21,7 @@ interface ChessboardCoreProps {
   analysisData?: GameAnalysis | null;
   moveHistory?: Move[];
   currentMoveIndex?: number;
+  showBestMoveArrow?: boolean;
 }
 
 export const ChessboardCore = React.forwardRef<
@@ -37,6 +38,7 @@ export const ChessboardCore = React.forwardRef<
     analysisData,
     moveHistory,
     currentMoveIndex,
+    showBestMoveArrow = true,
   },
   ref,
 ) {
@@ -176,6 +178,7 @@ export const ChessboardCore = React.forwardRef<
               boardSize={boardSize}
               boardOrientation={boardOrientation}
               lastMove={lastMove}
+              showBestMoveArrow={showBestMoveArrow}
             />
           )}
         </View>

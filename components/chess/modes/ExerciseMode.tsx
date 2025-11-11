@@ -13,6 +13,7 @@ export function ExerciseMode({
   showCoordinates = true,
   onRefReady,
   analysisData,
+  showBestMoveArrow = false,
 }: ExerciseModeProps) {
   const chessboardRef = useRef<ChessboardRef | null>(null);
 
@@ -38,6 +39,7 @@ export function ExerciseMode({
       gestureEnabled={gestureEnabled}
       onMove={handleMove}
       analysisData={analysisData}
+      showBestMoveArrow={showBestMoveArrow}
       onRefReady={(ref) => {
         // S'assurer que le ref est bien mis à jour
         if (ref) {

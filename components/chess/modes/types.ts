@@ -12,6 +12,7 @@ export interface CommonChessboardProps {
   boardOrientation: "white" | "black";
   showCoordinates?: boolean;
   analysisData?: GameAnalysis | null;
+  showBestMoveArrow?: boolean;
 }
 
 export interface VisualizationModeProps extends CommonChessboardProps {

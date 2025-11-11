@@ -422,6 +422,7 @@ export default function ExerciseScreen() {
               selectedMove ? [selectedMove.from, selectedMove.to] : []
             }
             analysisData={analysisData as any}
+            showBestMoveArrow={showSolution}
             onRefReady={(ref) => {
               chessboardRef.current = ref;
             }}
