@@ -6,7 +6,6 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter, useNavigation } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,9 +16,9 @@ import {
   CheckCircle2,
   XCircle,
   Lightbulb,
-  ChevronLeft,
-  ChevronRight,
   Eye,
+  RotateCcw,
+  ArrowRight,
 } from "lucide-react-native";
 
 import { useExercise } from "@/hooks/useExercise";
@@ -29,6 +28,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Chessboard } from "@/components/chess/Chessboard";
 import { AnalysisBar } from "@/components/chess/AnalysisBar";
 import type { ChessboardRef } from "@/components/chess/react-native-chessboard/src";
+import type { GameAnalysis } from "@/types/database";
 import { colors, spacing, typography, shadows, borders } from "@/theme";
 
 export default function ExerciseScreen() {
@@ -78,6 +78,9 @@ export default function ExerciseScreen() {
     "best" | "excellent" | "good" | "inaccuracy" | "mistake" | "blunder" | null
   >(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [userMoveAnalysis, setUserMoveAnalysis] = useState<GameAnalysis | null>(
+    null,
+  );
   const [showHint, setShowHint] = useState(false);
   const [showSolution, setShowSolution] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -100,30 +103,21 @@ export default function ExerciseScreen() {
     return chess.turn() === "w" ? "white" : "black";
   }, [chess]);
 
-  // Trouver les exercices précédent et suivant
-  const { previousExercise, nextExercise, currentIndex, totalExercises } =
-    useMemo(() => {
-      if (!exercise) {
-        return {
-          previousExercise: null,
-          nextExercise: null,
-          currentIndex: -1,
-          totalExercises: 0,
-        };
-      }
-      const pendingExercises = exercises.filter((e) => !e.completed);
-      const index = pendingExercises.findIndex((e) => e.id === exercise.id);
+  // Trouver l'exercice suivant
+  const { nextExercise } = useMemo(() => {
+    if (!exercise) {
+      return { nextExercise: null };
+    }
+    const pendingExercises = exercises.filter((e) => !e.completed);
+    const index = pendingExercises.findIndex((e) => e.id === exercise.id);
 
-      return {
-        previousExercise: index > 0 ? pendingExercises[index - 1] : null,
-        nextExercise:
-          index >= 0 && index < pendingExercises.length - 1
-            ? pendingExercises[index + 1]
-            : null,
-        currentIndex: index,
-        totalExercises: pendingExercises.length,
-      };
-    }, [exercise, exercises]);
+    return {
+      nextExercise:
+        index >= 0 && index < pendingExercises.length - 1
+          ? pendingExercises[index + 1]
+          : null,
+    };
+  }, [exercise, exercises]);
 
   // Vérifier si un coup est correct
   // correct_move est maintenant en UCI (format: "e2e4", "g1f3", "e7e8q")
@@ -149,13 +143,7 @@ export default function ExerciseScreen() {
     }
   };
 
-  // Navigation - utiliser replace pour éviter le rechargement complet
-  const goToPrevious = useCallback(() => {
-    if (previousExercise) {
-      router.replace(`/(protected)/exercise/${previousExercise.id}` as any);
-    }
-  }, [previousExercise, router]);
-
+  // Navigation vers le suivant
   const goToNext = useCallback(() => {
     if (nextExercise) {
       router.replace(`/(protected)/exercise/${nextExercise.id}` as any);
@@ -163,6 +151,54 @@ export default function ExerciseScreen() {
       router.replace("/(protected)/(tabs)/exercises" as any);
     }
   }, [nextExercise, router]);
+
+  // Réessayer - réinitialiser le plateau
+  const handleRetry = useCallback(() => {
+    if (chessboardRef.current && exercise?.fen) {
+      try {
+        chessboardRef.current.resetBoard(exercise.fen);
+        setIsCorrect(null);
+        setSelectedMove(null);
+        setMoveQuality(null);
+        setUserMoveAnalysis(null);
+      } catch (error) {
+        console.error("[Exercise] Erreur réinitialisation:", error);
+      }
+    }
+  }, [exercise?.fen]);
+
+  // Passer au suivant - marquer comme complété et naviguer
+  const handleNext = useCallback(async () => {
+    if (!exercise) return;
+
+    setIsCompleting(true);
+    try {
+      // Calculer le score (100 points de base, moins les tentatives)
+      const attempts = exercise.attempts ?? 0;
+      const score = Math.max(0, 100 - attempts * 10);
+
+      await completeExercise({
+        exerciseId: exercise.id,
+        score,
+        currentAttempts: attempts,
+      });
+
+      // Réinitialiser le feedback
+      setIsCorrect(null);
+      setSelectedMove(null);
+      setMoveQuality(null);
+      setUserMoveAnalysis(null);
+
+      // Naviguer vers le suivant
+      goToNext();
+    } catch (error) {
+      console.error(
+        "[Exercise] Erreur lors du marquage comme complété:",
+        error,
+      );
+      setIsCompleting(false);
+    }
+  }, [exercise, completeExercise, goToNext]);
 
   // Afficher la solution
   const handleShowSolution = () => {
@@ -186,12 +222,7 @@ export default function ExerciseScreen() {
         "[Exercise] Erreur lors de l'affichage de la solution:",
         error,
       );
-      // Fallback : afficher juste le texte
-      const correctMoveSan =
-        uciToSan(exercise.correct_move, exercise.fen) || exercise.correct_move;
-      Alert.alert("Solution", `Le meilleur coup est : ${correctMoveSan}`, [
-        { text: "OK" },
-      ]);
+      // Fallback : juste afficher la solution
       setShowSolution(true);
     }
   };
@@ -236,6 +267,7 @@ export default function ExerciseScreen() {
           setSelectedMove(null);
           setMoveQuality(null);
           setIsAnalyzing(false);
+          setUserMoveAnalysis(null);
           setShowSolution(false);
           setShowHint(false);
         } catch (error) {
@@ -278,6 +310,23 @@ export default function ExerciseScreen() {
 
       setMoveQuality(classification.move_quality);
 
+      // Créer une analyse temporaire pour afficher le badge
+      const tempAnalysis: GameAnalysis = {
+        id: "", // Pas nécessaire pour l'affichage
+        game_id: exercise.id,
+        move_number: 0,
+        fen: exercise.fen,
+        evaluation: classification.evaluation_after,
+        best_move: classification.best_move,
+        played_move: moveUci,
+        move_quality: classification.move_quality,
+        game_phase: null,
+        evaluation_loss: classification.evaluation_loss,
+        created_at: null,
+        analysis_data: null,
+      };
+      setUserMoveAnalysis(tempAnalysis);
+
       // Vérifier si c'est le meilleur coup
       const correct =
         classification.move_quality === "best" ||
@@ -286,93 +335,11 @@ export default function ExerciseScreen() {
           moveUci === exercise.correct_move.trim().toLowerCase());
 
       setIsCorrect(correct);
-
-      if (correct) {
-        // Coup correct - marquer comme complété
-        setIsCompleting(true);
-        try {
-          // Calculer le score (100 points de base, moins les tentatives)
-          const attempts = exercise.attempts ?? 0;
-          const score = Math.max(0, 100 - attempts * 10);
-
-          await completeExercise({
-            exerciseId: exercise.id,
-            score,
-            currentAttempts: attempts,
-          });
-
-          // Réinitialiser le feedback
-          setIsCorrect(null);
-          setSelectedMove(null);
-          setMoveQuality(null);
-
-          // Afficher un message de succès et passer au suivant
-          Alert.alert(
-            "Bravo !",
-            "Vous avez trouvé le meilleur coup !",
-            [
-              {
-                text: nextExercise ? "Exercice suivant" : "Terminé",
-                onPress: () => {
-                  if (nextExercise) {
-                    // Naviguer vers le prochain exercice
-                    router.replace(
-                      `/(protected)/exercise/${nextExercise.id}` as any,
-                    );
-                  } else {
-                    // Retourner à la liste des exercices
-                    router.replace("/(protected)/(tabs)/exercises" as any);
-                  }
-                },
-              },
-            ],
-            { cancelable: false },
-          );
-        } catch (error) {
-          console.error(
-            "[Exercise] Erreur lors du marquage comme complété:",
-            error,
-          );
-          Alert.alert(
-            "Erreur",
-            "Impossible de marquer l'exercice comme complété.",
-          );
-          setIsCompleting(false);
-        }
-      } else {
-        // Coup incorrect - réinitialiser le plateau après un délai
-        setTimeout(() => {
-          if (chessboardRef.current && exercise.fen) {
-            try {
-              chessboardRef.current.resetBoard(exercise.fen);
-              setIsCorrect(null);
-              setSelectedMove(null);
-              setMoveQuality(null);
-            } catch (error) {
-              console.error("[Exercise] Erreur réinitialisation:", error);
-            }
-          }
-        }, 2000); // Délai pour voir le feedback
-      }
     } catch (error) {
       console.error("[Exercise] Erreur classification coup:", error);
       // Fallback : vérification simple
       const correct = checkMove(move.from, move.to, move.promotion);
       setIsCorrect(correct);
-
-      if (!correct) {
-        setTimeout(() => {
-          if (chessboardRef.current && exercise.fen) {
-            try {
-              chessboardRef.current.resetBoard(exercise.fen);
-              setIsCorrect(null);
-              setSelectedMove(null);
-            } catch (err) {
-              console.error("[Exercise] Erreur réinitialisation:", err);
-            }
-          }
-        }, 1500);
-      }
     } finally {
       setIsAnalyzing(false);
     }
@@ -449,8 +416,15 @@ export default function ExerciseScreen() {
             highlightSquares={
               selectedMove ? [selectedMove.from, selectedMove.to] : []
             }
-            analysisData={analysisData as any}
+            analysisData={
+              userMoveAnalysis
+                ? (userMoveAnalysis as any)
+                : isAnalyzing
+                  ? null
+                  : (analysisData as any)
+            }
             showBestMoveArrow={showSolution}
+            lastMove={selectedMove}
             onRefReady={(ref) => {
               chessboardRef.current = ref;
             }}
@@ -458,176 +432,177 @@ export default function ExerciseScreen() {
         </View>
       </View>
 
-      {/* Navigation et boutons d'aide */}
-      <View style={styles.actionsContainer}>
-        {/* Navigation */}
-        <View style={styles.navigationContainer}>
-          <TouchableOpacity
-            style={[
-              styles.navButton,
-              !previousExercise && styles.navButtonDisabled,
-            ]}
-            onPress={goToPrevious}
-            disabled={!previousExercise}
-          >
-            <ChevronLeft
-              size={20}
-              color={
-                previousExercise ? colors.text.primary : colors.text.tertiary
-              }
-            />
-          </TouchableOpacity>
+      {/* Contenu en bas du Chessboard */}
+      <View style={styles.bottomContentContainer}>
+        {/* Boutons d'aide */}
+        <View style={styles.actionsContainer}>
+          <View style={styles.helpButtonsContainer}>
+            {exercise.hints && exercise.hints.length > 0 && (
+              <TouchableOpacity
+                style={styles.hintButton}
+                onPress={() => setShowHint(!showHint)}
+                activeOpacity={0.7}
+              >
+                <Lightbulb size={16} color={colors.warning.main} />
+                <Text style={styles.hintButtonText}>
+                  {showHint ? "Masquer l'indice" : "Indice"}
+                </Text>
+              </TouchableOpacity>
+            )}
 
-          <View style={styles.exerciseCounter}>
-            <Text style={styles.counterText}>
-              {currentIndex >= 0
-                ? `${currentIndex + 1} / ${totalExercises}`
-                : "-"}
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={[
-              styles.navButton,
-              !nextExercise && styles.navButtonDisabled,
-            ]}
-            onPress={goToNext}
-            disabled={!nextExercise}
-          >
-            <ChevronRight
-              size={20}
-              color={nextExercise ? colors.text.primary : colors.text.tertiary}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Boutons indice et solution */}
-        <View style={styles.helpButtonsContainer}>
-          {exercise.hints && exercise.hints.length > 0 && (
             <TouchableOpacity
-              style={styles.hintButton}
-              onPress={() => setShowHint(!showHint)}
-              activeOpacity={0.7}
+              style={[
+                styles.solutionButton,
+                showSolution && styles.solutionButtonActive,
+              ]}
+              onPress={handleShowSolution}
+              disabled={showSolution}
             >
-              <Lightbulb size={16} color={colors.warning.main} />
-              <Text style={styles.hintButtonText}>
-                {showHint ? "Masquer l'indice" : "Indice"}
+              <Eye size={16} color={colors.orange[600]} />
+              <Text style={styles.solutionButtonText}>
+                {showSolution ? "Solution affichée" : "Solution"}
               </Text>
             </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={[
-              styles.solutionButton,
-              showSolution && styles.solutionButtonActive,
-            ]}
-            onPress={handleShowSolution}
-            disabled={showSolution}
-          >
-            <Eye size={16} color={colors.orange[600]} />
-            <Text style={styles.solutionButtonText}>
-              {showSolution ? "Solution affichée" : "Solution"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Solution affichée */}
-      {showSolution && exercise?.correct_move && (
-        <View style={styles.solutionContainer}>
-          <Text style={styles.solutionLabel}>Solution :</Text>
-          <Text style={styles.solutionText}>
-            {uciToSan(exercise.correct_move, exercise.fen) ||
-              exercise.correct_move}
-          </Text>
-        </View>
-      )}
-
-      {/* Feedback visuel */}
-      {(isCorrect !== null || moveQuality || isAnalyzing) && (
-        <View
-          style={[
-            styles.feedbackContainer,
-            isCorrect
-              ? styles.feedbackCorrect
-              : moveQuality === "excellent" || moveQuality === "good"
-                ? styles.feedbackGood
-                : isAnalyzing
-                  ? styles.feedbackAnalyzing
-                  : styles.feedbackIncorrect,
-          ]}
-        >
-          {isAnalyzing ? (
-            <>
-              <ActivityIndicator size="small" color={colors.orange[500]} />
-              <Text style={styles.feedbackText}>Analyse en cours...</Text>
-            </>
-          ) : isCorrect ? (
-            <>
-              <CheckCircle2 size={20} color={colors.success.main} />
-              <Text style={[styles.feedbackText, styles.feedbackTextCorrect]}>
-                Coup correct !
-              </Text>
-            </>
-          ) : moveQuality ? (
-            <>
-              {moveQuality === "excellent" || moveQuality === "good" ? (
-                <CheckCircle2 size={20} color={colors.success.main} />
-              ) : (
-                <XCircle size={20} color={colors.error.main} />
-              )}
-              <Text
-                style={[
-                  styles.feedbackText,
-                  moveQuality === "excellent" || moveQuality === "good"
-                    ? styles.feedbackTextGood
-                    : styles.feedbackTextIncorrect,
-                ]}
-              >
-                {moveQuality === "best"
-                  ? "Meilleur coup !"
-                  : moveQuality === "excellent"
-                    ? "Excellent coup !"
-                    : moveQuality === "good"
-                      ? "Bon coup"
-                      : moveQuality === "inaccuracy"
-                        ? "Imprécision"
-                        : moveQuality === "mistake"
-                          ? "Erreur"
-                          : moveQuality === "blunder"
-                            ? "Erreur grave"
-                            : "Coup incorrect"}
-              </Text>
-            </>
-          ) : (
-            <>
-              <XCircle size={20} color={colors.error.main} />
-              <Text style={[styles.feedbackText, styles.feedbackTextIncorrect]}>
-                Coup incorrect
-              </Text>
-            </>
-          )}
-        </View>
-      )}
-
-      {/* Indice affiché */}
-      {showHint && exercise.hints && exercise.hints.length > 0 && (
-        <View style={styles.hintContent}>
-          <Text style={styles.hintText}>
-            {exercise.hints[0] || "Aucun indice disponible"}
-          </Text>
-        </View>
-      )}
-
-      {/* Informations supplémentaires */}
-      {exercise.attempts !== null && exercise.attempts > 0 && (
-        <View style={styles.infoContainer}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Tentatives :</Text>
-            <Text style={styles.infoValue}>{exercise.attempts}</Text>
           </View>
         </View>
-      )}
+
+        {/* Solution affichée */}
+        {showSolution && exercise?.correct_move && (
+          <View style={styles.solutionContainer}>
+            <Text style={styles.solutionLabel}>Solution :</Text>
+            <Text style={styles.solutionText}>
+              {uciToSan(exercise.correct_move, exercise.fen) ||
+                exercise.correct_move}
+            </Text>
+          </View>
+        )}
+
+        {/* Feedback visuel */}
+        {(isCorrect !== null || moveQuality || isAnalyzing) && (
+          <View
+            style={[
+              styles.feedbackContainer,
+              isCorrect
+                ? styles.feedbackCorrect
+                : moveQuality === "excellent" || moveQuality === "good"
+                  ? styles.feedbackGood
+                  : isAnalyzing
+                    ? styles.feedbackAnalyzing
+                    : styles.feedbackIncorrect,
+            ]}
+          >
+            {isAnalyzing ? (
+              <>
+                <ActivityIndicator size="small" color={colors.orange[500]} />
+                <Text style={styles.feedbackText}>Analyse en cours...</Text>
+              </>
+            ) : isCorrect ? (
+              <>
+                <CheckCircle2 size={20} color={colors.success.main} />
+                <Text style={[styles.feedbackText, styles.feedbackTextCorrect]}>
+                  Coup correct !
+                </Text>
+              </>
+            ) : moveQuality ? (
+              <>
+                {moveQuality === "excellent" || moveQuality === "good" ? (
+                  <CheckCircle2 size={20} color={colors.success.main} />
+                ) : (
+                  <XCircle size={20} color={colors.error.main} />
+                )}
+                <Text
+                  style={[
+                    styles.feedbackText,
+                    moveQuality === "excellent" || moveQuality === "good"
+                      ? styles.feedbackTextGood
+                      : styles.feedbackTextIncorrect,
+                  ]}
+                >
+                  {moveQuality === "best"
+                    ? "Meilleur coup !"
+                    : moveQuality === "excellent"
+                      ? "Excellent coup !"
+                      : moveQuality === "good"
+                        ? "Bon coup"
+                        : moveQuality === "inaccuracy"
+                          ? "Imprécision"
+                          : moveQuality === "mistake"
+                            ? "Erreur"
+                            : moveQuality === "blunder"
+                              ? "Erreur grave"
+                              : "Coup incorrect"}
+                </Text>
+              </>
+            ) : (
+              <>
+                <XCircle size={20} color={colors.error.main} />
+                <Text
+                  style={[styles.feedbackText, styles.feedbackTextIncorrect]}
+                >
+                  Coup incorrect
+                </Text>
+              </>
+            )}
+          </View>
+        )}
+
+        {/* Boutons d'action après un coup */}
+        {!isAnalyzing && (isCorrect !== null || moveQuality) && (
+          <View style={styles.actionButtonsContainer}>
+            {isCorrect ? (
+              <TouchableOpacity
+                style={[styles.actionButton, styles.actionButtonSuccess]}
+                onPress={handleNext}
+                disabled={isCompleting}
+              >
+                <ArrowRight size={18} color={colors.success.dark} />
+                <Text
+                  style={[
+                    styles.actionButtonText,
+                    styles.actionButtonTextSuccess,
+                  ]}
+                >
+                  {isCompleting ? "Enregistrement..." : "Passer au suivant"}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.actionButton, styles.actionButtonRetry]}
+                onPress={handleRetry}
+              >
+                <RotateCcw size={18} color={colors.error.dark} />
+                <Text
+                  style={[
+                    styles.actionButtonText,
+                    styles.actionButtonTextRetry,
+                  ]}
+                >
+                  Réessayer
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* Indice affiché */}
+        {showHint && exercise.hints && exercise.hints.length > 0 && (
+          <View style={styles.hintContent}>
+            <Text style={styles.hintText}>
+              {exercise.hints[0] || "Aucun indice disponible"}
+            </Text>
+          </View>
+        )}
+
+        {/* Informations supplémentaires */}
+        {exercise.attempts !== null && exercise.attempts > 0 && (
+          <View style={styles.infoContainer}>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Tentatives :</Text>
+              <Text style={styles.infoValue}>{exercise.attempts}</Text>
+            </View>
+          </View>
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -669,35 +644,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing[4],
     gap: spacing[3],
   },
-  navigationContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: colors.background.secondary,
-    padding: spacing[3],
-    borderRadius: borders.radius.lg,
-    ...shadows.sm,
-  },
   helpButtonsContainer: {
     flexDirection: "row",
     gap: spacing[3],
   },
-  navButton: {
-    padding: spacing[2],
-    borderRadius: borders.radius.md,
-    backgroundColor: colors.background.tertiary,
-  },
-  navButtonDisabled: {
-    opacity: 0.5,
-  },
-  exerciseCounter: {
-    flex: 1,
-    alignItems: "center",
-  },
-  counterText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.text.primary,
+  contentPadding: {
+    paddingHorizontal: spacing[4],
   },
   solutionButton: {
     flex: 1,
@@ -719,6 +671,9 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.medium,
     color: colors.orange[600],
+  },
+  bottomContentContainer: {
+    paddingHorizontal: spacing[4],
   },
   solutionContainer: {
     backgroundColor: colors.orange[50],
@@ -782,8 +737,10 @@ const styles = StyleSheet.create({
   },
   descriptionContainer: {
     backgroundColor: colors.background.secondary,
-    padding: spacing[4],
+    paddingVertical: spacing[4],
+    paddingHorizontal: spacing[4],
     borderRadius: borders.radius.lg,
+    marginHorizontal: spacing[4],
     marginBottom: spacing[4],
     ...shadows.sm,
   },
@@ -811,7 +768,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing[2],
-    padding: spacing[3],
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
     borderRadius: borders.radius.md,
     marginBottom: spacing[4],
   },
@@ -859,6 +817,7 @@ const styles = StyleSheet.create({
     padding: spacing[3],
     backgroundColor: colors.background.secondary,
     borderRadius: borders.radius.md,
+    marginBottom: spacing[4],
     ...shadows.sm,
   },
   hintText: {
@@ -868,7 +827,8 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     backgroundColor: colors.background.secondary,
-    padding: spacing[4],
+    paddingVertical: spacing[4],
+    paddingHorizontal: spacing[4],
     borderRadius: borders.radius.lg,
     gap: spacing[2],
     ...shadows.sm,
@@ -887,5 +847,33 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.text.primary,
     fontWeight: typography.fontWeight.semibold,
+  },
+  actionButtonsContainer: {
+    marginBottom: spacing[4],
+  },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing[2],
+    padding: spacing[4],
+    borderRadius: borders.radius.md,
+    ...shadows.sm,
+  },
+  actionButtonSuccess: {
+    backgroundColor: colors.success.light,
+  },
+  actionButtonRetry: {
+    backgroundColor: colors.error.light,
+  },
+  actionButtonText: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+  },
+  actionButtonTextSuccess: {
+    color: colors.success.dark,
+  },
+  actionButtonTextRetry: {
+    color: colors.error.dark,
   },
 });

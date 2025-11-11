@@ -22,6 +22,7 @@ interface ChessboardCoreProps {
   moveHistory?: Move[];
   currentMoveIndex?: number;
   showBestMoveArrow?: boolean;
+  lastMove?: { from: string; to: string } | null;
 }
 
 export const ChessboardCore = React.forwardRef<
@@ -39,6 +40,7 @@ export const ChessboardCore = React.forwardRef<
     moveHistory,
     currentMoveIndex,
     showBestMoveArrow = true,
+    lastMove: lastMoveProp,
   },
   ref,
 ) {
@@ -113,8 +115,12 @@ export const ChessboardCore = React.forwardRef<
         }
       : undefined;
 
-  // Calculer le dernier coup depuis moveHistory
+  // Calculer le dernier coup depuis moveHistory ou utiliser la prop lastMove
   const lastMove = useMemo(() => {
+    // Si lastMoveProp est fourni, l'utiliser en priorité
+    if (lastMoveProp) return lastMoveProp;
+
+    // Sinon, calculer depuis moveHistory
     if (!moveHistory || moveHistory.length === 0) return undefined;
     if (currentMoveIndex === undefined || currentMoveIndex < 0)
       return undefined;
@@ -126,7 +132,7 @@ export const ChessboardCore = React.forwardRef<
       from: move.from,
       to: move.to,
     };
-  }, [moveHistory, currentMoveIndex]);
+  }, [lastMoveProp, moveHistory, currentMoveIndex]);
 
   // Gérer les coups
   // IMPORTANT: react-native-chessboard retourne TOUJOURS les coordonnées dans le système standard

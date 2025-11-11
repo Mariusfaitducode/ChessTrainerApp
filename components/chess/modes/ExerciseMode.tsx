@@ -14,6 +14,7 @@ export function ExerciseMode({
   onRefReady,
   analysisData,
   showBestMoveArrow = false,
+  lastMove,
 }: ExerciseModeProps) {
   const chessboardRef = useRef<ChessboardRef | null>(null);
 
@@ -40,6 +41,7 @@ export function ExerciseMode({
       onMove={handleMove}
       analysisData={analysisData}
       showBestMoveArrow={showBestMoveArrow}
+      lastMove={lastMove}
       onRefReady={(ref) => {
         // S'assurer que le ref est bien mis à jour
         if (ref) {
