@@ -51,7 +51,8 @@ class ClassifyMoveResponse(BaseModel):
     """Classification d'un coup"""
     move_quality: str  # "best", "excellent", "good", "inaccuracy", "mistake", "blunder"
     evaluation_loss: float  # En centipawns
-    best_move: Optional[str]  # UCI
+    best_move: Optional[str]  # UCI - meilleur coup dans la position initiale
+    opponent_best_move: Optional[str]  # UCI - meilleur coup de l'adversaire après le coup joué
     evaluation_before: float  # En pawns (du point de vue des blancs)
     evaluation_after: float  # En pawns (du point de vue des blancs)
 

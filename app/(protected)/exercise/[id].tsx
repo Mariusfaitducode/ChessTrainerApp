@@ -310,20 +310,34 @@ export default function ExerciseScreen() {
 
       setMoveQuality(classification.move_quality);
 
-      // Créer une analyse temporaire pour afficher le badge
+      // Calculer le FEN après le coup joué
+      const tempChess = new Chess(exercise.fen);
+      try {
+        tempChess.move(moveUci);
+      } catch (error) {
+        console.error(
+          "[Exercise] Erreur lors du calcul du FEN après coup:",
+          error,
+        );
+      }
+
+      // Créer une analyse temporaire pour afficher le badge et la flèche
+      // On stocke opponent_best_move dans best_move pour afficher la flèche du meilleur coup de l'adversaire
       const tempAnalysis: GameAnalysis = {
         id: "", // Pas nécessaire pour l'affichage
         game_id: exercise.id,
         move_number: 0,
-        fen: exercise.fen,
+        fen: tempChess.fen(), // FEN après le coup joué
         evaluation: classification.evaluation_after,
-        best_move: classification.best_move,
+        best_move: classification.opponent_best_move, // Meilleur coup de l'adversaire après le coup joué
         played_move: moveUci,
         move_quality: classification.move_quality,
         game_phase: null,
         evaluation_loss: classification.evaluation_loss,
         created_at: null,
-        analysis_data: null,
+        analysis_data: {
+          opponent_best_move: classification.opponent_best_move,
+        } as any,
       };
       setUserMoveAnalysis(tempAnalysis);
 
@@ -423,7 +437,7 @@ export default function ExerciseScreen() {
                   ? null
                   : (analysisData as any)
             }
-            showBestMoveArrow={showSolution}
+            showBestMoveArrow={showSolution || !!userMoveAnalysis}
             lastMove={selectedMove}
             onRefReady={(ref) => {
               chessboardRef.current = ref;

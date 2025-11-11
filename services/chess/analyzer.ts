@@ -116,7 +116,8 @@ interface ClassifyMoveResponse {
     | "mistake"
     | "blunder";
   evaluation_loss: number; // En centipawns
-  best_move: string | null; // UCI
+  best_move: string | null; // UCI - meilleur coup dans la position initiale
+  opponent_best_move: string | null; // UCI - meilleur coup de l'adversaire après le coup joué
   evaluation_before: number; // En pawns
   evaluation_after: number; // En pawns
 }

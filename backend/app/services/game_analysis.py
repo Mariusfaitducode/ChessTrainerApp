@@ -22,6 +22,7 @@ class MoveAnalysisResult:
     fen_before: str
     played_move: str
     best_move: Optional[str]
+    opponent_best_move: Optional[str]  # Meilleur coup de l'adversaire après le coup joué
     evaluation_before: int  # centipawns
     evaluation_after: int  # centipawns
     move_quality: str
@@ -122,7 +123,7 @@ async def _analyze_move(
     except ValueError as exc:
         raise RuntimeError(f"Coup UCI invalide: {move_uci}") from exc
 
-    eval_after, _ = await _evaluate_position(board, engine, depth)
+    eval_after, opponent_best_move_uci = await _evaluate_position(board, engine, depth)
 
     eval_best_after: Optional[int] = None
     if best_move_uci and best_move_uci.lower() != move_uci.lower():
@@ -153,6 +154,7 @@ async def _analyze_move(
         fen_before=fen_before,
         played_move=move_uci,
         best_move=best_move_uci,
+        opponent_best_move=opponent_best_move_uci,
         evaluation_before=eval_before,
         evaluation_after=eval_after,
         move_quality=move_quality,

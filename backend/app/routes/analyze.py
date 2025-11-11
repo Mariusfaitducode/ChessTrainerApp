@@ -152,6 +152,7 @@ async def classify_move_endpoint(
                 move_quality=result.move_quality,
                 evaluation_loss=result.evaluation_loss,
                 best_move=result.best_move,
+                opponent_best_move=result.opponent_best_move,
                 evaluation_before=result.evaluation_before / 100.0,
                 evaluation_after=result.evaluation_after / 100.0,
             )
