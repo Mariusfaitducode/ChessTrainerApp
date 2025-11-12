@@ -48,6 +48,8 @@ export type GameAnalysis = Omit<GameAnalysisRow, "mistake_level"> & {
   move_quality?: MoveQuality | null;
   game_phase?: GamePhase | null;
   evaluation_loss?: number | null; // Perte d'évaluation en centipawns
+  evaluation_type?: "cp" | "mate" | null; // Type d'évaluation
+  mate_in?: number | null; // Nombre de coups jusqu'au mat (si evaluation_type === "mate")
 };
 
 export interface Exercise extends Omit<ExerciseRow, "hints"> {

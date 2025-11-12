@@ -56,18 +56,6 @@ export default function ExerciseScreen() {
     enabled: !!exercise?.game_analysis_id,
   });
 
-  // Calculer l'évaluation à partir de l'analyse
-  // L'évaluation dans la DB est déjà en pawns (convertie lors de l'insertion)
-  const currentEvaluation = useMemo(() => {
-    if (
-      analysisData?.evaluation === null ||
-      analysisData?.evaluation === undefined
-    ) {
-      return 0;
-    }
-    // L'évaluation est déjà en pawns dans la DB
-    return analysisData.evaluation;
-  }, [analysisData]);
   const chessboardRef = useRef<ChessboardRef | null>(null);
   const [selectedMove, setSelectedMove] = useState<{
     from: string;
@@ -81,6 +69,14 @@ export default function ExerciseScreen() {
   const [userMoveAnalysis, setUserMoveAnalysis] = useState<GameAnalysis | null>(
     null,
   );
+  const [evaluationAfterMove, setEvaluationAfterMove] = useState<number | null>(
+    null,
+  );
+  const [evaluationTypeAfter, setEvaluationTypeAfter] = useState<
+    "cp" | "mate" | null
+  >(null);
+  const [mateInAfter, setMateInAfter] = useState<number | null>(null);
+
   const [showHint, setShowHint] = useState(false);
   const [showSolution, setShowSolution] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -102,6 +98,38 @@ export default function ExerciseScreen() {
     if (!chess) return "white";
     return chess.turn() === "w" ? "white" : "black";
   }, [chess]);
+
+  // Calculer l'évaluation à partir de l'analyse
+  // L'évaluation dans la DB est déjà en pawns (convertie lors de l'insertion)
+  const currentEvaluation = useMemo(() => {
+    // Si on a une évaluation après un coup joué, l'utiliser
+    if (evaluationAfterMove !== null) {
+      return evaluationAfterMove;
+    }
+    // Sinon, utiliser l'évaluation de la position initiale
+    if (
+      analysisData?.evaluation === null ||
+      analysisData?.evaluation === undefined
+    ) {
+      return 0;
+    }
+    // L'évaluation est déjà en pawns dans la DB
+    return analysisData.evaluation;
+  }, [analysisData, evaluationAfterMove]);
+
+  // Déterminer qui doit jouer après le coup (pour la barre d'analyse)
+  const isWhiteToMoveAfter = useMemo(() => {
+    if (userMoveAnalysis && chess) {
+      // Créer un nouveau chess avec le FEN après le coup
+      try {
+        const tempChess = new Chess(userMoveAnalysis.fen);
+        return tempChess.turn() === "w";
+      } catch {
+        return chess.turn() === "w";
+      }
+    }
+    return chess?.turn() === "w";
+  }, [userMoveAnalysis, chess]);
 
   // Trouver l'exercice suivant
   const { nextExercise } = useMemo(() => {
@@ -161,6 +189,7 @@ export default function ExerciseScreen() {
         setSelectedMove(null);
         setMoveQuality(null);
         setUserMoveAnalysis(null);
+        setEvaluationAfterMove(null);
       } catch (error) {
         console.error("[Exercise] Erreur réinitialisation:", error);
       }
@@ -188,6 +217,7 @@ export default function ExerciseScreen() {
       setSelectedMove(null);
       setMoveQuality(null);
       setUserMoveAnalysis(null);
+      setEvaluationAfterMove(null);
 
       // Naviguer vers le suivant
       goToNext();
@@ -268,6 +298,9 @@ export default function ExerciseScreen() {
           setMoveQuality(null);
           setIsAnalyzing(false);
           setUserMoveAnalysis(null);
+          setEvaluationAfterMove(null);
+          setEvaluationTypeAfter(null);
+          setMateInAfter(null);
           setShowSolution(false);
           setShowHint(false);
         } catch (error) {
@@ -309,6 +342,9 @@ export default function ExerciseScreen() {
       const classification = await classifyMove(exercise.fen, moveUci, 13);
 
       setMoveQuality(classification.move_quality);
+      setEvaluationAfterMove(classification.evaluation_after);
+      setEvaluationTypeAfter(classification.evaluation_type_after);
+      setMateInAfter(classification.mate_in_after);
 
       // Calculer le FEN après le coup joué
       const tempChess = new Chess(exercise.fen);
@@ -404,17 +440,28 @@ export default function ExerciseScreen() {
       {/* Plateau d'échecs avec barre d'analyse */}
       <View style={styles.chessboardWrapper}>
         <View style={styles.analysisBarContainer}>
-          {analysisData && (
+          {(analysisData || userMoveAnalysis) && (
             <AnalysisBar
               evaluation={currentEvaluation}
-              isWhiteToMove={chess?.turn() === "w"}
-              bestMove={
-                analysisData.best_move
-                  ? uciToSan(analysisData.best_move, exercise.fen) ||
-                    analysisData.best_move
-                  : null
+              isWhiteToMove={
+                userMoveAnalysis ? isWhiteToMoveAfter : chess?.turn() === "w"
               }
-              moveQuality={analysisData.move_quality}
+              bestMove={
+                userMoveAnalysis?.best_move
+                  ? uciToSan(
+                      userMoveAnalysis.best_move,
+                      userMoveAnalysis.fen,
+                    ) || userMoveAnalysis.best_move
+                  : analysisData?.best_move
+                    ? uciToSan(analysisData.best_move, exercise.fen) ||
+                      analysisData.best_move
+                    : null
+              }
+              moveQuality={
+                userMoveAnalysis?.move_quality || analysisData?.move_quality
+              }
+              evaluationType={evaluationTypeAfter}
+              mateIn={mateInAfter}
               orientation="vertical"
               boardOrientation={boardOrientation}
             />

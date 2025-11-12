@@ -95,7 +95,17 @@ export default function GameDetailScreen() {
 
   const currentAnalysis = useMemo(() => {
     if (currentMoveIndex === -1) return analyses[0];
-    return analyses.find((a) => a.move_number === currentMoveIndex + 1);
+    const analysis = analyses.find((a) => a.move_number === currentMoveIndex + 1);
+    // Log pour debug
+    if (analysis) {
+      console.log("[GameDetail] currentAnalysis:", {
+        move_number: analysis.move_number,
+        evaluation: analysis.evaluation,
+        evaluation_type: analysis.evaluation_type,
+        mate_in: analysis.mate_in,
+      });
+    }
+    return analysis;
   }, [currentMoveIndex, analyses]);
 
   // Calculer le FEN de la position précédente pour synchroniser le chess engine
@@ -248,6 +258,8 @@ export default function GameDetailScreen() {
                       : null
                   }
                   moveQuality={currentAnalysis.move_quality}
+                  evaluationType={currentAnalysis.evaluation_type || null}
+                  mateIn={currentAnalysis.mate_in || null}
                   orientation="vertical"
                   boardOrientation={boardOrientation}
                 />

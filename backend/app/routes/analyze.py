@@ -155,6 +155,8 @@ async def classify_move_endpoint(
                 opponent_best_move=result.opponent_best_move,
                 evaluation_before=result.evaluation_before / 100.0,
                 evaluation_after=result.evaluation_after / 100.0,
+                evaluation_type_after=result.evaluation_type_after,
+                mate_in_after=result.mate_in_after,
             )
     except RuntimeError as exc:
         logger.error(f"[Analyze] Erreur runtime: {exc}")

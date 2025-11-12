@@ -25,6 +25,8 @@ class MoveAnalysisResult:
     opponent_best_move: Optional[str]  # Meilleur coup de l'adversaire après le coup joué
     evaluation_before: int  # centipawns
     evaluation_after: int  # centipawns
+    evaluation_type_after: str  # "cp" ou "mate"
+    mate_in_after: Optional[int]  # Nombre de coups jusqu'au mat (si evaluation_type_after == "mate")
     move_quality: str
     game_phase: str
     evaluation_loss: float  # centipawns
@@ -89,20 +91,25 @@ async def _evaluate_position(
     board: chess.Board,
     engine: chess.engine.SimpleEngine,
     depth: int,
-) -> tuple[int, Optional[str]]:
+) -> tuple[int, Optional[str], str, Optional[int]]:
     """
-    Retourne l'évaluation en centipawns (du point de vue des blancs)
-    et le meilleur coup en UCI pour une position donnée.
+    Retourne l'évaluation en centipawns (du point de vue des blancs),
+    le meilleur coup en UCI, le type d'évaluation ("cp" ou "mate"), et mate_in.
     """
     if board.is_game_over():
         if board.is_checkmate():
             eval_cp = -10000 if board.turn == chess.WHITE else 10000
+            return eval_cp, None, "mate", 0
         else:
-            eval_cp = 0
-        return eval_cp, None
+            return 0, None, "cp", None
 
     analysis = await analyze_position(board, engine, depth)
-    return analysis.evaluation, analysis.best_move
+    return (
+        analysis.evaluation,
+        analysis.best_move,
+        analysis.evaluation_type,
+        analysis.mate_in,
+    )
 
 
 async def _analyze_move(
@@ -116,14 +123,24 @@ async def _analyze_move(
     fen_before = board.fen()
     is_white = board.turn == chess.WHITE
 
-    eval_before, best_move_uci = await _evaluate_position(board, engine, depth)
+    (
+        eval_before,
+        best_move_uci,
+        eval_type_before,
+        mate_in_before,
+    ) = await _evaluate_position(board, engine, depth)
 
     try:
         board.push(chess.Move.from_uci(move_uci))
     except ValueError as exc:
         raise RuntimeError(f"Coup UCI invalide: {move_uci}") from exc
 
-    eval_after, opponent_best_move_uci = await _evaluate_position(board, engine, depth)
+    (
+        eval_after,
+        opponent_best_move_uci,
+        eval_type_after,
+        mate_in_after,
+    ) = await _evaluate_position(board, engine, depth)
 
     eval_best_after: Optional[int] = None
     if best_move_uci and best_move_uci.lower() != move_uci.lower():
@@ -131,7 +148,9 @@ async def _analyze_move(
             temp_board = chess.Board(fen_before)
             temp_board.push(chess.Move.from_uci(best_move_uci))
             if not temp_board.is_game_over():
-                eval_best_after, _ = await _evaluate_position(temp_board, engine, depth)
+                eval_best_after, _, _, _ = await _evaluate_position(
+                    temp_board, engine, depth
+                )
         except Exception as exc:  # noqa: BLE001
             logger.warning(
                 "[GameAnalysis] Erreur analyse meilleur coup pour move=%s: %s",
@@ -157,6 +176,8 @@ async def _analyze_move(
         opponent_best_move=opponent_best_move_uci,
         evaluation_before=eval_before,
         evaluation_after=eval_after,
+        evaluation_type_after=eval_type_after,
+        mate_in_after=mate_in_after,
         move_quality=move_quality,
         game_phase=game_phase,
         evaluation_loss=evaluation_loss,
@@ -216,14 +237,18 @@ async def analyze_game(
                 move_quality=result.move_quality,
                 game_phase=result.game_phase,
                 evaluation_loss=result.evaluation_loss,
+                evaluation_type=result.evaluation_type_after,
+                mate_in=result.mate_in_after,
             )
         )
 
         logger.info(
-            "[GameAnalysis] Coup %s analysé - quality=%s, loss=%.1fcp",
+            "[GameAnalysis] Coup %s analysé - quality=%s, loss=%.1fcp, eval_type=%s, mate_in=%s",
             result.move_number,
             result.move_quality,
             result.evaluation_loss,
+            result.evaluation_type_after,
+            result.mate_in_after,
         )
 
     logger.info(

@@ -15,6 +15,8 @@ interface AnalysisBarProps {
     | null;
   orientation?: "horizontal" | "vertical";
   boardOrientation?: "white" | "black"; // Orientation du plateau (qui est en bas)
+  evaluationType?: "cp" | "mate" | null; // Type d'évaluation
+  mateIn?: number | null; // Nombre de coups jusqu'au mat
 }
 
 export const AnalysisBar = ({
@@ -24,17 +26,63 @@ export const AnalysisBar = ({
   moveQuality,
   orientation = "horizontal",
   boardOrientation = "white",
+  evaluationType = null,
+  mateIn = null,
 }: AnalysisBarProps) => {
+  // Log pour debug
+  console.log("[AnalysisBar] Props reçues:", {
+    evaluation,
+    evaluationType,
+    mateIn,
+    isWhiteToMove,
+    orientation,
+  });
+
   // L'évaluation est déjà en pawns depuis la DB
   // IMPORTANT: L'évaluation est TOUJOURS du point de vue des blancs
   // Positif = avantage blanc, Négatif = avantage noir
   const pawns = evaluation || 0;
 
-  // Normaliser pour l'affichage (max ±10 pawns)
-  const normalized = Math.max(-10, Math.min(10, pawns));
+  // Si c'est un mat, la barre doit être pleine (100% ou 0%)
+  const isMate = evaluationType === "mate";
+  let percentage: number;
 
-  // Calculer le pourcentage : +10 pawns = 100% (haut), -10 pawns = 0% (bas)
-  const percentage = ((normalized + 10) / 20) * 100;
+  if (isMate) {
+    console.log("[AnalysisBar] Mat détecté - mateIn:", mateIn);
+    // Mat : barre pleine
+    // Si mateIn est positif, les blancs matent (100%)
+    // Si mateIn est négatif, les noirs matent (0%)
+    // Si mateIn est 0, c'est un mat immédiat
+    if (mateIn !== null && mateIn > 0) {
+      percentage = 100; // Les blancs matent
+      console.log("[AnalysisBar] Mat pour les blancs - percentage: 100%");
+    } else if (mateIn !== null && mateIn < 0) {
+      percentage = 0; // Les noirs matent
+      console.log("[AnalysisBar] Mat pour les noirs - percentage: 0%");
+    } else {
+      // Mat immédiat : déterminer selon qui est au trait
+      percentage = isWhiteToMove ? 0 : 100; // Celui qui est au trait est maté
+      console.log(
+        "[AnalysisBar] Mat immédiat - isWhiteToMove:",
+        isWhiteToMove,
+        "percentage:",
+        percentage,
+      );
+    }
+  } else {
+    // Normaliser pour l'affichage (max ±10 pawns)
+    const normalized = Math.max(-10, Math.min(10, pawns));
+    // Calculer le pourcentage : +10 pawns = 100% (haut), -10 pawns = 0% (bas)
+    percentage = ((normalized + 10) / 20) * 100;
+    console.log(
+      "[AnalysisBar] Évaluation normale - pawns:",
+      pawns,
+      "normalized:",
+      normalized,
+      "percentage:",
+      percentage,
+    );
+  }
 
   // Pour l'orientation verticale, l'évaluation est toujours du point de vue des blancs
   // donc on n'a pas besoin d'ajuster selon isWhiteToMove
@@ -51,6 +99,14 @@ export const AnalysisBar = ({
 
   // Formater l'évaluation pour l'affichage
   const formatEvaluation = () => {
+    if (isMate && mateIn !== null) {
+      if (mateIn === 0) {
+        return "Mat";
+      }
+      // mateIn est positif si les blancs matent, négatif si les noirs matent
+      const absMateIn = Math.abs(mateIn);
+      return `Mat en ${absMateIn}`;
+    }
     if (Math.abs(pawns) < 0.01) return "0.00";
     if (Math.abs(pawns) >= 10) {
       return pawns > 0 ? `+${pawns.toFixed(1)}` : pawns.toFixed(1);

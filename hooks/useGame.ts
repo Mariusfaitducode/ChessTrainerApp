@@ -61,7 +61,7 @@ export const useGame = (gameId: string | null) => {
       const { data, error } = await supabase
         .from("game_analyses")
         .select(
-          "id, game_id, move_number, evaluation, best_move, move_quality, game_phase, evaluation_loss",
+          "id, game_id, move_number, evaluation, best_move, move_quality, game_phase, evaluation_loss, evaluation_type, mate_in",
         )
         .eq("game_id", gameId)
         .order("move_number", { ascending: true });

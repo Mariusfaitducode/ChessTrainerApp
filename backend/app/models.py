@@ -34,6 +34,8 @@ class GameAnalysisResponse(BaseModel):
     move_quality: str  # "best", "excellent", "good", "inaccuracy", "mistake", "blunder"
     game_phase: str  # "opening", "middlegame", "endgame"
     evaluation_loss: float  # En centipawns
+    evaluation_type: str  # "cp" ou "mate"
+    mate_in: Optional[int]  # Nombre de coups jusqu'au mat (si evaluation_type == "mate")
 
 
 class AnalyzeGameResponse(BaseModel):
@@ -55,6 +57,8 @@ class ClassifyMoveResponse(BaseModel):
     opponent_best_move: Optional[str]  # UCI - meilleur coup de l'adversaire après le coup joué
     evaluation_before: float  # En pawns (du point de vue des blancs)
     evaluation_after: float  # En pawns (du point de vue des blancs)
+    evaluation_type_after: str  # "cp" ou "mate"
+    mate_in_after: Optional[int]  # Nombre de coups jusqu'au mat (si evaluation_type_after == "mate")
 
 
 class HealthResponse(BaseModel):

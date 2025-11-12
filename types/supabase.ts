@@ -115,10 +115,12 @@ export type Database = {
           created_at: string | null;
           evaluation: number | null;
           evaluation_loss: number | null;
+          evaluation_type: string | null;
           fen: string;
           game_id: string;
           game_phase: string | null;
           id: string;
+          mate_in: number | null;
           move_number: number;
           move_quality: string | null;
           played_move: string;
@@ -129,10 +131,12 @@ export type Database = {
           created_at?: string | null;
           evaluation?: number | null;
           evaluation_loss?: number | null;
+          evaluation_type?: string | null;
           fen: string;
           game_id: string;
           game_phase?: string | null;
           id?: string;
+          mate_in?: number | null;
           move_number: number;
           move_quality?: string | null;
           played_move: string;
@@ -143,10 +147,12 @@ export type Database = {
           created_at?: string | null;
           evaluation?: number | null;
           evaluation_loss?: number | null;
+          evaluation_type?: string | null;
           fen?: string;
           game_id?: string;
           game_phase?: string | null;
           id?: string;
+          mate_in?: number | null;
           move_number?: number;
           move_quality?: string | null;
           played_move?: string;
