@@ -17,6 +17,7 @@ interface AnalysisBarProps {
   boardOrientation?: "white" | "black"; // Orientation du plateau (qui est en bas)
   evaluationType?: "cp" | "mate" | null; // Type d'évaluation
   mateIn?: number | null; // Nombre de coups jusqu'au mat
+  userColor?: "white" | "black"; // Couleur du joueur (nous)
 }
 
 export const AnalysisBar = ({
@@ -28,6 +29,7 @@ export const AnalysisBar = ({
   boardOrientation = "white",
   evaluationType = null,
   mateIn = null,
+  userColor = "white",
 }: AnalysisBarProps) => {
   // Log pour debug
   console.log("[AnalysisBar] Props reçues:", {
@@ -35,67 +37,56 @@ export const AnalysisBar = ({
     evaluationType,
     mateIn,
     isWhiteToMove,
+    userColor,
     orientation,
   });
 
-  // L'évaluation est déjà en pawns depuis la DB
-  // IMPORTANT: L'évaluation est TOUJOURS du point de vue des blancs
-  // Positif = avantage blanc, Négatif = avantage noir
+  // L'évaluation est du point de vue des blancs (positif = avantage blanc, négatif = avantage noir)
   const pawns = evaluation || 0;
-
-  // Si c'est un mat, la barre doit être pleine (100% ou 0%)
   const isMate = evaluationType === "mate";
-  let percentage: number;
+
+  // Calculer l'avantage de notre joueur (en pawns)
+  // Si on est blanc : l'évaluation représente directement notre avantage
+  // Si on est noir : on inverse (car l'évaluation est du point de vue des blancs)
+  const userAdvantage = userColor === "white" ? pawns : -pawns;
+
+  // Déterminer si on gagne ou perd
+  let isUserWinning: boolean;
+  let barHeight: number; // Hauteur de la barre (0-100%)
 
   if (isMate) {
-    console.log("[AnalysisBar] Mat détecté - mateIn:", mateIn);
-    // Mat : barre pleine
-    // Si mateIn est positif, les blancs matent (100%)
-    // Si mateIn est négatif, les noirs matent (0%)
-    // Si mateIn est 0, c'est un mat immédiat
+    // Pour les mats : déterminer qui gagne
     if (mateIn !== null && mateIn > 0) {
-      percentage = 100; // Les blancs matent
-      console.log("[AnalysisBar] Mat pour les blancs - percentage: 100%");
+      // Les blancs matent
+      isUserWinning = userColor === "white";
     } else if (mateIn !== null && mateIn < 0) {
-      percentage = 0; // Les noirs matent
-      console.log("[AnalysisBar] Mat pour les noirs - percentage: 0%");
+      // Les noirs matent
+      isUserWinning = userColor === "black";
     } else {
-      // Mat immédiat : déterminer selon qui est au trait
-      percentage = isWhiteToMove ? 0 : 100; // Celui qui est au trait est maté
-      console.log(
-        "[AnalysisBar] Mat immédiat - isWhiteToMove:",
-        isWhiteToMove,
-        "percentage:",
-        percentage,
-      );
+      // Mat immédiat : celui qui est au trait est maté
+      const isUserMated = isWhiteToMove
+        ? userColor === "white"
+        : userColor === "black";
+      isUserWinning = !isUserMated;
     }
+    // Pour les mats : barre toujours à 100%
+    barHeight = 100;
   } else {
-    // Normaliser pour l'affichage (max ±10 pawns)
-    const normalized = Math.max(-10, Math.min(10, pawns));
-    // Calculer le pourcentage : +10 pawns = 100% (haut), -10 pawns = 0% (bas)
-    percentage = ((normalized + 10) / 20) * 100;
-    console.log(
-      "[AnalysisBar] Évaluation normale - pawns:",
-      pawns,
-      "normalized:",
-      normalized,
-      "percentage:",
-      percentage,
-    );
+    // Pour les évaluations normales
+    isUserWinning = userAdvantage > 0;
+
+    // Normaliser l'avantage entre -10 et +10 pawns
+    const normalized = Math.max(-10, Math.min(10, userAdvantage));
+    // Convertir en pourcentage : +10 pawns = 100%, 0 pawns = 50%, -10 pawns = 0%
+    // La hauteur représente notre avantage : 50% = égalité, >50% = on gagne, <50% = on perd
+    barHeight = ((normalized + 10) / 20) * 100;
   }
 
-  // Pour l'orientation verticale, l'évaluation est toujours du point de vue des blancs
-  // donc on n'a pas besoin d'ajuster selon isWhiteToMove
-  // Pour l'orientation horizontale, on ajuste selon le joueur au trait
-  const adjustedPercentage =
-    orientation === "vertical"
-      ? percentage // Toujours du point de vue des blancs (haut = blanc, bas = noir)
-      : isWhiteToMove
-        ? percentage // Blanc au trait : positif = avantage blanc (droite)
-        : 100 - percentage; // Noir au trait : positif = avantage noir (gauche), donc on inverse
-
-  const barColor =
-    adjustedPercentage > 50 ? colors.success.main : colors.error.main;
+  // Couleurs : blanc/noir selon la couleur du joueur
+  // Si on est blanc : bas = blanc, haut = noir
+  // Si on est noir : bas = noir, haut = blanc
+  const bottomColor = userColor === "white" ? "#FFFFFF" : "#000000";
+  const topColor = userColor === "white" ? "#000000" : "#FFFFFF";
 
   // Formater l'évaluation pour l'affichage
   const formatEvaluation = () => {
@@ -128,20 +119,86 @@ export const AnalysisBar = ({
   };
 
   if (orientation === "vertical") {
-    // Version simplifiée : juste la barre verticale
+    // Barre verticale avec blanc/noir :
+    // - barHeight représente notre avantage (0-100%, où 50% = égalité)
+    // - Barre en bas : notre couleur (blanc si on est blanc, noir si on est noir), hauteur = barHeight
+    // - Barre en haut : couleur adverse (noir si on est blanc, blanc si on est noir), hauteur = 100 - barHeight
+    // - Pour les mats : barre à 100% de la couleur gagnante
+
+    let bottomBarHeight: number;
+    let topBarHeight: number;
+
+    if (isMate) {
+      // Mat : barre à 100% de la couleur gagnante
+      if (isUserWinning) {
+        bottomBarHeight = 100;
+        topBarHeight = 0;
+      } else {
+        bottomBarHeight = 0;
+        topBarHeight = 100;
+      }
+    } else {
+      // Évaluation normale : barre en bas = notre avantage, barre en haut = avantage adverse
+      bottomBarHeight = barHeight;
+      topBarHeight = 100 - barHeight;
+    }
+
+    // S'assurer que les hauteurs sont toujours visibles (minimum 1% si > 0)
+    const finalBottomHeight =
+      bottomBarHeight > 0 ? Math.max(1, bottomBarHeight) : 0;
+    const finalTopHeight = topBarHeight > 0 ? Math.max(1, topBarHeight) : 0;
+
+    console.log(
+      `[AnalysisBar] Vertical - userAdvantage=${userAdvantage}, isUserWinning=${isUserWinning}, barHeight=${barHeight}, bottomBarHeight=${finalBottomHeight}, topBarHeight=${finalTopHeight}`,
+    );
+
     return (
       <View style={styles.verticalBarContainer}>
-        <View
-          style={[
-            {
-              height: `${adjustedPercentage}%`,
-              backgroundColor: barColor,
-            },
-          ]}
-        />
+        {/* Barre en haut : couleur adverse */}
+        {finalTopHeight > 0 && (
+          <View
+            style={[
+              {
+                width: "100%",
+                height: `${finalTopHeight}%`,
+                backgroundColor: topColor,
+                alignSelf: "flex-start",
+              },
+            ]}
+          />
+        )}
+        {/* Barre en bas : notre couleur */}
+        {finalBottomHeight > 0 && (
+          <View
+            style={[
+              {
+                width: "100%",
+                height: `${finalBottomHeight}%`,
+                backgroundColor: bottomColor,
+                alignSelf: "flex-end",
+              },
+            ]}
+          />
+        )}
       </View>
     );
   }
+
+  // Pour l'orientation horizontale, calculer le pourcentage ajusté
+  const adjustedPercentage =
+    orientation === "horizontal"
+      ? isWhiteToMove
+        ? barHeight // Blanc au trait : utiliser barHeight tel quel
+        : 100 - barHeight // Noir au trait : inverser
+      : barHeight;
+
+  // Pour l'orientation horizontale, utiliser la couleur du joueur au trait
+  const horizontalBarColor =
+    isWhiteToMove && userColor === "white"
+      ? bottomColor
+      : !isWhiteToMove && userColor === "black"
+        ? bottomColor
+        : topColor;
 
   return (
     <View style={styles.container}>
@@ -151,7 +208,7 @@ export const AnalysisBar = ({
             styles.bar,
             {
               width: `${adjustedPercentage}%`,
-              backgroundColor: barColor,
+              backgroundColor: horizontalBarColor,
             },
           ]}
         />

@@ -99,6 +99,9 @@ export default function ExerciseScreen() {
     return chess.turn() === "w" ? "white" : "black";
   }, [chess]);
 
+  // Dans les exercices, l'utilisateur est toujours celui qui doit jouer
+  const userColor = boardOrientation;
+
   // Calculer l'évaluation à partir de l'analyse
   // L'évaluation dans la DB est déjà en pawns (convertie lors de l'insertion)
   const currentEvaluation = useMemo(() => {
@@ -370,6 +373,8 @@ export default function ExerciseScreen() {
         move_quality: classification.move_quality,
         game_phase: null,
         evaluation_loss: classification.evaluation_loss,
+        evaluation_type: classification.evaluation_type_after || null,
+        mate_in: classification.mate_in_after || null,
         created_at: null,
         analysis_data: {
           opponent_best_move: classification.opponent_best_move,
@@ -462,6 +467,7 @@ export default function ExerciseScreen() {
               }
               evaluationType={evaluationTypeAfter}
               mateIn={mateInAfter}
+              userColor={userColor}
               orientation="vertical"
               boardOrientation={boardOrientation}
             />

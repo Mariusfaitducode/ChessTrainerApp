@@ -260,6 +260,7 @@ export default function GameDetailScreen() {
                   moveQuality={currentAnalysis.move_quality}
                   evaluationType={currentAnalysis.evaluation_type || null}
                   mateIn={currentAnalysis.mate_in || null}
+                  userColor={userColor}
                   orientation="vertical"
                   boardOrientation={boardOrientation}
                 />
