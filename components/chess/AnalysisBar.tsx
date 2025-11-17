@@ -31,16 +31,6 @@ export const AnalysisBar = ({
   mateIn = null,
   userColor = "white",
 }: AnalysisBarProps) => {
-  // Log pour debug
-  console.log("[AnalysisBar] Props reçues:", {
-    evaluation,
-    evaluationType,
-    mateIn,
-    isWhiteToMove,
-    userColor,
-    orientation,
-  });
-
   // L'évaluation est du point de vue des blancs (positif = avantage blanc, négatif = avantage noir)
   const pawns = evaluation || 0;
   const isMate = evaluationType === "mate";
@@ -82,11 +72,11 @@ export const AnalysisBar = ({
     barHeight = ((normalized + 10) / 20) * 100;
   }
 
-  // Couleurs : blanc/noir selon la couleur du joueur
-  // Si on est blanc : bas = blanc, haut = noir
-  // Si on est noir : bas = noir, haut = blanc
-  const bottomColor = userColor === "white" ? "#FFFFFF" : "#000000";
-  const topColor = userColor === "white" ? "#000000" : "#FFFFFF";
+  // Couleurs custom : #e1e1e1 (clair) et #454242 (foncé)
+  const lightShade = "#ffffff";
+  const darkShade = "#454242";
+  const bottomColor = userColor === "white" ? lightShade : darkShade;
+  const topColor = userColor === "white" ? darkShade : lightShade;
 
   // Formater l'évaluation pour l'affichage
   const formatEvaluation = () => {
@@ -119,65 +109,33 @@ export const AnalysisBar = ({
   };
 
   if (orientation === "vertical") {
-    // Barre verticale avec blanc/noir :
-    // - barHeight représente notre avantage (0-100%, où 50% = égalité)
-    // - Barre en bas : notre couleur (blanc si on est blanc, noir si on est noir), hauteur = barHeight
-    // - Barre en haut : couleur adverse (noir si on est blanc, blanc si on est noir), hauteur = 100 - barHeight
-    // - Pour les mats : barre à 100% de la couleur gagnante
+    const baseBottom = isMate ? (isUserWinning ? 100 : 0) : barHeight;
+    const baseTop = 100 - baseBottom;
+    const normalize = (value: number) => (value <= 0 ? 0 : Math.max(1, value));
 
-    let bottomBarHeight: number;
-    let topBarHeight: number;
-
-    if (isMate) {
-      // Mat : barre à 100% de la couleur gagnante
-      if (isUserWinning) {
-        bottomBarHeight = 100;
-        topBarHeight = 0;
-      } else {
-        bottomBarHeight = 0;
-        topBarHeight = 100;
-      }
-    } else {
-      // Évaluation normale : barre en bas = notre avantage, barre en haut = avantage adverse
-      bottomBarHeight = barHeight;
-      topBarHeight = 100 - barHeight;
-    }
-
-    // S'assurer que les hauteurs sont toujours visibles (minimum 1% si > 0)
-    const finalBottomHeight =
-      bottomBarHeight > 0 ? Math.max(1, bottomBarHeight) : 0;
-    const finalTopHeight = topBarHeight > 0 ? Math.max(1, topBarHeight) : 0;
-
-    console.log(
-      `[AnalysisBar] Vertical - userAdvantage=${userAdvantage}, isUserWinning=${isUserWinning}, barHeight=${barHeight}, bottomBarHeight=${finalBottomHeight}, topBarHeight=${finalTopHeight}`,
-    );
+    const topHeight = normalize(baseTop);
+    const bottomHeight = normalize(baseBottom);
 
     return (
       <View style={styles.verticalBarContainer}>
-        {/* Barre en haut : couleur adverse */}
-        {finalTopHeight > 0 && (
+        {topHeight > 0 && (
           <View
-            style={[
-              {
-                width: "100%",
-                height: `${finalTopHeight}%`,
-                backgroundColor: topColor,
-                alignSelf: "flex-start",
-              },
-            ]}
+            style={{
+              width: "100%",
+              height: `${topHeight}%`,
+              backgroundColor: topColor,
+              alignSelf: "flex-start",
+            }}
           />
         )}
-        {/* Barre en bas : notre couleur */}
-        {finalBottomHeight > 0 && (
+        {bottomHeight > 0 && (
           <View
-            style={[
-              {
-                width: "100%",
-                height: `${finalBottomHeight}%`,
-                backgroundColor: bottomColor,
-                alignSelf: "flex-end",
-              },
-            ]}
+            style={{
+              width: "100%",
+              height: `${bottomHeight}%`,
+              backgroundColor: bottomColor,
+              alignSelf: "flex-end",
+            }}
           />
         )}
       </View>
@@ -193,12 +151,10 @@ export const AnalysisBar = ({
       : barHeight;
 
   // Pour l'orientation horizontale, utiliser la couleur du joueur au trait
-  const horizontalBarColor =
-    isWhiteToMove && userColor === "white"
-      ? bottomColor
-      : !isWhiteToMove && userColor === "black"
-        ? bottomColor
-        : topColor;
+  const isUserTurn =
+    (isWhiteToMove && userColor === "white") ||
+    (!isWhiteToMove && userColor === "black");
+  const horizontalBarColor = isUserTurn ? bottomColor : topColor;
 
   return (
     <View style={styles.container}>
