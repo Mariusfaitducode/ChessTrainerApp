@@ -40,6 +40,10 @@ def classify_move(
     played_move_uci: str,
     best_move_uci: Optional[str],
     move_number: int,
+    eval_type_after: str,
+    mate_in_after: Optional[int],
+    eval_type_best_after: Optional[str] = None,
+    mate_in_best_after: Optional[int] = None,
 ) -> tuple[str, str, float]:
     """
     Classifie un coup et retourne (move_quality, game_phase, evaluation_loss)
@@ -55,24 +59,64 @@ def classify_move(
     else:
         game_phase = "endgame"
 
-    if eval_before == 0 and eval_after == 0:
-        return ("good", game_phase, 0.0)
-
+    # Vérifier si c'est le meilleur coup
     moves_are_equal = best_move_uci and played_move_uci.lower() == best_move_uci.lower()
     if moves_are_equal:
         return ("best", game_phase, 0.0)
 
+    # Traitement des cas de mat
+    # mate_in_after < 0 signifie que le joueur qui vient de jouer est maté
+    # mate_in_after > 0 signifie que l'adversaire est maté
+    if eval_type_after == "mate" and mate_in_after is not None:
+        if mate_in_after < 0:
+            # Le coup joué mène à un mat pour le joueur qui vient de jouer
+            # C'est toujours un blunder grave
+            # La perte est énorme (on utilise 10000 centipawns comme référence)
+            return ("blunder", game_phase, 10000.0)
+        elif mate_in_after > 0:
+            # Le coup joué mène à un mat pour l'adversaire
+            # Vérifier si le meilleur coup menait aussi au mat
+            if (
+                eval_type_best_after == "mate"
+                and mate_in_best_after is not None
+                and mate_in_best_after > 0
+            ):
+                # Les deux coups mènent au mat, comparer la rapidité
+                if mate_in_after <= mate_in_best_after:
+                    # Le coup joué mate aussi vite ou plus vite que le meilleur
+                    return ("best", game_phase, 0.0)
+                else:
+                    # Le coup joué mate moins vite
+                    evaluation_loss = (mate_in_after - mate_in_best_after) * 1000.0
+                    if evaluation_loss < 10:
+                        return ("excellent", game_phase, evaluation_loss)
+                    elif evaluation_loss < 30:
+                        return ("good", game_phase, evaluation_loss)
+                    else:
+                        return ("inaccuracy", game_phase, evaluation_loss)
+            else:
+                # Le meilleur coup ne menait pas au mat, mais le coup joué oui
+                # C'est excellent/best
+                return ("excellent", game_phase, 0.0)
+
+    # Cas standard : pas de mat, calcul basé sur les évaluations
+    if eval_before == 0 and eval_after == 0:
+        return ("good", game_phase, 0.0)
+
+    # Convertir les évaluations au point de vue du joueur qui joue
     if not is_white:
         eval_before = -eval_before
         eval_after = -eval_after
         if eval_best_after is not None:
             eval_best_after = -eval_best_after
 
+    # Calculer la perte d'évaluation
     if eval_best_after is not None:
         evaluation_loss = abs(eval_after - eval_best_after)
     else:
         evaluation_loss = abs(eval_after - eval_before)
 
+    # Classifier selon la perte d'évaluation
     if evaluation_loss < 10:
         move_quality = "excellent"
     elif evaluation_loss < 30:
@@ -143,14 +187,19 @@ async def _analyze_move(
     ) = await _evaluate_position(board, engine, depth)
 
     eval_best_after: Optional[int] = None
+    eval_type_best_after: Optional[str] = None
+    mate_in_best_after: Optional[int] = None
     if best_move_uci and best_move_uci.lower() != move_uci.lower():
         try:
             temp_board = chess.Board(fen_before)
             temp_board.push(chess.Move.from_uci(best_move_uci))
             if not temp_board.is_game_over():
-                eval_best_after, _, _, _ = await _evaluate_position(
-                    temp_board, engine, depth
-                )
+                (
+                    eval_best_after,
+                    _,
+                    eval_type_best_after,
+                    mate_in_best_after,
+                ) = await _evaluate_position(temp_board, engine, depth)
         except Exception as exc:  # noqa: BLE001
             logger.warning(
                 "[GameAnalysis] Erreur analyse meilleur coup pour move=%s: %s",
@@ -166,6 +215,10 @@ async def _analyze_move(
         move_uci,
         best_move_uci,
         move_number,
+        eval_type_after,
+        mate_in_after,
+        eval_type_best_after,
+        mate_in_best_after,
     )
 
     return MoveAnalysisResult(
