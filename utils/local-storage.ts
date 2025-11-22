@@ -53,7 +53,7 @@ export const LocalStorage = {
     const exists = games.some(
       (g) =>
         g.platform === game.platform &&
-        g.platform_game_id === game.platform_game_id
+        g.platform_game_id === game.platform_game_id,
     );
     if (!exists) {
       games.push(game);
@@ -77,7 +77,7 @@ export const LocalStorage = {
     try {
       await AsyncStorage.setItem(
         STORAGE_KEYS.PLATFORMS,
-        JSON.stringify(platforms)
+        JSON.stringify(platforms),
       );
     } catch (error) {
       console.error("[LocalStorage] Erreur sauvegarde plateformes:", error);
@@ -101,16 +101,19 @@ export const LocalStorage = {
   /**
    * Ajouter ou mettre à jour une plateforme
    */
-  async addPlatform(platform: GuestPlatform["platform"], username: string): Promise<void> {
+  async addPlatform(
+    platform: GuestPlatform["platform"],
+    username: string,
+  ): Promise<void> {
     const platforms = await this.getPlatforms();
     const existingIndex = platforms.findIndex((p) => p.platform === platform);
-    
+
     if (existingIndex !== -1) {
       platforms[existingIndex].username = username;
     } else {
       platforms.push({ platform, username });
     }
-    
+
     await this.savePlatforms(platforms);
   },
 
@@ -157,7 +160,7 @@ export const LocalStorage = {
     try {
       const keys = await AsyncStorage.getAllKeys();
       const analysisKeys = keys.filter((key) =>
-        key.startsWith(STORAGE_KEYS.ANALYSES_PREFIX)
+        key.startsWith(STORAGE_KEYS.ANALYSES_PREFIX),
       );
 
       const allAnalyses: Record<string, GameAnalysis[]> = {};
@@ -171,7 +174,10 @@ export const LocalStorage = {
 
       return allAnalyses;
     } catch (error) {
-      console.error("[LocalStorage] Erreur récupération toutes analyses:", error);
+      console.error(
+        "[LocalStorage] Erreur récupération toutes analyses:",
+        error,
+      );
       return {};
     }
   },
@@ -183,7 +189,7 @@ export const LocalStorage = {
     try {
       await AsyncStorage.setItem(
         STORAGE_KEYS.EXERCISES,
-        JSON.stringify(exercises)
+        JSON.stringify(exercises),
       );
     } catch (error) {
       console.error("[LocalStorage] Erreur sauvegarde exercices:", error);
@@ -211,7 +217,7 @@ export const LocalStorage = {
     const exercises = await this.getExercises();
     // Vérifier les doublons basés sur game_analysis_id
     const exists = exercises.some(
-      (e) => e.game_analysis_id === exercise.game_analysis_id
+      (e) => e.game_analysis_id === exercise.game_analysis_id,
     );
     if (!exists) {
       exercises.push(exercise);
@@ -224,7 +230,7 @@ export const LocalStorage = {
    */
   async updateExercise(
     exerciseId: string,
-    updates: Partial<Exercise>
+    updates: Partial<Exercise>,
   ): Promise<void> {
     const exercises = await this.getExercises();
     const index = exercises.findIndex((e) => e.id === exerciseId);
@@ -268,8 +274,8 @@ export const LocalStorage = {
         Object.values(STORAGE_KEYS).some((storageKey) =>
           typeof storageKey === "string"
             ? key === storageKey || key.startsWith(storageKey)
-            : false
-        )
+            : false,
+        ),
       );
       await AsyncStorage.multiRemove(guestKeys);
     } catch (error) {
@@ -287,8 +293,8 @@ export const LocalStorage = {
         Object.values(STORAGE_KEYS).some((storageKey) =>
           typeof storageKey === "string"
             ? key === storageKey || key.startsWith(storageKey)
-            : false
-        )
+            : false,
+        ),
       );
 
       let totalSize = 0;
@@ -306,4 +312,3 @@ export const LocalStorage = {
     }
   },
 };
-

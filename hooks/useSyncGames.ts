@@ -1,17 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert } from "react-native";
 
+import { useDataService } from "./useDataService";
 import { useSupabase } from "./useSupabase";
 import { useChessPlatform } from "./useChessPlatform";
 import { useGuestMode } from "./useGuestMode";
-import { LocalStorage } from "@/utils/local-storage";
-import { generateUUIDSync } from "@/utils/uuid";
 import type { Platform } from "@/types/chess";
-import type { Game } from "@/types/games";
 import { getAllPlayerGames, type ChessComGame } from "@/services/chesscom/api";
 import {
   getUserGames,
-  getGamePGN,
   type LichessGame,
 } from "@/services/lichess/api";
 import { prepareGamesForInsert } from "@/services/sync/games";
@@ -20,6 +17,7 @@ import { prepareGamesForInsert } from "@/services/sync/games";
  * Hook pour synchroniser les parties depuis les plateformes
  */
 export const useSyncGames = () => {
+  const dataService = useDataService();
   const { supabase, session } = useSupabase();
   const { platforms } = useChessPlatform();
   const { isGuest } = useGuestMode();
@@ -33,7 +31,6 @@ export const useSyncGames = () => {
       maxGames?: number;
       platform?: Platform;
     } = {}) => {
-
       const platformsToSync = platform
         ? platforms.filter((p) => p.platform === platform)
         : platforms;
@@ -110,110 +107,39 @@ export const useSyncGames = () => {
             continue;
           }
 
-          if (isGuest) {
-            // Mode guest : stocker dans LocalStorage
-            const existingGames = await LocalStorage.getGames();
-            const existingIds = new Set(
-              existingGames.map(
-                (g) => `${g.platform}_${g.platform_game_id}`
-              )
-            );
+          // Récupérer les parties existantes pour détecter les doublons
+          const existingGames = await dataService.getGames();
+          const existingIds = new Set(
+            existingGames.map(
+              (g) => `${g.platform}_${g.platform_game_id}`,
+            ),
+          );
 
-            // Filtrer les nouvelles parties
-            const newGames = gamesToInsert.filter(
-              (g) => !existingIds.has(`${g.platform}_${g.platform_game_id}`)
-            );
+          // Filtrer les nouvelles parties
+          const newGames = gamesToInsert.filter(
+            (g) => !existingIds.has(`${g.platform}_${g.platform_game_id}`),
+          );
 
-            console.log(
-              `[Sync] ${newGames.length} nouvelles parties (${gamesToInsert.length - newGames.length} déjà existantes)`,
-            );
+          console.log(
+            `[Sync] ${newGames.length} nouvelles parties (${gamesToInsert.length - newGames.length} déjà existantes)`,
+          );
 
-            if (newGames.length === 0) {
-              totalSkipped += gamesToInsert.length;
-              console.log(`[Sync] Toutes les parties sont déjà importées`);
-              continue;
-            }
+          if (newGames.length === 0) {
+            totalSkipped += gamesToInsert.length;
+            console.log(`[Sync] Toutes les parties sont déjà importées`);
+            continue;
+          }
 
-            // Générer des IDs temporaires et sauvegarder
-            for (const game of newGames) {
-              const gameWithId: Game = {
-                ...game,
-                id: generateUUIDSync(),
-                user_id: "guest",
-                imported_at: new Date().toISOString(),
-                analyzed_at: null,
-              } as Game;
+          // Ajouter les nouvelles parties via le service unifié
+          for (const game of newGames) {
+            await dataService.addGame(game);
+          }
 
-              await LocalStorage.addGame(gameWithId);
-            }
+          totalImported += newGames.length;
+          totalSkipped += gamesToInsert.length - newGames.length;
 
-            totalImported += newGames.length;
-            totalSkipped += gamesToInsert.length - newGames.length;
-          } else {
-            // Mode authentifié : utiliser Supabase (code existant)
-            // Vérifier quelles parties existent déjà
-            const platformGameIds = gamesToInsert.map((g) => g.platform_game_id);
-            console.log(
-              `[Sync] Vérification des doublons parmi ${platformGameIds.length} parties...`,
-            );
-
-            let existingGames: { platform_game_id: string }[] = [];
-            if (platformGameIds.length > 0) {
-              const { data, error } = await supabase
-                .from("games")
-                .select("platform_game_id")
-                .eq("user_id", session!.user.id)
-                .eq("platform", userPlatform.platform)
-                .in("platform_game_id", platformGameIds);
-
-              if (error) {
-                console.error(
-                  "[Sync] Erreur lors de la vérification des doublons:",
-                  error,
-                );
-              } else {
-                existingGames = data || [];
-              }
-            }
-
-            const existingIds = new Set(
-              existingGames?.map((g) => g.platform_game_id) || [],
-            );
-
-            // Filtrer les nouvelles parties
-            const newGames = gamesToInsert.filter(
-              (g) => !existingIds.has(g.platform_game_id),
-            );
-
-            console.log(
-              `[Sync] ${newGames.length} nouvelles parties (${gamesToInsert.length - newGames.length} déjà existantes)`,
-            );
-
-            if (newGames.length === 0) {
-              totalSkipped += gamesToInsert.length;
-              console.log(`[Sync] Toutes les parties sont déjà importées`);
-              continue;
-            }
-
-            console.log(
-              `[Sync] Insertion de ${newGames.length} nouvelles parties...`,
-            );
-
-            // Insérer les nouvelles parties
-            const { error: insertError, data } = await supabase
-              .from("games")
-              .insert(newGames)
-              .select();
-
-            if (insertError) {
-              console.error("Erreur lors de l'insertion:", insertError);
-              totalErrors += newGames.length;
-            } else {
-              totalImported += data?.length || 0;
-              totalSkipped += gamesToInsert.length - (data?.length || 0);
-            }
-
-            // Mettre à jour last_sync_at
+          // Mettre à jour last_sync_at (seulement en mode authentifié)
+          if (!isGuest && userPlatform.id) {
             await supabase
               .from("user_platforms")
               .update({ last_sync_at: new Date().toISOString() })

@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { useSupabase } from "./useSupabase";
+import { useDataService } from "./useDataService";
 import { useGuestMode } from "./useGuestMode";
-import { LocalStorage } from "@/utils/local-storage";
 import type { Game } from "@/types/games";
 
 export const useGames = () => {
-  const { supabase } = useSupabase();
+  const dataService = useDataService();
   const { isGuest } = useGuestMode();
 
   const {
@@ -17,91 +16,7 @@ export const useGames = () => {
   } = useQuery({
     queryKey: ["games", isGuest ? "guest" : "authenticated"],
     queryFn: async () => {
-      if (isGuest) {
-        // Mode guest : utiliser LocalStorage
-        const guestGames = await LocalStorage.getGames();
-        // Ajouter blunders_count à 0 par défaut (sera calculé si analyses disponibles)
-        return guestGames.map((game) => ({
-          ...game,
-          blunders_count: 0,
-        })) as Game[];
-      }
-
-      // Mode authentifié : utiliser Supabase
-      const { data: gamesData, error: gamesError } = await supabase
-        .from("games")
-        .select("*")
-        .order("played_at", { ascending: false });
-
-      if (gamesError) throw gamesError;
-
-      if (!gamesData || gamesData.length === 0) {
-        return [];
-      }
-
-      // Récupérer les game_ids qui ont des analyses (source de vérité)
-      const gameIds = gamesData.map((g) => g.id);
-      const { data: analysesData } = await supabase
-        .from("game_analyses")
-        .select("game_id, move_quality")
-        .in("game_id", gameIds);
-
-      const gamesWithAnalyses = new Set(
-        (analysesData || []).map((a) => a.game_id),
-      );
-
-      // Compter les blunders par partie (basé sur move_quality)
-      const blundersCountByGame = new Map<string, number>();
-      (analysesData || []).forEach((analysis) => {
-        if (analysis.move_quality === "blunder") {
-          const current = blundersCountByGame.get(analysis.game_id) || 0;
-          blundersCountByGame.set(analysis.game_id, current + 1);
-        }
-      });
-
-      // Synchroniser analyzed_at avec la présence d'analyses
-      // On fait une seule requête batch pour optimiser
-      const gamesToUpdate: { id: string; analyzed_at: string | null }[] = [];
-
-      const gamesWithCorrectStatus = gamesData.map((game) => {
-        const hasAnalyses = gamesWithAnalyses.has(game.id);
-        const blundersCount = blundersCountByGame.get(game.id) || 0;
-
-        if (hasAnalyses !== !!game.analyzed_at) {
-          gamesToUpdate.push({
-            id: game.id,
-            analyzed_at: hasAnalyses ? new Date().toISOString() : null,
-          });
-          return {
-            ...game,
-            analyzed_at: hasAnalyses ? new Date().toISOString() : null,
-            blunders_count: blundersCount,
-          };
-        }
-
-        return {
-          ...game,
-          blunders_count: blundersCount,
-        };
-      });
-
-      // Mettre à jour en batch si nécessaire
-      if (gamesToUpdate.length > 0) {
-        // Note: Supabase ne supporte pas les updates batch directement
-        // On fait les updates en parallèle mais sans bloquer
-        Promise.all(
-          gamesToUpdate.map((game) =>
-            supabase
-              .from("games")
-              .update({ analyzed_at: game.analyzed_at })
-              .eq("id", game.id),
-          ),
-        ).catch((err) => {
-          console.error("[useGames] Erreur synchronisation:", err);
-        });
-      }
-
-      return gamesWithCorrectStatus as Game[];
+      return await dataService.getGames();
     },
   });
 

@@ -1,7 +1,10 @@
 // Utilitaires pour les exercices
 import type { Game, GameAnalysis } from "@/types/games";
 import { generateExercisesFromAnalyses } from "@/services/chess/exercise-generator";
+import { generateExercisesFromAnalysesGuest } from "@/services/chess/exercise-generator";
+import { LocalStorage } from "@/utils/local-storage";
 import type { QueryClient } from "@tanstack/react-query";
+import type { Exercise } from "@/types/exercises";
 
 /**
  * Récupère les usernames normalisés de l'utilisateur depuis les plateformes
@@ -67,6 +70,59 @@ export const generateExercisesForGame = async (
     await generateExercisesFromAnalyses(
       supabase,
       dbAnalyses as GameAnalysis[],
+      game,
+      userUsernames,
+    );
+
+    // Invalider le cache des exercices
+    queryClient.invalidateQueries({ queryKey: ["exercises"] });
+  } catch (error: any) {
+    // Logger silencieusement, ne pas bloquer l'utilisateur
+    console.error(
+      `[${context || "ExerciseGenerator"}] Erreur génération exercices (game ${gameId}):`,
+      error,
+    );
+  }
+};
+
+/**
+ * Génère les exercices pour une partie analysée en mode guest
+ * Version adaptée pour LocalStorage
+ */
+export const generateExercisesForGameGuest = async (
+  gameId: string,
+  game: Game,
+  platforms: { platform_username: string | null }[],
+  queryClient: QueryClient,
+  context?: string,
+): Promise<void> => {
+  try {
+    // Récupérer les analyses depuis LocalStorage
+    const guestAnalyses = await LocalStorage.getAnalyses(gameId);
+
+    if (!guestAnalyses || guestAnalyses.length === 0) {
+      if (context) {
+        console.log(
+          `[${context}] Aucune analyse trouvée pour générer les exercices (game ${gameId})`,
+        );
+      }
+      return;
+    }
+
+    // Vérifier que l'utilisateur a des usernames configurés
+    const userUsernames = getUserUsernames(platforms);
+    if (userUsernames.length === 0) {
+      if (context) {
+        console.log(
+          `[${context}] Aucun username trouvé pour générer les exercices (game ${gameId})`,
+        );
+      }
+      return;
+    }
+
+    // Générer les exercices
+    await generateExercisesFromAnalysesGuest(
+      guestAnalyses as GameAnalysis[],
       game,
       userUsernames,
     );

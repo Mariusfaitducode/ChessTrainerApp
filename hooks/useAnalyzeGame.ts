@@ -1,18 +1,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert } from "react-native";
 
+import { useDataService } from "./useDataService";
 import { useSupabase } from "./useSupabase";
 import { useGuestMode } from "./useGuestMode";
-import { LocalStorage } from "@/utils/local-storage";
 import {
   analyzeGame,
   prepareAnalysesForInsert,
 } from "@/services/chess/analyzer";
-import { insertAnalyses } from "@/utils/analysis";
-import { generateExercisesForGame } from "@/utils/exercise";
+import {
+  generateExercisesForGame,
+  generateExercisesForGameGuest,
+} from "@/utils/exercise";
 import { useChessPlatform } from "./useChessPlatform";
 import type { Game } from "@/types/games";
-import type { GameAnalysis } from "@/types/database";
 
 interface AnalyzeGameOptions {
   onProgress?: (current: number, total: number) => void;
@@ -23,7 +24,8 @@ interface AnalyzeGameOptions {
  * Hook pour analyser une partie d'échecs
  */
 export const useAnalyzeGame = () => {
-  const { supabase, session } = useSupabase();
+  const dataService = useDataService();
+  const { supabase } = useSupabase();
   const { isGuest } = useGuestMode();
   const queryClient = useQueryClient();
   const { platforms } = useChessPlatform();
@@ -49,48 +51,29 @@ export const useAnalyzeGame = () => {
         throw new Error("Aucune analyse générée");
       }
 
-      if (isGuest) {
-        // Mode guest : stocker dans LocalStorage
-        const analysesToInsert = prepareAnalysesForInsert(game.id, analyses);
-        
-        // Sauvegarder les analyses
-        await LocalStorage.saveAnalyses(game.id, analysesToInsert as GameAnalysis[]);
+      // Préparer les analyses pour insertion
+      const analysesToInsert = prepareAnalysesForInsert(game.id, analyses);
 
-        // Mettre à jour analyzed_at dans LocalStorage
-        const games = await LocalStorage.getGames();
-        const gameIndex = games.findIndex((g) => g.id === game.id);
-        if (gameIndex !== -1) {
-          games[gameIndex].analyzed_at = new Date().toISOString();
-          await LocalStorage.saveGames(games);
-        }
+      // Sauvegarder via le service unifié
+      await dataService.saveAnalyses(game.id, analysesToInsert);
+      await dataService.updateGameAnalyzedAt(game.id, new Date().toISOString());
 
-        // Invalider les caches
-        queryClient.invalidateQueries({ queryKey: ["game-analyses", game.id] });
-        queryClient.invalidateQueries({ queryKey: ["games"] });
-        queryClient.invalidateQueries({ queryKey: ["game-metadata", game.id] });
+      // Invalider les caches
+      queryClient.invalidateQueries({ queryKey: ["game-analyses", game.id] });
+      queryClient.invalidateQueries({ queryKey: ["games"] });
+      queryClient.invalidateQueries({ queryKey: ["game-metadata", game.id] });
 
-        // Générer les exercices en différé (pour mode guest aussi)
-        setTimeout(() => {
-          // TODO: Adapter generateExercisesForGame pour mode guest
-          // Pour l'instant, on skip la génération d'exercices en mode guest
-          console.log("[useAnalyzeGame] Génération d'exercices en mode guest - à implémenter");
-        }, 100);
-      } else {
-        // Mode authentifié : utiliser Supabase
-        if (!session?.user) {
-          throw new Error("Vous devez être connecté pour analyser une partie");
-        }
-
-        const analysesToInsert = prepareAnalysesForInsert(game.id, analyses);
-        await insertAnalyses(supabase, game.id, analysesToInsert);
-
-        // Invalider les caches
-        queryClient.invalidateQueries({ queryKey: ["game-analyses", game.id] });
-        queryClient.invalidateQueries({ queryKey: ["games"] });
-        queryClient.invalidateQueries({ queryKey: ["game-metadata", game.id] });
-
-        // Générer les exercices en différé (pour ne pas bloquer l'analyse)
-        setTimeout(() => {
+      // Générer les exercices en différé
+      setTimeout(() => {
+        if (isGuest) {
+          generateExercisesForGameGuest(
+            game.id,
+            game,
+            platforms,
+            queryClient,
+            "useAnalyzeGame",
+          );
+        } else {
           generateExercisesForGame(
             supabase,
             game.id,
@@ -99,8 +82,8 @@ export const useAnalyzeGame = () => {
             queryClient,
             "useAnalyzeGame",
           );
-        }, 100); // Petit délai pour laisser l'insertion se terminer
-      }
+        }
+      }, 100);
 
       return analyses;
     },

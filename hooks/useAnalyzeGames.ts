@@ -2,13 +2,17 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert } from "react-native";
 
+import { useDataService } from "./useDataService";
 import { useSupabase } from "./useSupabase";
+import { useGuestMode } from "./useGuestMode";
 import {
   analyzeGame,
   prepareAnalysesForInsert,
 } from "@/services/chess/analyzer";
-import { insertAnalyses } from "@/utils/analysis";
-import { generateExercisesForGame } from "@/utils/exercise";
+import {
+  generateExercisesForGame,
+  generateExercisesForGameGuest,
+} from "@/utils/exercise";
 import { useChessPlatform } from "./useChessPlatform";
 import type { Game } from "@/types/games";
 
@@ -24,7 +28,9 @@ interface Progress {
 }
 
 export const useAnalyzeGames = () => {
-  const { supabase, session } = useSupabase();
+  const dataService = useDataService();
+  const { supabase } = useSupabase();
+  const { isGuest } = useGuestMode();
   const queryClient = useQueryClient();
   const { platforms } = useChessPlatform();
   const [progress, setProgress] = useState<Record<string, Progress>>({});
@@ -37,10 +43,6 @@ export const useAnalyzeGames = () => {
       games: Game[];
       options?: AnalyzeGamesOptions;
     }) => {
-      if (!session?.user) {
-        throw new Error("Vous devez être connecté pour analyser les parties");
-      }
-
       if (games.length === 0) {
         throw new Error("Aucune partie à analyser");
       }
@@ -95,8 +97,15 @@ export const useAnalyzeGames = () => {
             throw new Error("Aucune analyse générée");
           }
 
+          // Préparer les analyses pour insertion
           const analysesToInsert = prepareAnalysesForInsert(game.id, analyses);
-          await insertAnalyses(supabase, game.id, analysesToInsert);
+
+          // Sauvegarder via le service unifié
+          await dataService.saveAnalyses(game.id, analysesToInsert);
+          await dataService.updateGameAnalyzedAt(
+            game.id,
+            new Date().toISOString(),
+          );
 
           setProgress((prev) => ({
             ...prev,
@@ -108,16 +117,35 @@ export const useAnalyzeGames = () => {
             },
           }));
 
-          // Générer les exercices en différé (pour ne pas bloquer l'analyse)
+          // Invalider les caches
+          queryClient.invalidateQueries({
+            queryKey: ["game-analyses", game.id],
+          });
+          queryClient.invalidateQueries({ queryKey: ["games"] });
+          queryClient.invalidateQueries({
+            queryKey: ["game-metadata", game.id],
+          });
+
+          // Générer les exercices en différé
           setTimeout(() => {
-            generateExercisesForGame(
-              supabase,
-              game.id,
-              game,
-              platforms,
-              queryClient,
-              "useAnalyzeGames",
-            );
+            if (isGuest) {
+              generateExercisesForGameGuest(
+                game.id,
+                game,
+                platforms,
+                queryClient,
+                "useAnalyzeGames",
+              );
+            } else {
+              generateExercisesForGame(
+                supabase,
+                game.id,
+                game,
+                platforms,
+                queryClient,
+                "useAnalyzeGames",
+              );
+            }
           }, 100);
 
           results.push({ gameId: game.id, success: true });

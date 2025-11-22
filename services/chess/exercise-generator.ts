@@ -3,6 +3,8 @@ import { Chess } from "chess.js";
 import type { GameAnalysis, Game } from "@/types/games";
 import type { Exercise } from "@/types/exercises";
 import { compareMoves } from "./move-comparison";
+import { generateUUIDSync } from "@/utils/uuid";
+import { LocalStorage } from "@/utils/local-storage";
 
 interface ExerciseGenerationContext {
   game: Game;
@@ -281,4 +283,118 @@ export const generateExercisesFromAnalyses = async (
     console.error(`[ExerciseGenerator] Erreur:`, error);
     throw error;
   }
+};
+
+/**
+ * Génère tous les exercices à partir des analyses d'une partie (mode guest)
+ * Version adaptée pour LocalStorage
+ */
+export const generateExercisesFromAnalysesGuest = async (
+  analyses: GameAnalysis[],
+  game: Game,
+  userUsernames: string[],
+): Promise<number> => {
+  console.log(
+    `[ExerciseGenerator] Génération d'exercices (guest) pour ${analyses.length} analyses`,
+  );
+
+  const context: ExerciseGenerationContext = {
+    game,
+    userUsernames,
+  };
+
+  // Filtrer uniquement les blunders (basé sur move_quality)
+  const blunders = analyses.filter((a) => a.move_quality === "blunder");
+  console.log(`[ExerciseGenerator] ${blunders.length} blunders trouvés`);
+
+  // Créer les exercices avec leur analyse associée
+  const exercisesWithAnalysis: {
+    exercise: Omit<Exercise, "id" | "created_at">;
+    analysis: GameAnalysis;
+  }[] = [];
+
+  for (const analysis of blunders) {
+    const exercise = createExerciseFromAnalysis(analysis, context);
+    if (exercise) {
+      exercisesWithAnalysis.push({ exercise, analysis });
+    }
+  }
+
+  if (exercisesWithAnalysis.length === 0) {
+    console.log("[ExerciseGenerator] Aucun exercice à créer");
+    return 0;
+  }
+
+  console.log(
+    `[ExerciseGenerator] ${exercisesWithAnalysis.length} exercices à créer`,
+  );
+
+  // Récupérer les exercices existants depuis LocalStorage
+  const existingExercises = await LocalStorage.getExercises();
+  const existingSet = new Set(
+    existingExercises.map(
+      (e) => `${e.fen}_${e.correct_move}_${e.user_id || "guest"}`,
+    ),
+  );
+
+  // Vérifier l'existence avant insertion pour éviter les doublons
+  const exercisesToInsert: Omit<Exercise, "id" | "created_at">[] = [];
+
+  for (const { exercise, analysis } of exercisesWithAnalysis) {
+    try {
+      // Vérifier si un exercice existe déjà avec la même FEN et le même correct_move
+      const exerciseKey = `${exercise.fen}_${exercise.correct_move}_${exercise.user_id || "guest"}`;
+      if (existingSet.has(exerciseKey)) {
+        console.log(
+          `[ExerciseGenerator] Exercice déjà existant pour FEN ${exercise.fen} et move ${exercise.correct_move}`,
+        );
+        continue;
+      }
+
+      // Validation finale : vérifier une dernière fois que best_move ≠ played_move
+      const finalCheck = compareMoves(
+        exercise.correct_move,
+        analysis.played_move,
+        exercise.fen,
+      );
+
+      if (finalCheck) {
+        console.error(
+          `[ExerciseGenerator] ERREUR: Tentative de créer un exercice avec best_move === played_move !`,
+          `best_move=${exercise.correct_move}, played_move=${analysis.played_move}, analysis_id=${analysis.id}`,
+        );
+        continue; // Ne pas insérer cet exercice
+      }
+
+      exercisesToInsert.push(exercise);
+    } catch (error: any) {
+      console.error(
+        `[ExerciseGenerator] Erreur lors de la vérification:`,
+        error,
+      );
+      // Continuer avec le suivant
+    }
+  }
+
+  if (exercisesToInsert.length === 0) {
+    console.log("[ExerciseGenerator] Tous les exercices existent déjà");
+    return 0;
+  }
+
+  // Insérer les exercices dans LocalStorage avec IDs temporaires
+  const exercisesWithIds: Exercise[] = exercisesToInsert.map((exercise) => ({
+    ...exercise,
+    id: generateUUIDSync(),
+    created_at: new Date().toISOString(),
+  })) as Exercise[];
+
+  // Ajouter chaque exercice à LocalStorage
+  for (const exercise of exercisesWithIds) {
+    await LocalStorage.addExercise(exercise);
+  }
+
+  console.log(
+    `[ExerciseGenerator] ${exercisesToInsert.length} exercices créés avec succès (guest)`,
+  );
+  return exercisesToInsert.length;
 };
