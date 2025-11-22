@@ -23,7 +23,8 @@ import {
 
 import { useExercise } from "@/hooks/useExercise";
 import { useExercises } from "@/hooks/useExercises";
-import { useSupabase } from "@/hooks/useSupabase";
+import { useDataService } from "@/hooks/useDataService";
+import { useGuestMode } from "@/hooks/useGuestMode";
 import { useQuery } from "@tanstack/react-query";
 import { Chessboard } from "@/components/chess/Chessboard";
 import { AnalysisBar } from "@/components/chess/AnalysisBar";
@@ -36,24 +37,33 @@ export default function ExerciseScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const navigation = useNavigation();
-  const { supabase } = useSupabase();
+  const dataService = useDataService();
+  const { isGuest } = useGuestMode();
   const { exercise, isLoading, error } = useExercise(id);
   const { completeExercise, exercises } = useExercises(false);
 
   // Récupérer l'évaluation pour la barre d'analyse
   const { data: analysisData } = useQuery({
-    queryKey: ["exercise-analysis", exercise?.game_analysis_id],
+    queryKey: ["exercise-analysis", exercise?.game_analysis_id, isGuest ? "guest" : "authenticated"],
     queryFn: async () => {
-      if (!exercise?.game_analysis_id) return null;
-      const { data, error } = await supabase
-        .from("game_analyses")
-        .select("evaluation, best_move, move_quality")
-        .eq("id", exercise.game_analysis_id)
-        .single();
-      if (error) throw error;
-      return data;
+      if (!exercise?.game_analysis_id || !exercise?.game_id) return null;
+      
+      // Récupérer toutes les analyses de la partie
+      const analyses = await dataService.getAnalyses(exercise.game_id);
+      
+      // Trouver l'analyse correspondante
+      const analysis = analyses.find((a) => a.id === exercise.game_analysis_id);
+      
+      if (!analysis) return null;
+      
+      // Retourner uniquement les champs nécessaires
+      return {
+        evaluation: analysis.evaluation,
+        best_move: analysis.best_move,
+        move_quality: analysis.move_quality,
+      };
     },
-    enabled: !!exercise?.game_analysis_id,
+    enabled: !!exercise?.game_analysis_id && !!exercise?.game_id,
   });
 
   const chessboardRef = useRef<ChessboardRef | null>(null);
