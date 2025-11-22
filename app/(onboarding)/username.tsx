@@ -58,6 +58,10 @@ export default function UsernameOnboardingScreen() {
       // Marquer l'onboarding comme complété
       await completeOnboarding();
 
+      // Petit délai pour s'assurer que l'état est bien mis à jour
+      // avant de naviguer (évite les conflits de navigation)
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       // Rediriger vers l'app (dashboard)
       router.replace("/(protected)/(tabs)/");
     } catch (error: any) {

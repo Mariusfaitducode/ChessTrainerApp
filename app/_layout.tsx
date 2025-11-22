@@ -45,13 +45,19 @@ function RootNavigator() {
     const inPublicGroup = segments[0] === "(public)";
 
     // Si l'onboarding n'est pas complété, rediriger vers l'onboarding
+    // MAIS seulement si on n'est pas déjà dans le groupe protected (pour éviter les conflits)
     if (!isOnboardingCompleted) {
-      if (!inOnboardingGroup && !inPublicGroup) {
+      if (!inOnboardingGroup && !inPublicGroup && !inProtectedGroup) {
         router.replace("/(onboarding)/");
       }
     } else {
       // Si l'onboarding est complété, cacher le splash screen
       SplashScreen.hide();
+      
+      // Si on est dans l'onboarding mais que c'est complété, rediriger vers l'app
+      if (inOnboardingGroup) {
+        router.replace("/(protected)/(tabs)/");
+      }
     }
   }, [isLoaded, isOnboardingCompleted, isOnboardingLoading, segments, router]);
 

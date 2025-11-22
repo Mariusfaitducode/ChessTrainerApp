@@ -40,6 +40,7 @@
 ## 💡 Problème identifié
 
 **Les limitations actuelles ne sont pas assez "vendeuses"** :
+
 - ❌ "Synchronisation entre appareils" → pas immédiatement visible
 - ❌ "Backup automatique" → pas un besoin urgent
 - ❌ "Stockage illimité" → pas de limite claire en guest
@@ -53,10 +54,12 @@
 ### 1. **Statistiques avancées** (Priorité haute)
 
 **Mode Guest** :
+
 - ❌ Pas de statistiques
 - ❌ Pas d'historique
 
 **Avec compte** :
+
 - ✅ **Dashboard avec statistiques détaillées**
   - Taux d'erreurs global (blunders/mistakes/inaccuracies)
   - Évolution dans le temps (graphiques)
@@ -76,10 +79,12 @@
 ### 2. **Synchronisation automatique** (Priorité haute)
 
 **Mode Guest** :
+
 - ❌ Synchronisation manuelle uniquement
 - ❌ Pas de background sync
 
 **Avec compte** :
+
 - ✅ **Synchronisation automatique en arrière-plan**
   - Sync périodique (toutes les heures)
   - Sync au démarrage de l'app
@@ -95,10 +100,12 @@
 ### 3. **Export et partage** (Priorité moyenne)
 
 **Mode Guest** :
+
 - ❌ Pas d'export
 - ❌ Pas de partage
 
 **Avec compte** :
+
 - ✅ **Export PGN**
   - Exporter une partie analysée
   - Exporter toutes les parties
@@ -116,9 +123,11 @@
 ### 4. **Notifications et rappels** (Priorité moyenne)
 
 **Mode Guest** :
+
 - ❌ Pas de notifications
 
 **Avec compte** :
+
 - ✅ **Notifications push**
   - Nouveaux exercices générés
   - Rappels de résolution d'exercices
@@ -134,10 +143,12 @@
 ### 5. **Limites et quotas** (Priorité basse)
 
 **Mode Guest** :
+
 - ⚠️ Limite implicite (stockage local)
 - ⚠️ Pas de limite claire affichée
 
 **Avec compte** :
+
 - ✅ **Stockage illimité**
   - Pas de limite de parties
   - Pas de limite d'analyses
@@ -153,10 +164,12 @@
 ### 6. **Historique et progression** (Priorité haute)
 
 **Mode Guest** :
+
 - ❌ Pas d'historique long terme
 - ❌ Pas de suivi de progression
 
 **Avec compte** :
+
 - ✅ **Historique complet**
   - Toutes les parties depuis le début
   - Toutes les analyses
@@ -299,25 +312,25 @@ if (isGuest && games.length >= GUEST_LIMIT) {
 
 ### Avant (actuel)
 
-| Feature | Guest | Compte |
-|---------|-------|--------|
-| Sync parties | ✅ | ✅ |
-| Analyse | ✅ | ✅ |
-| Exercices | ✅ | ✅ |
-| **Valeur ajoutée compte** | ❌ **Aucune** | ❌ |
+| Feature                   | Guest         | Compte |
+| ------------------------- | ------------- | ------ |
+| Sync parties              | ✅            | ✅     |
+| Analyse                   | ✅            | ✅     |
+| Exercices                 | ✅            | ✅     |
+| **Valeur ajoutée compte** | ❌ **Aucune** | ❌     |
 
 ### Après (avec features premium)
 
-| Feature | Guest | Compte |
-|---------|-------|--------|
-| Sync parties | ✅ (50 max) | ✅ (illimité) |
-| Analyse | ✅ | ✅ |
-| Exercices | ✅ | ✅ |
-| **Statistiques** | ❌ | ✅ **Premium** |
-| **Sync auto** | ❌ | ✅ **Premium** |
-| **Export/Partage** | ❌ | ✅ **Premium** |
-| **Notifications** | ❌ | ✅ **Premium** |
-| **Historique** | ❌ | ✅ **Premium** |
+| Feature            | Guest       | Compte         |
+| ------------------ | ----------- | -------------- |
+| Sync parties       | ✅ (50 max) | ✅ (illimité)  |
+| Analyse            | ✅          | ✅             |
+| Exercices          | ✅          | ✅             |
+| **Statistiques**   | ❌          | ✅ **Premium** |
+| **Sync auto**      | ❌          | ✅ **Premium** |
+| **Export/Partage** | ❌          | ✅ **Premium** |
+| **Notifications**  | ❌          | ✅ **Premium** |
+| **Historique**     | ❌          | ✅ **Premium** |
 
 **Résultat** : **5 features premium** qui justifient clairement la création de compte.
 
@@ -328,6 +341,7 @@ if (isGuest && games.length >= GUEST_LIMIT) {
 **Problème actuel** : Pas assez de différences entre guest et compte.
 
 **Solution** : Implémenter des **features premium réservées aux comptes** :
+
 1. ✅ Statistiques avancées (dashboard)
 2. ✅ Synchronisation automatique
 3. ✅ Export et partage
@@ -340,4 +354,3 @@ if (isGuest && games.length >= GUEST_LIMIT) {
 ---
 
 **Dernière mise à jour** : Décembre 2024
-

@@ -3,7 +3,7 @@
  * Détecte si c'est la première arrivée et gère la navigation
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ONBOARDING_KEY = "onboarding_completed";
@@ -14,11 +14,7 @@ export const useOnboarding = () => {
   >(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    checkOnboardingStatus();
-  }, []);
-
-  const checkOnboardingStatus = async () => {
+  const checkOnboardingStatus = useCallback(async () => {
     try {
       const completed = await AsyncStorage.getItem(ONBOARDING_KEY);
       setIsOnboardingCompleted(completed === "true");
@@ -28,12 +24,18 @@ export const useOnboarding = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    checkOnboardingStatus();
+  }, [checkOnboardingStatus]);
 
   const completeOnboarding = async () => {
     try {
       await AsyncStorage.setItem(ONBOARDING_KEY, "true");
+      // Mettre à jour l'état immédiatement
       setIsOnboardingCompleted(true);
+      setIsLoading(false);
     } catch (error) {
       console.error("[useOnboarding] Erreur sauvegarde:", error);
     }
@@ -43,6 +45,7 @@ export const useOnboarding = () => {
     isOnboardingCompleted,
     isLoading,
     completeOnboarding,
+    refresh: checkOnboardingStatus,
   };
 };
 
