@@ -1,10 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { useSupabase } from "./useSupabase";
+import { useGuestMode } from "./useGuestMode";
+import { LocalStorage } from "@/utils/local-storage";
 import type { Game } from "@/types/games";
 
 export const useGames = () => {
   const { supabase } = useSupabase();
+  const { isGuest } = useGuestMode();
 
   const {
     data: games,
@@ -12,8 +15,19 @@ export const useGames = () => {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["games"],
+    queryKey: ["games", isGuest ? "guest" : "authenticated"],
     queryFn: async () => {
+      if (isGuest) {
+        // Mode guest : utiliser LocalStorage
+        const guestGames = await LocalStorage.getGames();
+        // Ajouter blunders_count à 0 par défaut (sera calculé si analyses disponibles)
+        return guestGames.map((game) => ({
+          ...game,
+          blunders_count: 0,
+        })) as Game[];
+      }
+
+      // Mode authentifié : utiliser Supabase
       const { data: gamesData, error: gamesError } = await supabase
         .from("games")
         .select("*")

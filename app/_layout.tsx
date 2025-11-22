@@ -45,13 +45,11 @@ function RootNavigator() {
         animationDuration: 0,
       }}
     >
-      <Stack.Protected guard={!!session}>
-        <Stack.Screen name="(protected)" />
-      </Stack.Protected>
+      {/* Toujours accessible, même sans session (mode guest) */}
+      <Stack.Screen name="(protected)" />
 
-      <Stack.Protected guard={!session}>
-        <Stack.Screen name="(public)" />
-      </Stack.Protected>
+      {/* Seulement accessible si pas de session (pages d'auth) */}
+      {!session && <Stack.Screen name="(public)" />}
     </Stack>
   );
 }

@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useSupabase } from "./useSupabase";
+import { useGuestMode } from "./useGuestMode";
+import { LocalStorage } from "@/utils/local-storage";
 import type { UserPlatform } from "@/types/platforms";
 import type { Platform } from "@/types/chess";
 import { getPlayerProfile as getChessComProfile } from "@/services/chesscom/api";
@@ -8,6 +10,7 @@ import { getUserProfile as getLichessProfile } from "@/services/lichess/api";
 
 export const useChessPlatform = () => {
   const { supabase, session } = useSupabase();
+  const { isGuest } = useGuestMode();
   const queryClient = useQueryClient();
 
   const {
@@ -16,8 +19,24 @@ export const useChessPlatform = () => {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["user-platforms"],
+    queryKey: ["user-platforms", isGuest ? "guest" : "authenticated"],
     queryFn: async () => {
+      if (isGuest) {
+        // Mode guest : utiliser LocalStorage
+        const guestPlatforms = await LocalStorage.getPlatforms();
+        // Convertir en format UserPlatform pour compatibilité
+        return guestPlatforms.map((p) => ({
+          id: `guest_${p.platform}`, // ID temporaire
+          user_id: "guest", // ID temporaire
+          platform: p.platform,
+          platform_username: p.username,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_sync_at: null,
+        })) as UserPlatform[];
+      }
+
+      // Mode authentifié : utiliser Supabase
       if (!session?.user) return [];
 
       const { data, error } = await supabase
@@ -29,7 +48,7 @@ export const useChessPlatform = () => {
       if (error) throw error;
       return data as UserPlatform[];
     },
-    enabled: !!session?.user,
+    enabled: isGuest || !!session?.user,
   });
 
   const addPlatform = useMutation({
@@ -40,11 +59,7 @@ export const useChessPlatform = () => {
       platform: Platform;
       username: string;
     }) => {
-      if (!session?.user) {
-        throw new Error("User not authenticated");
-      }
-
-      // Valider que le username existe sur la plateforme
+      // Valider que le username existe sur la plateforme (pour guest et auth)
       try {
         if (platform === "lichess") {
           await getLichessProfile(username);
@@ -56,6 +71,26 @@ export const useChessPlatform = () => {
           error?.message ||
             `Le joueur "${username}" n'existe pas sur ${platform}`,
         );
+      }
+
+      if (isGuest) {
+        // Mode guest : stocker localement
+        await LocalStorage.addPlatform(platform, username);
+        // Retourner au format UserPlatform pour compatibilité
+        return {
+          id: `guest_${platform}`,
+          user_id: "guest",
+          platform,
+          platform_username: username,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_sync_at: null,
+        } as UserPlatform;
+      }
+
+      // Mode authentifié : utiliser Supabase
+      if (!session?.user) {
+        throw new Error("User not authenticated");
       }
 
       // Vérifier si la plateforme existe déjà
@@ -103,12 +138,20 @@ export const useChessPlatform = () => {
 
   const disconnectPlatform = useMutation({
     mutationFn: async (platformId: string) => {
-      const { error } = await supabase
-        .from("user_platforms")
-        .delete()
-        .eq("id", platformId);
+      if (isGuest) {
+        // Mode guest : supprimer du cache local
+        // platformId est au format "guest_lichess" ou "guest_chesscom"
+        const platform = platformId.replace("guest_", "") as Platform;
+        await LocalStorage.removePlatform(platform);
+      } else {
+        // Mode authentifié : utiliser Supabase
+        const { error } = await supabase
+          .from("user_platforms")
+          .delete()
+          .eq("id", platformId);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-platforms"] });
