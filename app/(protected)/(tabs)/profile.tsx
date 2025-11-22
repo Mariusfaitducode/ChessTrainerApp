@@ -13,14 +13,18 @@ import {
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useRouter } from "expo-router";
 import { useSupabase } from "@/hooks/useSupabase";
 import { useChessPlatform } from "@/hooks/useChessPlatform";
+import { useGuestMode } from "@/hooks/useGuestMode";
 import type { Platform } from "@/types/chess";
 import { colors, spacing, typography, shadows, borders } from "@/theme";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { session, signOut } = useSupabase();
+  const { isGuest } = useGuestMode();
   const { addPlatform, disconnectPlatform, isAdding, getPlatform } =
     useChessPlatform();
 
@@ -89,13 +93,15 @@ export default function ProfileScreen() {
     >
       <Text style={styles.title}>Profil</Text>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Compte</Text>
-        <View style={styles.infoCard}>
-          <Text style={styles.infoLabel}>Email</Text>
-          <Text style={styles.infoValue}>{session?.user?.email}</Text>
+      {!isGuest && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Compte</Text>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoLabel}>Email</Text>
+            <Text style={styles.infoValue}>{session?.user?.email}</Text>
+          </View>
         </View>
-      </View>
+      )}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Plateformes</Text>
@@ -171,11 +177,27 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <View style={styles.section}>
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-          <Text style={styles.signOutText}>Déconnexion</Text>
-        </TouchableOpacity>
-      </View>
+      {!isGuest && (
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.signOutButton}
+            onPress={handleSignOut}
+          >
+            <Text style={styles.signOutText}>Déconnexion</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {isGuest && (
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.signUpButton}
+            onPress={() => router.push("/(public)/sign-up")}
+          >
+            <Text style={styles.signUpText}>Créer un compte</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Modal pour ajouter un username */}
       <Modal
@@ -290,6 +312,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   signOutText: {
+    color: colors.text.inverse,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+  },
+  signUpButton: {
+    backgroundColor: colors.orange[500],
+    borderRadius: borders.radius.lg,
+    padding: spacing[4],
+    alignItems: "center",
+  },
+  signUpText: {
     color: colors.text.inverse,
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.semibold,

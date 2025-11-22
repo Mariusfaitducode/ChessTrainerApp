@@ -12,7 +12,9 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useExercises } from "@/hooks/useExercises";
+import { usePrompts } from "@/hooks/usePrompts";
 import { ExerciseCard } from "@/components/exercises/ExerciseCard";
+import { SignUpPrompt } from "@/components/prompts/SignUpPrompt";
 import type { Exercise } from "@/types/exercises";
 import { colors, spacing, typography, borders } from "@/theme";
 
@@ -29,6 +31,7 @@ export default function ExercisesScreen() {
   const { exercises, isLoading, refetch } = useExercises(
     filter === "completed",
   );
+  const { showExercisePrompt, dismissExercisePrompt } = usePrompts();
 
   const filteredExercises =
     filter === "pending"
@@ -156,6 +159,13 @@ export default function ExercisesScreen() {
         }
         showsVerticalScrollIndicator={false}
         stickySectionHeadersEnabled={false}
+      />
+
+      <SignUpPrompt
+        visible={showExercisePrompt}
+        onDismiss={dismissExercisePrompt}
+        type="exercise"
+        count={exercises.filter((e) => e.completed).length}
       />
     </View>
   );

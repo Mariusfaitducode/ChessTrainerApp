@@ -17,7 +17,10 @@ import { useGames } from "@/hooks/useGames";
 import { useSyncGames } from "@/hooks/useSyncGames";
 import { useChessPlatform } from "@/hooks/useChessPlatform";
 import { useSupabase } from "@/hooks/useSupabase";
+import { usePrompts } from "@/hooks/usePrompts";
 import { GameCard } from "@/components/games/GameCard";
+import { GuestIndicator } from "@/components/prompts/GuestIndicator";
+import { SignUpPrompt } from "@/components/prompts/SignUpPrompt";
 import type { Game } from "@/types/games";
 import { colors, spacing, typography, shadows, borders } from "@/theme";
 
@@ -67,6 +70,7 @@ export default function GamesScreen() {
   const { games, isLoading, refetch } = useGames();
   const { syncGames, isSyncing } = useSyncGames();
   const { platforms } = useChessPlatform();
+  const { showSyncPrompt, dismissSyncPrompt } = usePrompts();
 
   const handleGamePress = (gameId: string) => {
     router.push(`/(protected)/game/${gameId}` as any);
@@ -141,6 +145,7 @@ export default function GamesScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <GuestIndicator />
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.titleSection}>
@@ -194,6 +199,13 @@ export default function GamesScreen() {
         }
         showsVerticalScrollIndicator={false}
         stickySectionHeadersEnabled={false}
+      />
+
+      <SignUpPrompt
+        visible={showSyncPrompt}
+        onDismiss={dismissSyncPrompt}
+        type="sync"
+        count={games.length}
       />
     </View>
   );
