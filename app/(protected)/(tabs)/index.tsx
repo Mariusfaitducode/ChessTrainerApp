@@ -203,11 +203,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   sectionTitle: {
-    fontFamily: typography.fontFamily.display, // Patrick Hand
-    fontSize: 24, // Un peu plus gros pour Patrick Hand qui est small
+    fontFamily: typography.fontFamily.body, // Retour à la police système (Moderne)
+    fontSize: 20,
+    fontWeight: "600",
     marginBottom: spacing[3],
-    color: colors.text.secondary,
-    // Pas d'uppercase pour garder le style manuscrit
+    color: colors.text.primary,
+    letterSpacing: -0.5, // Un peu plus serré pour le côté moderne
   },
   statsRow: {
     flexDirection: "row",
@@ -217,17 +218,21 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: colors.background.primary,
-    borderWidth: borders.width.thin, // Fin (1px)
+    borderWidth: borders.width.thin,
     borderColor: colors.border.medium,
-    borderRadius: borders.radius.md,
+    borderRadius: 16, // Plus arrondi (Moderne)
     padding: spacing[4],
     alignItems: "center",
     justifyContent: "center",
-    ...shadows.sm, // Ombre légère
+    ...shadows.sm,
     aspectRatio: 1.2,
   },
   statNumber: {
-    fontFamily: typography.fontFamily.display, // Patrick Hand pour le chiffre (fun)
+    fontFamily: typography.fontFamily.display, // On garde Patrick Hand juste pour le gros chiffre c'est sympa ? ou System ?
+    // L'user a dit "uniquement titres des pages". Donc passons le chiffre en System aussi pour être strict sur "Moderne".
+    // Mais un chiffre manuscrit c'est joli. Je vais le mettre en System Bold pour respecter la consigne "Moderne".
+    fontFamily: typography.fontFamily.body,
+    fontWeight: "700",
     fontSize: 32,
     color: colors.text.primary,
     marginBottom: spacing[1],
@@ -235,14 +240,16 @@ const styles = StyleSheet.create({
   statLabel: {
     fontFamily: typography.fontFamily.body,
     fontSize: 14,
-    fontWeight: "600",
-    color: colors.text.primary,
+    fontWeight: "500",
+    color: colors.text.secondary, // Plus discret
     textTransform: "uppercase",
+    letterSpacing: 1,
   },
   statSubtitle: {
     fontFamily: typography.fontFamily.body,
     fontSize: 12,
-    color: colors.text.secondary,
+    color: colors.text.tertiary,
+    marginTop: 2,
   },
   section: {
     marginBottom: spacing[6],
@@ -251,8 +258,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
     borderWidth: borders.width.thin,
     borderColor: colors.border.medium,
-    borderRadius: borders.radius.md,
-    padding: spacing[4],
+    borderRadius: 16, // Plus arrondi
+    padding: spacing[5], // Plus aéré
     ...shadows.sm,
   },
   actionCardDisabled: {
@@ -295,7 +302,7 @@ const styles = StyleSheet.create({
     gap: spacing[3],
     backgroundColor: colors.background.secondary,
     padding: spacing[4],
-    borderRadius: borders.radius.md,
+    borderRadius: 16,
     borderWidth: borders.width.thin,
     borderColor: colors.border.light,
   },
@@ -328,7 +335,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
     borderWidth: borders.width.thin,
     borderColor: colors.border.medium,
-    borderRadius: borders.radius.md,
+    borderRadius: 16,
     padding: spacing[4],
     ...shadows.sm,
     marginTop: spacing[2],

@@ -145,7 +145,12 @@ export default function ExercisesScreen() {
           filteredExercises.length === 0 && styles.listEmpty,
         ]}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.text.primary} colors={[colors.text.primary]}/>
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refetch}
+            tintColor={colors.text.primary}
+            colors={[colors.text.primary]}
+          />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -233,9 +238,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   sectionTitle: {
-    fontFamily: typography.fontFamily.display, // Patrick Hand
-    fontSize: 22,
-    color: colors.text.primary,
+    fontFamily: typography.fontFamily.body,
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text.secondary,
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
   sectionCount: {
     fontFamily: typography.fontFamily.body, // System

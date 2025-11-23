@@ -68,6 +68,11 @@ function RootNavigator() {
       return;
     }
 
+    // Tout est chargé, on peut cacher le splash screen
+    SplashScreen.hideAsync().catch(() => {
+      // Ignore error if splash screen is already hidden
+    });
+
     const inOnboardingGroup = segments[0] === "(onboarding)";
     const inProtectedGroup = segments[0] === "(protected)";
     const inPublicGroup = segments[0] === "(public)";
@@ -79,9 +84,6 @@ function RootNavigator() {
         router.replace("/(onboarding)/");
       }
     } else {
-      // Si l'onboarding est complété, cacher le splash screen
-      SplashScreen.hide();
-      
       // Si on est dans l'onboarding mais que c'est complété, rediriger vers l'app
       if (inOnboardingGroup) {
         router.replace("/(protected)/(tabs)/");

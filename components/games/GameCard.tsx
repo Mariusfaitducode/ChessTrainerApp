@@ -193,10 +193,10 @@ export const GameCard = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.background.primary,
-    borderRadius: borders.radius.md,
+    borderRadius: 16, // Moderne
     borderWidth: borders.width.thin, // Trait fin
     borderColor: colors.border.medium,
-    padding: spacing[3],
+    padding: spacing[4], // Aéré
     marginBottom: spacing[3],
     ...shadows.sm, // Ombre légère
   },

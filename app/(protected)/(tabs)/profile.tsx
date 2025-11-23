@@ -273,15 +273,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing[6],
   },
   sectionTitle: {
-    fontFamily: typography.fontFamily.heading, // Patrick Hand
+    fontFamily: typography.fontFamily.body,
     fontSize: 20,
+    fontWeight: "600",
     color: colors.text.primary,
-    marginBottom: spacing[3],
+    marginBottom: spacing[4],
+    letterSpacing: -0.5,
   },
   infoCard: {
     backgroundColor: colors.background.primary,
-    borderRadius: borders.radius.md,
-    padding: spacing[4],
+    borderRadius: 16, // Radius moderne
+    padding: spacing[5], // Padding aéré
     borderWidth: borders.width.thin,
     borderColor: colors.border.medium,
     ...shadows.sm,
@@ -292,6 +294,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing[1],
     textTransform: "uppercase",
     fontFamily: typography.fontFamily.body,
+    fontWeight: "500",
+    letterSpacing: 1,
   },
   infoValue: {
     fontSize: 16,
@@ -301,7 +305,7 @@ const styles = StyleSheet.create({
   },
   signOutButton: {
     backgroundColor: colors.background.primary,
-    borderRadius: borders.radius.md,
+    borderRadius: 16,
     borderWidth: borders.width.thin,
     borderColor: colors.error.main,
     padding: spacing[4],
@@ -316,7 +320,7 @@ const styles = StyleSheet.create({
   },
   signUpButton: {
     backgroundColor: colors.text.primary, // Noir
-    borderRadius: borders.radius.md,
+    borderRadius: 16,
     padding: spacing[4],
     alignItems: "center",
     ...shadows.sm,
@@ -329,8 +333,8 @@ const styles = StyleSheet.create({
   },
   platformCard: {
     backgroundColor: colors.background.primary,
-    borderRadius: borders.radius.md,
-    padding: spacing[4],
+    borderRadius: 16,
+    padding: spacing[5],
     borderWidth: borders.width.thin,
     borderColor: colors.border.medium,
     ...shadows.sm,
@@ -343,7 +347,8 @@ const styles = StyleSheet.create({
   },
   platformName: {
     fontSize: 18,
-    fontFamily: typography.fontFamily.heading,
+    fontFamily: typography.fontFamily.body, // System, plus Patrick Hand
+    fontWeight: "600",
     color: colors.text.primary,
   },
   connectedBadge: {

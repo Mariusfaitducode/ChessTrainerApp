@@ -283,9 +283,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   sectionTitle: {
-    fontFamily: typography.fontFamily.display, // Patrick Hand
-    fontSize: 22,
-    color: colors.text.primary,
+    fontFamily: typography.fontFamily.body,
+    fontSize: 14, // Plus petit, plus discret (style label)
+    fontWeight: "600",
+    color: colors.text.secondary,
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
   sectionCount: {
     fontFamily: typography.fontFamily.body, // System

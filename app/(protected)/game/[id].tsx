@@ -376,9 +376,11 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontFamily: typography.fontFamily.display, // Patrick Hand
+    fontFamily: typography.fontFamily.body,
+    fontWeight: "600",
     marginBottom: spacing[3],
     color: colors.text.primary,
+    letterSpacing: -0.5,
   },
   loadingPlaceholderText: {
     marginTop: spacing[3],
