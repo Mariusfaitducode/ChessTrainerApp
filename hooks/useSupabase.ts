@@ -76,16 +76,35 @@ export const useSupabase = (): UseSupabaseProps => {
   useEffect(() => {
     if (!supabase) return;
 
-    // Récupérer la session initiale
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    // Timeout de sécurité pour forcer isLoaded à true après 3 secondes max
+    const timeoutId = setTimeout(() => {
+      console.warn("[useSupabase] Timeout: forçant isLoaded à true");
       setIsLoaded(true);
+    }, 3000);
 
-      // Migration si session existe déjà au chargement
-      if (data.session?.user && !migrationDoneRef.current) {
-        handleMigration(data.session.user.id);
-      }
-    });
+    // Récupérer la session initiale
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[useSupabase] Erreur getSession:", error);
+        }
+        setSession(data?.session ?? null);
+        setIsLoaded(true);
+        clearTimeout(timeoutId);
+
+        // Migration si session existe déjà au chargement
+        if (data?.session?.user && !migrationDoneRef.current) {
+          handleMigration(data.session.user.id);
+        }
+      })
+      .catch((error) => {
+        console.error("[useSupabase] Erreur lors de getSession:", error);
+        // Même en cas d'erreur, on marque comme chargé pour ne pas bloquer l'app
+        setSession(null);
+        setIsLoaded(true);
+        clearTimeout(timeoutId);
+      });
 
     // Écouter les changements d'authentification
     const { data: listener } = supabase.auth.onAuthStateChange(
@@ -106,6 +125,7 @@ export const useSupabase = (): UseSupabaseProps => {
     );
 
     return () => {
+      clearTimeout(timeoutId);
       listener.subscription.unsubscribe();
     };
   }, [supabase, handleMigration]);

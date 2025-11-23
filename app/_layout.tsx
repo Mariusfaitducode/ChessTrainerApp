@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -32,16 +32,27 @@ export default function RootLayout() {
     Fredoka_700Bold,
     PatrickHand_400Regular,
   });
+  const [fontsTimeout, setFontsTimeout] = useState(false);
 
   useEffect(() => {
+    // Timeout de sécurité : forcer le chargement après 3 secondes
+    const timeout = setTimeout(() => {
+      console.warn("[RootLayout] Timeout fonts: forçant le chargement");
+      setFontsTimeout(true);
+    }, 3000);
+
     if (fontsLoaded) {
       console.log("Fonts loaded successfully!");
+      clearTimeout(timeout);
       // On laisse le RootNavigator gérer le hide du splash screen
       // une fois que l'auth est chargée aussi
     }
+
+    return () => clearTimeout(timeout);
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
+  // Permettre le rendu même si les fonts ne sont pas chargées après le timeout
+  if (!fontsLoaded && !fontsTimeout) {
     return null;
   }
 
@@ -64,11 +75,20 @@ function RootNavigator() {
   const segments = useSegments();
 
   useEffect(() => {
+    // Timeout de sécurité : forcer le masquage du splash screen après 5 secondes max
+    const safetyTimeout = setTimeout(() => {
+      console.warn("[RootNavigator] Timeout: forçant le masquage du splash screen");
+      SplashScreen.hideAsync().catch(() => {
+        // Ignore error if splash screen is already hidden
+      });
+    }, 5000);
+
     if (!isLoaded || isOnboardingLoading) {
-      return;
+      return () => clearTimeout(safetyTimeout);
     }
 
     // Tout est chargé, on peut cacher le splash screen
+    clearTimeout(safetyTimeout);
     SplashScreen.hideAsync().catch(() => {
       // Ignore error if splash screen is already hidden
     });
@@ -89,6 +109,8 @@ function RootNavigator() {
         router.replace("/(protected)/(tabs)/");
       }
     }
+
+    return () => clearTimeout(safetyTimeout);
   }, [isLoaded, isOnboardingCompleted, isOnboardingLoading, segments, router]);
 
   return (

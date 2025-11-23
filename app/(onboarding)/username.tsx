@@ -95,13 +95,13 @@ export default function UsernameOnboardingScreen() {
 
       </View>
 
-      {/* Footer avec bouton Flèche */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[
-            styles.nextButton,
-            (!username.trim() || isSubmitting) && styles.nextButtonDisabled,
-          ]}
+        {/* Footer avec bouton Flèche */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[
+              styles.nextButton,
+              (!username.trim() || isSubmitting) && styles.nextButtonDisabled,
+            ]}
           onPress={handleSubmit}
           disabled={!username.trim() || isSubmitting}
           activeOpacity={0.8}

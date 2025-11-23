@@ -16,7 +16,12 @@ export const useOnboarding = () => {
 
   const checkOnboardingStatus = useCallback(async () => {
     try {
-      const completed = await AsyncStorage.getItem(ONBOARDING_KEY);
+      // Timeout de sécurité pour AsyncStorage (2 secondes max)
+      const timeoutPromise = new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), 2000),
+      );
+      const storagePromise = AsyncStorage.getItem(ONBOARDING_KEY);
+      const completed = await Promise.race([storagePromise, timeoutPromise]);
       setIsOnboardingCompleted(completed === "true");
     } catch (error) {
       console.error("[useOnboarding] Erreur vérification:", error);

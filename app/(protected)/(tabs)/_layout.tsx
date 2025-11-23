@@ -13,6 +13,7 @@ export default function TabsLayout() {
         }}
       >
         <Stack.Screen name="index" />
+        <Stack.Screen name="map" />
         <Stack.Screen name="games" />
         <Stack.Screen name="exercises" />
         <Stack.Screen name="profile" />

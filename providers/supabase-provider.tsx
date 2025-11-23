@@ -11,22 +11,45 @@ interface SupabaseProviderProps {
 }
 
 export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
-  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY!;
+  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY;
 
-  const supabase = useMemo(
-    () =>
-      createClient(supabaseUrl, supabaseKey, {
-        auth: {
-          storage: AsyncStorage,
-          autoRefreshToken: true,
-          persistSession: true,
-          detectSessionInUrl: false,
-          lock: processLock,
+  const supabase = useMemo(() => {
+    if (!supabaseUrl || !supabaseKey) {
+      console.error(
+        "[SupabaseProvider] Variables d'environnement manquantes:",
+        {
+          hasUrl: !!supabaseUrl,
+          hasKey: !!supabaseKey,
         },
-      }),
-    [supabaseUrl, supabaseKey],
-  );
+      );
+      // Retourner un client "vide" pour éviter les crashes
+      // Le hook useSupabase gérera l'erreur
+      return createClient(
+        supabaseUrl || "https://placeholder.supabase.co",
+        supabaseKey || "placeholder-key",
+        {
+          auth: {
+            storage: AsyncStorage,
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: false,
+            lock: processLock,
+          },
+        },
+      );
+    }
+
+    return createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        storage: AsyncStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+        lock: processLock,
+      },
+    });
+  }, [supabaseUrl, supabaseKey]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {

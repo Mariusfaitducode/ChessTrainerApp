@@ -16,7 +16,13 @@ import { prepareGamesForInsert } from "@/services/sync/games";
 /**
  * Hook pour synchroniser les parties depuis les plateformes
  */
-export const useSyncGames = () => {
+export const useSyncGames = (
+  options?: {
+    onSuccess?: (result: { imported: number; skipped: number; errors: number }) => void;
+    onError?: (error: Error) => void;
+    silent?: boolean;
+  }
+) => {
   const dataService = useDataService();
   const { supabase, session } = useSupabase();
   const { platforms } = useChessPlatform();
@@ -31,6 +37,8 @@ export const useSyncGames = () => {
       maxGames?: number;
       platform?: Platform;
     } = {}) => {
+      // ... (reste du code inchangé jusqu'au return)
+
       const platformsToSync = platform
         ? platforms.filter((p) => p.platform === platform)
         : platforms;
@@ -178,6 +186,13 @@ export const useSyncGames = () => {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
 
+      if (options?.onSuccess) {
+        options.onSuccess(result);
+        return;
+      }
+
+      if (options?.silent) return;
+
       if (result.imported === 0 && result.skipped > 0) {
         Alert.alert(
           "Synchronisation terminée",
@@ -196,6 +211,13 @@ export const useSyncGames = () => {
       }
     },
     onError: (error: any) => {
+      if (options?.onError) {
+        options.onError(error);
+        return;
+      }
+
+      if (options?.silent) return;
+
       Alert.alert(
         "Erreur de synchronisation",
         error?.message || "Une erreur est survenue",

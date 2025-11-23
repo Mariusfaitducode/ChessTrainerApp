@@ -60,7 +60,7 @@ export const colors = {
     500: "#FF9800", // Orange principal remplacé par la couleur "Mistake" ou action secondaire
     600: "#FB8C00",
   },
-  
+
   // États fonctionnels
   success: {
     light: "#D4EDDA",
