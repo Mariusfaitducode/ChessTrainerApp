@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: borders.radius.full,
-    backgroundColor: colors.orange[500],
+    backgroundColor: colors.text.primary, // Noir "Encre"
     justifyContent: "center",
     alignItems: "center",
     ...shadows.sm,
@@ -101,16 +101,15 @@ const styles = StyleSheet.create({
   moveCounter: {
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
-    backgroundColor: colors.background.secondary,
-    borderRadius: borders.radius.full,
+    // Plus de background gris
     minWidth: 80,
     alignItems: "center",
-    borderWidth: borders.width.thin,
-    borderColor: colors.border.light,
+    // Plus de bordure
   },
   moveCounterText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
+    fontSize: typography.fontSize.lg, // Plus grand
+    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.body, // System
     color: colors.text.primary,
   },
 });

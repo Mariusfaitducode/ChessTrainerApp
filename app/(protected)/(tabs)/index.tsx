@@ -7,15 +7,45 @@ import {
   RefreshControl,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
 } from "react-native";
-import { Brain } from "lucide-react-native";
-
+import { Brain, Play, Trophy, Zap } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useGames } from "@/hooks/useGames";
 import { useExercises } from "@/hooks/useExercises";
 import { useAnalyzeGames } from "@/hooks/useAnalyzeGames";
 import { colors, spacing, typography, shadows, borders } from "@/theme";
+import { getQualityBadgeImage } from "@/utils/chess-badge";
+
+// Composant StatCard "Clean Wireframe"
+const StatCard = ({ label, value, subtitle }: { label: string; value: string | number; subtitle?: string }) => (
+  <View style={styles.statCard}>
+    <Text style={styles.statNumber}>{value}</Text>
+    <Text style={styles.statLabel}>{label}</Text>
+    {subtitle && <Text style={styles.statSubtitle}>{subtitle}</Text>}
+  </View>
+);
+
+// Composant ActionCard "Clean Wireframe"
+const ActionCard = ({ title, subtitle, icon: Icon, onPress, loading = false, disabled = false }: any) => (
+  <TouchableOpacity 
+    style={[styles.actionCard, disabled && styles.actionCardDisabled]} 
+    onPress={onPress}
+    disabled={disabled}
+    activeOpacity={0.8}
+  >
+    <View style={styles.actionContent}>
+      <View style={styles.actionIconContainer}>
+        {loading ? <ActivityIndicator color={colors.text.primary} /> : <Icon size={24} color={colors.text.primary} strokeWidth={1.5} />}
+      </View>
+      <View style={styles.actionTextContainer}>
+        <Text style={styles.actionTitle}>{loading ? "Analyse en cours..." : title}</Text>
+        <Text style={styles.actionSubtitle}>{subtitle}</Text>
+      </View>
+    </View>
+  </TouchableOpacity>
+);
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
@@ -39,22 +69,19 @@ export default function DashboardScreen() {
   };
 
   const pendingExercises = exercises.filter((e) => !e.completed);
-  const recentGames = games.slice(0, 5);
-
-  // Obtenir les 5 dernières parties non analysées
+  const completedExercises = exercises.filter((e) => e.completed);
+  
   const unanalyzedGames = games.filter((g) => !g.analyzed_at).slice(0, 5);
+  const analyzedGamesCount = games.filter((g) => g.analyzed_at).length;
 
   const handleAnalyzeFirst = async () => {
-    if (unanalyzedGames.length === 0) {
-      return;
-    }
+    if (unanalyzedGames.length === 0) return;
 
     const firstGame = unanalyzedGames[0];
     setAnalyzingGameId(firstGame.id);
 
     try {
       await analyzeGames({ games: [firstGame] });
-      // Rafraîchir les données après analyse
       await Promise.all([refetchGames(), refetchExercises()]);
     } catch {
       // L'erreur est déjà gérée dans le hook avec Alert
@@ -63,7 +90,6 @@ export default function DashboardScreen() {
     }
   };
 
-  // Calculer le progress pour la partie en cours d'analyse
   const currentProgress = analyzingGameId ? progress[analyzingGameId] : null;
   const progressPercent =
     currentProgress && currentProgress.total > 0
@@ -78,120 +104,85 @@ export default function DashboardScreen() {
         <RefreshControl refreshing={isLoading} onRefresh={onRefresh} />
       }
     >
+      {/* Header - Seul titre en Patrick Hand */}
       <Text style={styles.title}>Dashboard</Text>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Statistiques</Text>
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{games.length}</Text>
-            <Text style={styles.statLabel}>Parties</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{exercises.length}</Text>
-            <Text style={styles.statLabel}>Exercices</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{pendingExercises.length}</Text>
-            <Text style={styles.statLabel}>En attente</Text>
-          </View>
-        </View>
+      {/* Stats */}
+      <View style={styles.statsRow}>
+        <StatCard 
+          value={`${analyzedGamesCount}/${games.length}`} 
+          label="Parties" 
+          subtitle="analysées" 
+        />
+        <StatCard 
+          value={`${completedExercises.length}/${exercises.length}`} 
+          label="Exercices" 
+          subtitle="résolus" 
+        />
       </View>
 
+      {/* Section Analyse */}
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Analyse</Text>
-          {unanalyzedGames.length > 0 && (
-            <TouchableOpacity
-              style={[
-                styles.analyzeButton,
-                isAnalyzing && styles.analyzeButtonDisabled,
-              ]}
-              onPress={handleAnalyzeFirst}
-              disabled={isAnalyzing}
-              activeOpacity={0.7}
-            >
-              {isAnalyzing ? (
-                <>
-                  <ActivityIndicator
-                    color={colors.text.inverse}
-                    size="small"
-                    style={styles.buttonSpinner}
-                  />
-                  <Text style={styles.analyzeButtonText}>
-                    Analyse en cours...
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Brain size={16} color={colors.text.inverse} />
-                  <Text style={styles.analyzeButtonText}>
-                    Analyser la prochaine
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
-        {isAnalyzing && currentProgress && currentProgress.total > 0 && (
+        <Text style={styles.sectionTitle}>Analyse</Text>
+        {unanalyzedGames.length > 0 ? (
+          <ActionCard
+            title="Analyser mes parties"
+            subtitle={`${unanalyzedGames.length} nouvelles parties détectées`}
+            icon={Brain}
+            onPress={handleAnalyzeFirst}
+            loading={isAnalyzing}
+            disabled={isAnalyzing}
+          />
+        ) : (
+          <View style={styles.infoCard}>
+            <Trophy size={24} color={colors.text.primary} strokeWidth={1.5} />
+            <Text style={styles.infoCardText}>Toutes tes parties sont analysées !</Text>
+          </View>
+        )}
+
+        {isAnalyzing && (
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View
-                style={[styles.progressFill, { width: `${progressPercent}%` }]}
-              />
+              <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
             </View>
             <Text style={styles.progressText}>
-              {progressPercent}% ({currentProgress.current}/
-              {currentProgress.total} coups analysés)
+              Analyse du cerveau en cours... {progressPercent}%
             </Text>
           </View>
         )}
-        {unanalyzedGames.length === 0 && games.length > 0 ? (
-          <Text style={styles.infoText}>
-            Toutes les parties ont déjà été analysées
-          </Text>
-        ) : unanalyzedGames.length === 0 ? (
-          <Text style={styles.emptyText}>
-            Aucune partie. Synchronise tes comptes pour importer tes parties.
-          </Text>
-        ) : (
-          <Text style={styles.infoText}>
-            {unanalyzedGames.length} partie
-            {unanalyzedGames.length > 1 ? "s" : ""} non analysée
-            {unanalyzedGames.length > 1 ? "s" : ""} disponible
-            {unanalyzedGames.length > 1 ? "s" : ""}
-          </Text>
-        )}
       </View>
 
+      {/* Section Exercices */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Dernières parties</Text>
-        {recentGames.length === 0 ? (
-          <Text style={styles.emptyText}>
-            Aucune partie. Synchronise tes comptes pour importer tes parties.
-          </Text>
-        ) : (
-          <Text style={styles.infoText}>
-            {recentGames.length} partie{recentGames.length > 1 ? "s" : ""}{" "}
-            récente{recentGames.length > 1 ? "s" : ""}
-          </Text>
-        )}
+        <Text style={styles.sectionTitle}>Entraînement</Text>
+        <ActionCard
+          title="Résoudre des exercices"
+          subtitle={pendingExercises.length > 0 ? `${pendingExercises.length} exercices t'attendent` : "Aucun exercice pour le moment"}
+          icon={Zap}
+          onPress={() => {}} // TODO: Naviguer vers exercices
+          disabled={pendingExercises.length === 0}
+        />
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Exercices disponibles</Text>
-        {pendingExercises.length === 0 ? (
-          <Text style={styles.emptyText}>
-            Aucun exercice en attente. Analyse tes parties pour générer des
-            exercices.
-          </Text>
-        ) : (
-          <Text style={styles.infoText}>
-            {pendingExercises.length} exercice
-            {pendingExercises.length > 1 ? "s" : ""} à résoudre
-          </Text>
-        )}
+      {/* Badges Card avec les vrais assets */}
+      <View style={styles.badgesCard}>
+         <Text style={styles.sectionTitle}>Légende</Text>
+         <View style={styles.badgesRow}>
+            <Image source={getQualityBadgeImage("brilliant")} style={styles.badgeIcon} />
+            <Image source={getQualityBadgeImage("great")} style={styles.badgeIcon} />
+            <Image source={getQualityBadgeImage("best")} style={styles.badgeIcon} />
+            <Image source={getQualityBadgeImage("excellent")} style={styles.badgeIcon} />
+            <Image source={getQualityBadgeImage("good")} style={styles.badgeIcon} />
+         </View>
+         <View style={styles.badgesRow}>
+            <Image source={getQualityBadgeImage("inaccuracy")} style={styles.badgeIcon} />
+            <Image source={getQualityBadgeImage("mistake")} style={styles.badgeIcon} />
+            <Image source={getQualityBadgeImage("miss")} style={styles.badgeIcon} />
+            <Image source={getQualityBadgeImage("blunder")} style={styles.badgeIcon} />
+            <Image source={getQualityBadgeImage("book")} style={styles.badgeIcon} />
+         </View>
       </View>
+
     </ScrollView>
   );
 }
@@ -202,102 +193,155 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   content: {
-    padding: spacing[4],
+    padding: spacing[4], // Un peu plus standard (16px) au lieu de 24px
   },
   title: {
-    fontSize: typography.fontSize["3xl"],
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.display, // Patrick Hand
+    fontSize: 32,
     marginBottom: spacing[6],
     color: colors.text.primary,
+    textAlign: "center",
+  },
+  sectionTitle: {
+    fontFamily: typography.fontFamily.display, // Patrick Hand
+    fontSize: 24, // Un peu plus gros pour Patrick Hand qui est small
+    marginBottom: spacing[3],
+    color: colors.text.secondary,
+    // Pas d'uppercase pour garder le style manuscrit
+  },
+  statsRow: {
+    flexDirection: "row",
+    gap: spacing[3],
+    marginBottom: spacing[6],
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+    borderWidth: borders.width.thin, // Fin (1px)
+    borderColor: colors.border.medium,
+    borderRadius: borders.radius.md,
+    padding: spacing[4],
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadows.sm, // Ombre légère
+    aspectRatio: 1.2,
+  },
+  statNumber: {
+    fontFamily: typography.fontFamily.display, // Patrick Hand pour le chiffre (fun)
+    fontSize: 32,
+    color: colors.text.primary,
+    marginBottom: spacing[1],
+  },
+  statLabel: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text.primary,
+    textTransform: "uppercase",
+  },
+  statSubtitle: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 12,
+    color: colors.text.secondary,
   },
   section: {
     marginBottom: spacing[6],
   },
-  sectionTitle: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.semibold,
-    marginBottom: spacing[3],
+  actionCard: {
+    backgroundColor: colors.background.primary,
+    borderWidth: borders.width.thin,
+    borderColor: colors.border.medium,
+    borderRadius: borders.radius.md,
+    padding: spacing[4],
+    ...shadows.sm,
+  },
+  actionCardDisabled: {
+    backgroundColor: colors.background.secondary, // Grisé léger
+    borderColor: colors.border.light,
+    ...shadows.none,
+  },
+  actionContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[4],
+  },
+  actionIconContainer: {
+    width: 48,
+    height: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.border.medium,
+    borderRadius: 24, // Rond
+  },
+  actionTextContainer: {
+    flex: 1,
+  },
+  actionTitle: {
+    fontFamily: typography.fontFamily.body, // System
+    fontWeight: "600",
+    fontSize: 16,
+    color: colors.text.primary,
+    marginBottom: 2,
+  },
+  actionSubtitle: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 14,
+    color: colors.text.secondary,
+  },
+  infoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[3],
+    backgroundColor: colors.background.secondary,
+    padding: spacing[4],
+    borderRadius: borders.radius.md,
+    borderWidth: borders.width.thin,
+    borderColor: colors.border.light,
+  },
+  infoCardText: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 14,
     color: colors.text.primary,
   },
-  statsGrid: {
-    flexDirection: "row",
-    gap: spacing[3],
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.background.secondary,
-    borderRadius: borders.radius.lg,
-    padding: spacing[4],
-    alignItems: "center",
-    ...shadows.sm,
-  },
-  statNumber: {
-    fontSize: typography.fontSize["3xl"],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.orange[500],
-    marginBottom: spacing[1],
-  },
-  statLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text.secondary,
-  },
-  emptyText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text.tertiary,
-    fontStyle: "italic",
-    paddingVertical: spacing[4],
-  },
-  infoText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text.secondary,
-    paddingVertical: spacing[2],
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: spacing[3],
-  },
-  analyzeButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing[2],
-    backgroundColor: colors.orange[500],
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    borderRadius: borders.radius.md,
-    ...shadows.sm,
-  },
-  analyzeButtonDisabled: {
-    opacity: 0.7,
-  },
-  buttonSpinner: {
-    marginRight: spacing[1],
-  },
-  analyzeButtonText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.text.inverse,
-  },
   progressContainer: {
-    marginTop: spacing[3],
-    marginBottom: spacing[2],
+    marginTop: spacing[4],
   },
   progressBar: {
-    height: 8,
-    backgroundColor: colors.background.tertiary,
+    height: 6, // Plus fin
+    backgroundColor: colors.background.secondary,
     borderRadius: borders.radius.full,
     overflow: "hidden",
     marginBottom: spacing[2],
   },
   progressFill: {
     height: "100%",
-    backgroundColor: colors.orange[500],
-    borderRadius: borders.radius.full,
+    backgroundColor: colors.text.primary,
   },
   progressText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.text.tertiary,
+    fontFamily: typography.fontFamily.body,
+    fontSize: 12,
     textAlign: "center",
+    color: colors.text.secondary,
+  },
+  badgesCard: {
+    backgroundColor: colors.background.primary,
+    borderWidth: borders.width.thin,
+    borderColor: colors.border.medium,
+    borderRadius: borders.radius.md,
+    padding: spacing[4],
+    ...shadows.sm,
+    marginTop: spacing[2],
+  },
+  badgesRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: spacing[3],
+  },
+  badgeIcon: {
+    width: 32,
+    height: 32,
+    resizeMode: "contain",
   },
 });
+

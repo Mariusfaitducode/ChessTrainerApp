@@ -1,13 +1,24 @@
 /**
- * Système de typographie minimaliste
+ * Système de typographie "Sketch & Play"
+ * - Titres : Patrick Hand (Manuscrit)
+ * - Corps : Police Système (Lisibilité)
  */
 
 export const typography = {
   fontFamily: {
-    regular: "System", // iOS: San Francisco, Android: Roboto
+    // Patrick Hand pour les titres et l'identité visuelle
+    display: "PatrickHand_400Regular",
+    heading: "PatrickHand_400Regular",
+    subheading: "PatrickHand_400Regular",
+    
+    // Police système native pour le corps de texte (lisibilité)
+    body: "System",
+    
+    // Fallbacks et code
+    regular: "System", 
     medium: "System",
     bold: "System",
-    mono: "Courier", // Pour le code/monospace
+    mono: "Courier",
   },
 
   fontSize: {
@@ -23,9 +34,9 @@ export const typography = {
   },
 
   lineHeight: {
-    tight: 1.2,
-    normal: 1.5,
-    relaxed: 1.75,
+    tight: 1.1,
+    normal: 1.4,
+    relaxed: 1.6,
   },
 
   fontWeight: {

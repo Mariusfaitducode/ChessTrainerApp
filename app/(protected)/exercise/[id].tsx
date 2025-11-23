@@ -669,16 +669,6 @@ export default function ExerciseScreen() {
             </Text>
           </View>
         )}
-
-        {/* Informations supplémentaires */}
-        {exercise.attempts !== null && exercise.attempts > 0 && (
-          <View style={styles.infoContainer}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Tentatives :</Text>
-              <Text style={styles.infoValue}>{exercise.attempts}</Text>
-            </View>
-          </View>
-        )}
       </View>
     </ScrollView>
   );
@@ -813,17 +803,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   descriptionContainer: {
-    backgroundColor: colors.background.secondary,
+    backgroundColor: colors.background.primary,
     paddingVertical: spacing[4],
     paddingHorizontal: spacing[4],
-    borderRadius: borders.radius.lg,
+    borderRadius: borders.radius.md,
     marginHorizontal: spacing[4],
     marginBottom: spacing[4],
+    borderWidth: borders.width.thin,
+    borderColor: colors.border.medium,
     ...shadows.sm,
   },
   description: {
     fontSize: typography.fontSize.base,
     color: colors.text.primary,
+    fontFamily: typography.fontFamily.body,
     lineHeight: typography.fontSize.base * typography.lineHeight.normal,
   },
   chessboardWrapper: {
@@ -831,10 +824,15 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
     width: "100%",
     marginBottom: spacing[4],
+    borderBottomWidth: borders.width.thin,
+    borderBottomColor: colors.border.medium,
   },
   analysisBarContainer: {
-    width: 12,
+    width: 16,
     alignSelf: "stretch",
+    backgroundColor: colors.background.primary,
+    borderRightWidth: borders.width.thin,
+    borderRightColor: colors.border.medium,
   },
   chessboardContainer: {
     flex: 1,
@@ -849,31 +847,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     borderRadius: borders.radius.md,
     marginBottom: spacing[4],
+    borderWidth: borders.width.thin, // Cadre fin
+    backgroundColor: colors.background.primary, // Fond blanc
   },
   feedbackCorrect: {
-    backgroundColor: colors.success.light,
+    borderColor: colors.success.main,
   },
   feedbackGood: {
-    backgroundColor: colors.success.light,
+    borderColor: colors.success.main,
   },
   feedbackAnalyzing: {
-    backgroundColor: colors.orange[50],
+    borderColor: colors.warning.main,
   },
   feedbackIncorrect: {
-    backgroundColor: colors.error.light,
+    borderColor: colors.error.main,
   },
   feedbackText: {
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.body,
+    color: colors.text.primary,
   },
   feedbackTextCorrect: {
-    color: colors.success.dark,
+    color: colors.text.primary,
   },
   feedbackTextGood: {
-    color: colors.success.dark,
+    color: colors.text.primary,
   },
   feedbackTextIncorrect: {
-    color: colors.error.dark,
+    color: colors.text.primary,
   },
   hintButton: {
     flex: 1,
@@ -882,48 +884,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing[2],
     padding: spacing[3],
-    backgroundColor: colors.warning.light,
+    backgroundColor: colors.background.primary,
     borderRadius: borders.radius.md,
+    borderWidth: borders.width.thin,
+    borderColor: colors.warning.main,
   },
   hintButtonText: {
     fontSize: typography.fontSize.sm,
-    color: colors.warning.dark,
+    color: colors.text.primary,
+    fontFamily: typography.fontFamily.body,
     fontWeight: typography.fontWeight.medium,
   },
   hintContent: {
     padding: spacing[3],
-    backgroundColor: colors.background.secondary,
+    backgroundColor: colors.background.primary,
     borderRadius: borders.radius.md,
     marginBottom: spacing[4],
+    borderWidth: borders.width.thin,
+    borderColor: colors.border.medium,
     ...shadows.sm,
   },
   hintText: {
     fontSize: typography.fontSize.sm,
     color: colors.text.secondary,
+    fontFamily: typography.fontFamily.body,
     lineHeight: typography.fontSize.sm * typography.lineHeight.normal,
-  },
-  infoContainer: {
-    backgroundColor: colors.background.secondary,
-    paddingVertical: spacing[4],
-    paddingHorizontal: spacing[4],
-    borderRadius: borders.radius.lg,
-    gap: spacing[2],
-    ...shadows.sm,
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  infoLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text.secondary,
-    fontWeight: typography.fontWeight.medium,
-  },
-  infoValue: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text.primary,
-    fontWeight: typography.fontWeight.semibold,
   },
   actionButtonsContainer: {
     marginBottom: spacing[4],
@@ -935,22 +920,26 @@ const styles = StyleSheet.create({
     gap: spacing[2],
     padding: spacing[4],
     borderRadius: borders.radius.md,
+    backgroundColor: colors.text.primary, // Bouton noir
     ...shadows.sm,
   },
   actionButtonSuccess: {
-    backgroundColor: colors.success.light,
+    backgroundColor: colors.text.primary,
   },
   actionButtonRetry: {
-    backgroundColor: colors.error.light,
+    backgroundColor: colors.background.primary,
+    borderWidth: borders.width.thin,
+    borderColor: colors.text.primary,
   },
   actionButtonText: {
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.body,
   },
   actionButtonTextSuccess: {
-    color: colors.success.dark,
+    color: colors.text.inverse, // Blanc sur noir
   },
   actionButtonTextRetry: {
-    color: colors.error.dark,
+    color: colors.text.primary, // Noir sur blanc
   },
 });

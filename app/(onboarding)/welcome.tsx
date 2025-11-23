@@ -1,11 +1,12 @@
 /**
  * Écran 1 : Bienvenue
- * Présente l'application et invite à commencer
+ * Style "Sketch & Play"
  */
 
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ArrowRight } from "lucide-react-native";
 import { colors, spacing, typography, borders, shadows } from "@/theme";
 
 export default function WelcomeOnboardingScreen() {
@@ -19,23 +20,31 @@ export default function WelcomeOnboardingScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.emoji}>♟️</Text>
-          <Text style={styles.title}>Bienvenue !</Text>
-          <Text style={styles.subtitle}>
-            Analyse tes parties d&apos;échecs et améliore ton jeu avec des
-            exercices personnalisés
-          </Text>
+        {/* Logo / Illustration */}
+        <View style={styles.logoContainer}>
+          <Text style={styles.logoEmoji}>♟️</Text>
         </View>
 
-        <View style={styles.illustration}>
-          <Text style={styles.illustrationEmoji}>🎯</Text>
+        {/* Titres */}
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>ChessCorrect</Text>
+          <Text style={styles.subtitle}>Bienvenue sur ChessCorrect !</Text>
+        </View>
+
+        {/* Illustration secondaire (Pion) */}
+        <View style={styles.illustrationContainer}>
+           <Text style={styles.pawnEmoji}>♟</Text>
         </View>
       </View>
 
+      {/* Footer avec bouton Flèche */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.button} onPress={handleNext}>
-          <Text style={styles.buttonText}>Commencer</Text>
+        <TouchableOpacity 
+          style={styles.nextButton} 
+          onPress={handleNext}
+          activeOpacity={0.8}
+        >
+          <ArrowRight size={32} color={colors.text.primary} strokeWidth={3} />
         </TouchableOpacity>
       </View>
     </View>
@@ -49,54 +58,56 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: spacing[6],
-    justifyContent: "center",
-  },
-  header: {
     alignItems: "center",
-    marginBottom: spacing[10],
+    paddingHorizontal: spacing[6],
+    paddingTop: spacing[12],
   },
-  emoji: {
+  logoContainer: {
+    marginBottom: spacing[4],
+  },
+  logoEmoji: {
     fontSize: 80,
-    marginBottom: spacing[6],
+  },
+  textContainer: {
+    alignItems: "center",
+    marginBottom: spacing[12],
   },
   title: {
-    fontSize: typography.fontSize["4xl"],
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.display,
+    fontSize: 42,
     color: colors.text.primary,
-    marginBottom: spacing[4],
+    marginBottom: spacing[2],
     textAlign: "center",
   },
   subtitle: {
-    fontSize: typography.fontSize.lg,
-    color: colors.text.secondary,
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.xl,
+    color: colors.text.primary,
     textAlign: "center",
-    lineHeight: typography.fontSize.lg * typography.lineHeight.normal,
-    paddingHorizontal: spacing[4],
   },
-  illustration: {
-    alignItems: "center",
+  illustrationContainer: {
+    flex: 1,
     justifyContent: "center",
-    marginTop: spacing[8],
+    alignItems: "center",
   },
-  illustrationEmoji: {
+  pawnEmoji: {
     fontSize: 120,
+    transform: [{ rotate: "-10deg" }], // Petit côté ludique
   },
   footer: {
-    paddingHorizontal: spacing[6],
-    paddingBottom: spacing[8],
+    padding: spacing[6],
+    alignItems: "flex-end", // Bouton à droite
   },
-  button: {
-    backgroundColor: colors.orange[500],
-    borderRadius: borders.radius.lg,
-    padding: spacing[5],
+  nextButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32, // Cercle parfait
+    borderWidth: borders.width.medium,
+    borderColor: colors.border.medium,
+    backgroundColor: colors.background.primary,
     alignItems: "center",
-    ...shadows.md,
-  },
-  buttonText: {
-    color: colors.text.inverse,
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
+    justifyContent: "center",
+    ...shadows.sm, // Ombre dure
   },
 });
 

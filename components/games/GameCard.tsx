@@ -29,18 +29,11 @@ const getTimeControlType = (
   timeControl: string | null,
 ): "bullet" | "blitz" | "rapid" | "classical" => {
   if (!timeControl) return "rapid";
-
-  // Parse time control (format: "time+increment" ou juste "time")
   const parts = timeControl.split("+");
   const totalSeconds = parseInt(parts[0]) || 0;
-
-  // Bullet: < 3 minutes
   if (totalSeconds < 180) return "bullet";
-  // Blitz: 3-10 minutes
   if (totalSeconds < 600) return "blitz";
-  // Rapid: 10-60 minutes
   if (totalSeconds < 3600) return "rapid";
-  // Classical: >= 60 minutes
   return "classical";
 };
 
@@ -59,20 +52,8 @@ const getTimeControlIcon = (
   }
 };
 
-const getTimeControlColor = (
-  type: "bullet" | "blitz" | "rapid" | "classical",
-) => {
-  switch (type) {
-    case "bullet":
-      return colors.error.main;
-    case "blitz":
-      return colors.warning.main;
-    case "rapid":
-      return colors.orange[500];
-    case "classical":
-      return colors.text.secondary;
-  }
-};
+// On garde les icônes en noir pour le style wireframe, sauf exception
+const ICON_COLOR = colors.text.primary;
 
 const getResultStatus = (
   result: Game["result"],
@@ -96,28 +77,15 @@ const getResultIcon = (status: "win" | "loss" | "draw") => {
   }
 };
 
-const getResultColor = (status: "win" | "loss" | "draw") => {
-  switch (status) {
-    case "win":
-      return colors.success.main;
-    case "loss":
-      return colors.error.main;
-    case "draw":
-      return colors.text.tertiary;
-  }
-};
-
 export const GameCard = ({
   game,
   userPlatforms,
   onPress,
   isAnalyzing = false,
 }: GameCardProps) => {
-  // Trouver la plateforme correspondante
   const platform = userPlatforms.find((p) => p.platform === game.platform);
   const userUsername = platform?.platform_username?.toLowerCase();
 
-  // Déterminer la couleur jouée, l'adversaire et son ELO
   const gameInfo = useMemo(() => {
     if (!userUsername) {
       return {
@@ -129,8 +97,6 @@ export const GameCard = ({
 
     const whitePlayer = game.white_player?.toLowerCase() || "";
     const blackPlayer = game.black_player?.toLowerCase() || "";
-
-    // Extraire les ELO du PGN
     const whiteElo = parseWhiteElo(game.pgn);
     const blackElo = parseBlackElo(game.pgn);
 
@@ -161,57 +127,63 @@ export const GameCard = ({
 
   const timeControlType = getTimeControlType(game.time_control);
   const TimeControlIcon = getTimeControlIcon(timeControlType);
-  const timeControlColor = getTimeControlColor(timeControlType);
-
   const ResultIcon = getResultIcon(resultStatus);
-  const resultColor = getResultColor(resultStatus);
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.content}>
-        {/* Logo type de partie */}
+        {/* Icône type de partie (Noir simple) */}
         <View style={styles.iconContainer}>
-          <TimeControlIcon size={20} color={timeControlColor} />
+          <TimeControlIcon size={20} color={ICON_COLOR} strokeWidth={2} />
         </View>
 
-        {/* Nom de l'adversaire et ELO */}
+        {/* Info Adversaire */}
         <View style={styles.opponentContainer}>
           <Text style={styles.opponentName} numberOfLines={1}>
-            {gameInfo.opponent || "Adversaire"}
+            vs {gameInfo.opponent || "Adversaire"}
           </Text>
           {gameInfo.opponentElo && (
-            <Text style={styles.opponentElo}>{gameInfo.opponentElo}</Text>
+            <Text style={styles.opponentElo}>({gameInfo.opponentElo})</Text>
           )}
         </View>
 
-        {/* Statut analyse et blunders */}
+        {/* Badges d'analyse */}
         <View style={styles.analysisStatus}>
           {isAnalyzing ? (
             <Loader2
               size={16}
-              color={colors.orange[500]}
+              color={colors.text.primary}
               style={styles.analysisIcon}
             />
           ) : game.analyzed_at ? (
-            <>
+            <View style={styles.badgesRow}>
               <CheckCircle2
                 size={16}
-                color={colors.orange[600]}
-                style={styles.analysisIcon}
+                color={colors.text.primary}
+                strokeWidth={2}
               />
               {game.blunders_count !== undefined && game.blunders_count > 0 && (
                 <View style={styles.blundersBadge}>
-                  <AlertTriangle size={12} color={colors.error.main} />
-                  <Text style={styles.blundersText}>{game.blunders_count}</Text>
+                  <Text style={styles.blundersText}>
+                    {game.blunders_count} ??
+                  </Text>
                 </View>
               )}
-            </>
+            </View>
           ) : null}
         </View>
 
         {/* Résultat */}
         <View style={styles.resultContainer}>
-          <ResultIcon size={20} color={resultColor} />
+          <ResultIcon
+            size={20}
+            color={
+              resultStatus === "win"
+                ? colors.text.primary
+                : colors.text.secondary
+            }
+            strokeWidth={2}
+          />
         </View>
       </View>
     </TouchableOpacity>
@@ -220,13 +192,13 @@ export const GameCard = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: borders.radius.lg,
+    backgroundColor: colors.background.primary,
+    borderRadius: borders.radius.md,
+    borderWidth: borders.width.thin, // Trait fin
+    borderColor: colors.border.medium,
     padding: spacing[3],
     marginBottom: spacing[3],
-    ...shadows.sm,
-    borderLeftWidth: borders.width.medium,
-    borderLeftColor: colors.orange[200],
+    ...shadows.sm, // Ombre légère
   },
   content: {
     flexDirection: "row",
@@ -238,6 +210,9 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.border.medium,
+    borderRadius: borders.radius.sm,
   },
   opponentContainer: {
     flex: 1,
@@ -246,39 +221,40 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   opponentName: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.body, // System
+    fontSize: 16,
+    fontWeight: "600",
     color: colors.text.primary,
   },
   opponentElo: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: typography.fontFamily.body,
+    fontSize: 16,
     color: colors.text.secondary,
   },
   analysisStatus: {
-    minWidth: 32,
-    height: 32,
-    justifyContent: "center",
-    alignItems: "center",
     flexDirection: "row",
-    gap: spacing[1],
+    alignItems: "center",
+  },
+  badgesRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[2],
   },
   analysisIcon: {
-    // Animation automatique pour Loader2
+    // Animation automatique
   },
   blundersBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.error.light,
-    paddingHorizontal: spacing[1],
-    paddingVertical: spacing[1],
-    borderRadius: borders.radius.sm,
-    gap: spacing[1],
+    backgroundColor: colors.background.primary,
+    borderWidth: 1,
+    borderColor: colors.chess.blunder, // On garde la couleur juste pour le trait rouge du blunder
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+    borderRadius: borders.radius.full,
   },
   blundersText: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.error.main,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 12,
+    color: colors.chess.blunder, // Texte rouge
   },
   resultContainer: {
     width: 32,

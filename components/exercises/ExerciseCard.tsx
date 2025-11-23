@@ -61,47 +61,47 @@ export const ExerciseCard = ({ exercise, onPress }: ExerciseCardProps) => {
 
   const qualityBadgeImage = getQualityBadgeImage(moveQuality);
 
+  // Couleur du texte selon le type d'erreur pour garder l'info visuelle
+  let textColor = colors.text.primary;
+  if (moveQuality === "blunder") textColor = colors.chess.blunder;
+  else if (moveQuality === "mistake") textColor = colors.chess.mistake;
+  else if (moveQuality === "inaccuracy") textColor = colors.chess.inaccuracy;
+
   return (
     <TouchableOpacity
-      style={[
-        styles.card,
-        moveQuality &&
-          (styles[`${moveQuality}Card` as keyof typeof styles] as any),
-        exercise.completed && styles.completedCard,
-      ]}
+      style={[styles.card, exercise.completed && styles.completedCard]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       <View style={styles.content}>
         {/* Badge type d'erreur */}
         <View style={styles.iconContainer}>
-          {/* {exercise.completed ? (
-            <CheckCircle2 size={18} color={colors.success.main} />
-          ) : qualityBadgeImage ? ( */}
           <Image
             source={qualityBadgeImage}
             style={styles.badge}
             resizeMode="contain"
           />
-          {/* ) : null} */}
         </View>
 
-        {/* Type d'erreur, numéro du coup, coup joué et loss */}
+        {/* Infos */}
         <View style={styles.infoContainer}>
-          <Text style={styles.errorType} numberOfLines={1}>
+          <Text
+            style={[styles.errorType, { color: textColor }]}
+            numberOfLines={1}
+          >
             {exercise.completed ? "Terminé" : errorLabel}
           </Text>
-          {exercise.move_number && (
-            <Text style={styles.moveNumber} numberOfLines={1}>
-              #{exercise.move_number}
-            </Text>
-          )}
-          <Text style={styles.move} numberOfLines={1}>
-            {playedMove}
-          </Text>
-          {lossInPawns && (
+
+          <View style={styles.moveDetails}>
+            {exercise.move_number && (
+              <Text style={styles.moveNumber}>#{exercise.move_number}</Text>
+            )}
+            <Text style={styles.move}>{playedMove}</Text>
+          </View>
+
+          {lossInPawns && !exercise.completed && (
             <Text style={styles.loss} numberOfLines={1}>
-              -{lossInPawns} ♟
+              -{lossInPawns}
             </Text>
           )}
         </View>
@@ -112,26 +112,18 @@ export const ExerciseCard = ({ exercise, onPress }: ExerciseCardProps) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: borders.radius.lg,
+    backgroundColor: colors.background.primary,
+    borderRadius: borders.radius.md,
+    borderWidth: borders.width.thin, // 2px
+    borderColor: colors.border.medium,
     padding: spacing[3],
     marginBottom: spacing[3],
     ...shadows.sm,
-    borderLeftWidth: borders.width.medium,
-    borderLeftColor: colors.orange[200],
   },
   completedCard: {
-    borderLeftColor: colors.success.main,
-    opacity: 0.9,
-  },
-  blunderCard: {
-    borderLeftColor: colors.error.main,
-  },
-  mistakeCard: {
-    borderLeftColor: colors.warning.main,
-  },
-  inaccuracyCard: {
-    borderLeftColor: colors.orange[500],
+    backgroundColor: colors.background.tertiary, // Grisé si terminé
+    borderColor: colors.border.light,
+    opacity: 0.8,
   },
   content: {
     flexDirection: "row",
@@ -139,43 +131,44 @@ const styles = StyleSheet.create({
     gap: spacing[3],
   },
   iconContainer: {
-    width: 32,
-    height: 32,
     justifyContent: "center",
     alignItems: "center",
   },
   badge: {
-    width: 24,
-    height: 24,
+    width: 28,
+    height: 28,
   },
   infoContainer: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing[3],
+    justifyContent: "space-between",
   },
   errorType: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.text.primary,
-    minWidth: 80,
+    fontFamily: typography.fontFamily.body, // System
+    fontWeight: "600",
+    fontSize: 16,
+    minWidth: 90,
+  },
+  moveDetails: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[2],
   },
   moveNumber: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: typography.fontFamily.body,
+    fontSize: 14,
     color: colors.text.tertiary,
-    fontFamily: "monospace",
   },
   move: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.text.secondary,
-    fontFamily: "monospace",
+    fontFamily: typography.fontFamily.body,
+    fontSize: 18,
+    color: colors.text.primary,
+    fontWeight: "bold",
   },
   loss: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 14,
     color: colors.error.main,
-    marginLeft: "auto",
   },
 });

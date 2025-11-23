@@ -3,6 +3,14 @@ import { useEffect } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import {
+  useFonts,
+  Fredoka_400Regular,
+  Fredoka_500Medium,
+  Fredoka_600SemiBold,
+  Fredoka_700Bold,
+} from "@expo-google-fonts/fredoka";
+import { PatrickHand_400Regular } from "@expo-google-fonts/patrick-hand";
 
 import { useSupabase } from "@/hooks/useSupabase";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -17,6 +25,26 @@ SplashScreen.setOptions({
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Fredoka_400Regular,
+    Fredoka_500Medium,
+    Fredoka_600SemiBold,
+    Fredoka_700Bold,
+    PatrickHand_400Regular,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      console.log("Fonts loaded successfully!");
+      // On laisse le RootNavigator gérer le hide du splash screen
+      // une fois que l'auth est chargée aussi
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SupabaseProvider>

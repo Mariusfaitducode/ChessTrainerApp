@@ -1,13 +1,13 @@
 /**
  * Écran 2 : Sélection de la plateforme
- * L'utilisateur choisit entre Lichess et Chess.com
+ * Style "Sketch & Play" - Maquette 2
  */
 
 import { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft, ArrowRight } from "lucide-react-native";
+import { ArrowRight } from "lucide-react-native";
 import type { Platform } from "@/types/chess";
 import { colors, spacing, typography, borders, shadows } from "@/theme";
 
@@ -17,10 +17,6 @@ export default function PlatformOnboardingScreen() {
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(
     null,
   );
-
-  const handleBack = () => {
-    router.back();
-  };
 
   const handleNext = () => {
     if (!selectedPlatform) return;
@@ -33,81 +29,80 @@ export default function PlatformOnboardingScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Quelle plateforme utilises-tu ?</Text>
-          <Text style={styles.subtitle}>
-            Choisis la plateforme où tu joues tes parties
-          </Text>
+        {/* Illustration Cavalier */}
+        <View style={styles.illustrationContainer}>
+          <Text style={styles.knightEmoji}>♞</Text>
         </View>
 
+        {/* Titre */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Où joues-tu</Text>
+          <Text style={styles.title}>aux échecs ?</Text>
+        </View>
+
+        {/* Choix Plateforme (Boutons Rectangles) */}
         <View style={styles.platforms}>
           <TouchableOpacity
             style={[
-              styles.platformCard,
-              selectedPlatform === "lichess" && styles.platformCardSelected,
+              styles.platformButton,
+              selectedPlatform === "chesscom" && styles.platformButtonSelected,
             ]}
-            onPress={() => setSelectedPlatform("lichess")}
-            activeOpacity={0.7}
+            onPress={() => setSelectedPlatform("chesscom")}
+            activeOpacity={0.8}
           >
-            <Text style={styles.platformEmoji}>♛</Text>
-            <Text style={styles.platformName}>Lichess</Text>
-            <Text style={styles.platformDescription}>
-              Plateforme open-source gratuite
+            <Text
+              style={[
+                styles.platformButtonText,
+                selectedPlatform === "chesscom" &&
+                  styles.platformButtonTextSelected,
+              ]}
+            >
+              Chess
             </Text>
+            {selectedPlatform === "chesscom" && (
+              <View style={styles.checkIcon}>
+                <Text style={{ fontSize: 20 }}>✓</Text>
+              </View>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[
-              styles.platformCard,
-              selectedPlatform === "chesscom" && styles.platformCardSelected,
+              styles.platformButton,
+              selectedPlatform === "lichess" && styles.platformButtonSelected,
             ]}
-            onPress={() => setSelectedPlatform("chesscom")}
-            activeOpacity={0.7}
+            onPress={() => setSelectedPlatform("lichess")}
+            activeOpacity={0.8}
           >
-            <Text style={styles.platformEmoji}>♚</Text>
-            <Text style={styles.platformName}>Chess.com</Text>
-            <Text style={styles.platformDescription}>
-              La plus grande communauté d&apos;échecs
+            <Text
+              style={[
+                styles.platformButtonText,
+                selectedPlatform === "lichess" &&
+                  styles.platformButtonTextSelected,
+              ]}
+            >
+              LiChess
             </Text>
+            {selectedPlatform === "lichess" && (
+              <View style={styles.checkIcon}>
+                <Text style={{ fontSize: 20 }}>✓</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
 
+      {/* Footer avec bouton Flèche */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.footerButton, styles.backButton]}
-          onPress={handleBack}
-        >
-          <ArrowLeft size={20} color={colors.text.secondary} />
-          <Text style={styles.backButtonText}>Retour</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.footerButton,
-            styles.nextButton,
-            !selectedPlatform && styles.nextButtonDisabled,
-          ]}
-          onPress={handleNext}
-          disabled={!selectedPlatform}
-        >
-          <Text
-            style={[
-              styles.nextButtonText,
-              !selectedPlatform && styles.nextButtonTextDisabled,
-            ]}
+        {selectedPlatform && (
+          <TouchableOpacity
+            style={styles.nextButton}
+            onPress={handleNext}
+            activeOpacity={0.8}
           >
-            Suivant
-          </Text>
-          <ArrowRight
-            size={20}
-            color={
-              selectedPlatform
-                ? colors.text.inverse
-                : colors.text.disabled
-            }
-          />
-        </TouchableOpacity>
+            <ArrowRight size={32} color={colors.text.primary} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -120,97 +115,77 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    alignItems: "center",
     paddingHorizontal: spacing[6],
     paddingTop: spacing[8],
   },
+  illustrationContainer: {
+    marginBottom: spacing[6],
+  },
+  knightEmoji: {
+    fontSize: 80,
+  },
   header: {
-    marginBottom: spacing[10],
+    marginBottom: spacing[12],
+    alignItems: "center",
   },
   title: {
-    fontSize: typography.fontSize["3xl"],
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.body,
+    fontSize: 32,
     color: colors.text.primary,
-    marginBottom: spacing[3],
     textAlign: "center",
-  },
-  subtitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.text.secondary,
-    textAlign: "center",
-    lineHeight: typography.fontSize.base * typography.lineHeight.normal,
+    lineHeight: 40,
   },
   platforms: {
+    width: "100%",
     gap: spacing[4],
+    maxWidth: 300,
   },
-  platformCard: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: borders.radius.xl,
-    padding: spacing[6],
-    alignItems: "center",
-    borderWidth: borders.width.medium,
-    borderColor: colors.border.light,
-    ...shadows.sm,
-  },
-  platformCardSelected: {
-    borderColor: colors.orange[500],
-    borderWidth: borders.width.thick,
-    backgroundColor: colors.orange[50],
-  },
-  platformEmoji: {
-    fontSize: 64,
-    marginBottom: spacing[3],
-  },
-  platformName: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.text.primary,
-    marginBottom: spacing[2],
-  },
-  platformDescription: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text.secondary,
-    textAlign: "center",
-  },
-  footer: {
-    flexDirection: "row",
-    paddingHorizontal: spacing[6],
-    paddingBottom: spacing[8],
-    gap: spacing[3],
-  },
-  footerButton: {
-    flex: 1,
-    flexDirection: "row",
+  platformButton: {
+    flexDirection: "row", // Pour aligner le check
+    backgroundColor: colors.background.primary,
+    borderRadius: borders.radius.md,
+    borderWidth: borders.width.medium, // 2px
+    borderColor: colors.border.medium,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
     alignItems: "center",
     justifyContent: "center",
-    padding: spacing[4],
-    borderRadius: borders.radius.lg,
-    gap: spacing[2],
+    ...shadows.sm,
   },
-  backButton: {
-    backgroundColor: colors.background.secondary,
-    borderWidth: borders.width.thin,
-    borderColor: colors.border.medium,
+  platformButtonSelected: {
+    backgroundColor: colors.background.tertiary, // Gris très clair subtil
+    borderColor: colors.text.primary, // Noir
   },
-  backButtonText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.text.secondary,
+  platformButtonText: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 24,
+    color: colors.text.primary,
+    flex: 1, // Pour centrer le texte même avec l'icône
+    textAlign: "center",
+    marginLeft: 20, // Compenser l'icône pour le centrage visuel
+  },
+  platformButtonTextSelected: {
+    color: colors.text.primary, // Reste noir
+    fontWeight: "bold",
+  },
+  checkIcon: {
+    width: 20, // Espace fixe pour l'icône
+  },
+  footer: {
+    padding: spacing[6],
+    alignItems: "flex-end",
+    height: 120,
   },
   nextButton: {
-    backgroundColor: colors.orange[500],
-    ...shadows.md,
-  },
-  nextButtonDisabled: {
-    backgroundColor: colors.background.tertiary,
-    ...shadows.none,
-  },
-  nextButtonText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.text.inverse,
-  },
-  nextButtonTextDisabled: {
-    color: colors.text.disabled,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: borders.width.medium,
+    borderColor: colors.border.medium,
+    backgroundColor: colors.background.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadows.sm,
   },
 });
-

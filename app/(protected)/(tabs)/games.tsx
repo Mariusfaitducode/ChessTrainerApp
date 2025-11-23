@@ -161,10 +161,10 @@ export default function GamesScreen() {
             activeOpacity={0.7}
           >
             {isSyncing ? (
-              <ActivityIndicator color={colors.text.inverse} size="small" />
+              <ActivityIndicator color={colors.text.primary} size="small" />
             ) : (
               <>
-                <RefreshCw size={16} color={colors.text.inverse} />
+                <RefreshCw size={18} color={colors.text.primary} strokeWidth={1.5} />
                 <Text style={styles.syncButtonText}>Synchroniser</Text>
               </>
             )}
@@ -185,8 +185,8 @@ export default function GamesScreen() {
           <RefreshControl
             refreshing={isLoading}
             onRefresh={refetch}
-            tintColor={colors.orange[500]}
-            colors={[colors.orange[500]]}
+            tintColor={colors.text.primary}
+            colors={[colors.text.primary]}
           />
         }
         ListEmptyComponent={
@@ -217,51 +217,53 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   header: {
-    backgroundColor: colors.background.secondary,
-    borderBottomWidth: borders.width.thin,
-    borderBottomColor: colors.border.light,
-    paddingHorizontal: spacing[4],
+    backgroundColor: colors.background.primary,
+    paddingHorizontal: spacing[6],
     paddingTop: spacing[4],
     paddingBottom: spacing[4],
-    ...shadows.sm,
   },
   headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: spacing[3],
   },
   titleSection: {
     flex: 1,
   },
   title: {
-    fontSize: typography.fontSize["2xl"],
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.display, // Patrick Hand
+    fontSize: 32,
     color: colors.text.primary,
     marginBottom: spacing[1],
   },
   count: {
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.body, // System
+    fontSize: 16,
     color: colors.text.secondary,
   },
   syncButton: {
-    backgroundColor: colors.orange[500],
+    backgroundColor: colors.background.primary,
+    borderWidth: borders.width.thin, // Fin (1px)
+    borderColor: colors.border.medium,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderRadius: borders.radius.md,
+    paddingVertical: spacing[2],
+    borderRadius: borders.radius.full,
     gap: spacing[2],
-    minWidth: 120,
+    ...shadows.sm,
   },
   syncButtonDisabled: {
     opacity: 0.6,
+    backgroundColor: colors.background.tertiary,
   },
   syncButtonText: {
-    color: colors.text.inverse,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
+    color: colors.text.primary,
+    fontFamily: typography.fontFamily.body, // System
+    fontSize: 14,
+    fontWeight: "600",
   },
   list: {
     padding: spacing[4],
@@ -274,21 +276,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[2],
     marginTop: spacing[4],
     marginBottom: spacing[2],
     backgroundColor: colors.background.primary,
   },
   sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.display, // Patrick Hand
+    fontSize: 22,
     color: colors.text.primary,
   },
   sectionCount: {
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.body, // System
+    fontSize: 14,
     color: colors.text.secondary,
-    fontWeight: typography.fontWeight.medium,
   },
   emptyContainer: {
     flex: 1,
@@ -298,16 +300,17 @@ const styles = StyleSheet.create({
     minHeight: 300,
   },
   emptyText: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.body, // System
+    fontSize: 18,
+    fontWeight: "600",
     color: colors.text.secondary,
     marginBottom: spacing[2],
     textAlign: "center",
   },
   emptySubtext: {
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.body, // System
+    fontSize: 14,
     color: colors.text.tertiary,
     textAlign: "center",
-    lineHeight: typography.fontSize.sm * typography.lineHeight.normal,
   },
 });

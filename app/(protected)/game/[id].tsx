@@ -95,7 +95,9 @@ export default function GameDetailScreen() {
 
   const currentAnalysis = useMemo(() => {
     if (currentMoveIndex === -1) return analyses[0];
-    const analysis = analyses.find((a) => a.move_number === currentMoveIndex + 1);
+    const analysis = analyses.find(
+      (a) => a.move_number === currentMoveIndex + 1,
+    );
     // Log pour debug
     if (analysis) {
       console.log("[GameDetail] currentAnalysis:", {
@@ -158,7 +160,7 @@ export default function GameDetailScreen() {
   if (!game && isLoading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={colors.orange[500]} />
+        <ActivityIndicator size="large" color={colors.text.primary} />
         <Text style={styles.loadingText}>Chargement de la partie...</Text>
       </View>
     );
@@ -194,54 +196,15 @@ export default function GameDetailScreen() {
     >
       {readyToRenderHeavy ? (
         <>
-          {currentAnalysis?.evaluation != null && (
-            <View style={styles.analysisInfoContainer}>
-              <Text style={styles.analysisInfoText}>
-                {currentAnalysis.evaluation > 0
-                  ? `+${currentAnalysis.evaluation.toFixed(2)}`
-                  : currentAnalysis.evaluation.toFixed(2)}
-              </Text>
-              {currentAnalysis.best_move && (
-                <Text style={styles.analysisInfoText}>
-                  Meilleur: {currentAnalysis.best_move}
-                </Text>
-              )}
-              {currentAnalysis.move_quality && (
-                <Text
-                  style={[
-                    currentAnalysis.move_quality === "blunder" ||
-                    currentAnalysis.move_quality === "mistake" ||
-                    currentAnalysis.move_quality === "inaccuracy"
-                      ? styles.analysisMistakeText
-                      : styles.analysisQualityText,
-                  ]}
-                >
-                  {currentAnalysis.move_quality === "best"
-                    ? "⭐ Meilleur coup"
-                    : currentAnalysis.move_quality === "excellent"
-                      ? "✨ Excellent"
-                      : currentAnalysis.move_quality === "good"
-                        ? "✓ Bon"
-                        : currentAnalysis.move_quality === "inaccuracy"
-                          ? "⚠️ Imprécision"
-                          : currentAnalysis.move_quality === "mistake"
-                            ? "❌ Erreur"
-                            : currentAnalysis.move_quality === "blunder"
-                              ? "💥 Erreur grave"
-                              : ""}
-                </Text>
-              )}
-              {currentAnalysis.game_phase && (
-                <Text style={styles.analysisPhaseText}>
-                  {currentAnalysis.game_phase === "opening"
-                    ? "📖 Ouverture"
-                    : currentAnalysis.game_phase === "middlegame"
-                      ? "⚔️ Milieu"
-                      : "🏁 Finale"}
-                </Text>
-              )}
-            </View>
-          )}
+          {/* Liste des coups (Au-dessus du plateau) */}
+          <View style={styles.movesContainer}>
+            <MoveList
+              moves={flattenedMoves}
+              currentMove={currentMoveIndex}
+              onMoveSelect={handleMoveSelect}
+              analyses={analyses}
+            />
+          </View>
 
           <View style={styles.chessboardWrapper}>
             <View style={styles.analysisBarContainer}>
@@ -280,12 +243,32 @@ export default function GameDetailScreen() {
             </View>
           </View>
 
-          <View
-            style={[
-              styles.controlsContainer,
-              { paddingHorizontal: spacing[4] },
-            ]}
-          >
+          {/* Info Analyse (Style Banner) */}
+          {currentAnalysis?.evaluation != null && (
+            <View style={styles.analysisInfoContainer}>
+              <Text style={styles.analysisInfoText}>
+                {currentAnalysis.evaluation > 0
+                  ? `+${currentAnalysis.evaluation.toFixed(2)}`
+                  : currentAnalysis.evaluation.toFixed(2)}
+              </Text>
+              {currentAnalysis.move_quality && (
+                <Text style={styles.analysisQualityText}>
+                  {currentAnalysis.move_quality === "best"
+                    ? "⭐ Meilleur coup"
+                    : currentAnalysis.move_quality === "blunder"
+                      ? "💥 Gaffe"
+                      : currentAnalysis.move_quality === "mistake"
+                        ? "❌ Erreur"
+                        : currentAnalysis.move_quality === "inaccuracy"
+                          ? "⚠️ Imprécision"
+                          : "✓ Bon coup"}
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Contrôles de navigation (Sans Card) */}
+          <View style={styles.controlsContainer}>
             <GameControls
               onFirst={goToStart}
               onPrevious={goToPrevious}
@@ -297,42 +280,15 @@ export default function GameDetailScreen() {
               totalMoves={totalMoves}
             />
           </View>
-
-          <View
-            style={[styles.movesSection, { paddingHorizontal: spacing[4] }]}
-          >
-            <Text style={styles.sectionTitle}>Coups</Text>
-            <MoveList
-              moves={flattenedMoves}
-              currentMove={currentMoveIndex}
-              onMoveSelect={handleMoveSelect}
-              analyses={analyses}
-            />
-          </View>
         </>
       ) : (
         <View style={styles.loadingPlaceholder}>
-          <ActivityIndicator size="small" color={colors.orange[500]} />
+          <ActivityIndicator size="small" color={colors.text.primary} />
           <Text style={styles.loadingPlaceholderText}>
             Préparation de l&apos;échiquier...
           </Text>
         </View>
       )}
-      <View style={[styles.infoSection, { paddingHorizontal: spacing[4] }]}>
-        <Text style={styles.sectionTitle}>Informations</Text>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Plateforme</Text>
-          <Text style={styles.infoValue}>
-            {game.platform === "lichess" ? "Lichess" : "Chess.com"}
-          </Text>
-        </View>
-        {game.analyzed_at && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Analysée</Text>
-            <Text style={styles.infoValue}>{formatDate(game.analyzed_at)}</Text>
-          </View>
-        )}
-      </View>
     </ScrollView>
   );
 }
@@ -356,108 +312,78 @@ const styles = StyleSheet.create({
     marginTop: spacing[4],
     fontSize: typography.fontSize.base,
     color: colors.text.secondary,
+    fontFamily: typography.fontFamily.body,
   },
   errorText: {
     fontSize: typography.fontSize.base,
     color: colors.error.main,
     textAlign: "center",
+    fontFamily: typography.fontFamily.body,
+  },
+  chessboardWrapper: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    width: "100%",
+    marginBottom: spacing[2],
+    borderBottomWidth: borders.width.thin, // Ligne fine sous l'échiquier
+    borderBottomColor: colors.border.medium,
+  },
+  analysisBarContainer: {
+    width: 16, // Un peu plus large pour la lisibilité
+    alignSelf: "stretch",
+    backgroundColor: colors.background.primary,
+    borderRightWidth: borders.width.thin,
+    borderRightColor: colors.border.medium,
+  },
+  chessboardContainer: {
+    flex: 1,
+    minWidth: 0,
   },
   analysisInfoContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: spacing[4],
-    paddingVertical: spacing[2],
+    paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
-    backgroundColor: colors.background.secondary,
-    marginBottom: spacing[2],
+    borderBottomWidth: borders.width.thin,
+    borderBottomColor: colors.border.light,
+    backgroundColor: colors.background.primary,
+    marginBottom: spacing[4],
   },
   analysisInfoText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: 18,
+    fontWeight: "bold",
     color: colors.text.primary,
-    fontFamily: "monospace",
-  },
-  analysisMistakeText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.error.main,
+    fontFamily: typography.fontFamily.body,
   },
   analysisQualityText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.success.main,
-  },
-  analysisPhaseText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: 16,
     color: colors.text.secondary,
-  },
-  chessboardWrapper: {
-    flexDirection: "row",
-    alignItems: "stretch",
-    width: "100%",
-    marginBottom: spacing[4],
-  },
-  analysisBarContainer: {
-    width: 12,
-    alignSelf: "stretch",
-  },
-  chessboardContainer: {
-    flex: 1,
-    minWidth: 0,
+    fontFamily: typography.fontFamily.body,
   },
   controlsContainer: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: borders.radius.lg,
+    backgroundColor: colors.background.primary, // Fond blanc
+    paddingHorizontal: spacing[4],
     marginBottom: spacing[4],
-    ...shadows.sm,
+    // Plus de bordure, plus de shadow, plus de radius
   },
-  movesSection: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: borders.radius.lg,
-    padding: spacing[4],
-    marginBottom: spacing[4],
-    ...shadows.sm,
+  movesContainer: {
+    backgroundColor: colors.background.primary,
+    paddingBottom: spacing[2], // Espace avant le plateau
+    paddingTop: spacing[2],
+    // Pas de bordure, le MoveList gère son scroll
   },
   sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
+    fontSize: 20,
+    fontFamily: typography.fontFamily.display, // Patrick Hand
     marginBottom: spacing[3],
     color: colors.text.primary,
   },
-  infoSection: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: borders.radius.lg,
-    padding: spacing[4],
-    ...shadows.sm,
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: spacing[3],
-    borderBottomWidth: borders.width.thin,
-    borderBottomColor: colors.border.light,
-  },
-  infoLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text.secondary,
-  },
-  infoValue: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.text.primary,
-  },
-  loadingPlaceholder: {
-    padding: spacing[8],
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 200,
-  },
   loadingPlaceholderText: {
     marginTop: spacing[3],
-    fontSize: typography.fontSize.sm,
+    fontSize: 14,
     color: colors.text.secondary,
+    fontFamily: typography.fontFamily.body,
   },
 });

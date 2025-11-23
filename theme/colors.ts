@@ -1,77 +1,89 @@
 /**
- * Système de couleurs basé sur la règle 60/30/10
- * - 60% : Blanc cassé (couleur principale)
- * - 30% : Orange clair (couleur secondaire)
- * - 10% : Orange/Brun (accent)
+ * Système de couleurs "Sketch & Play"
+ * - Base : Noir & Blanc contrasté
+ * - Accents : Couleurs "Pop" vives pour les badges
  */
 
 export const colors = {
-  // Palette principale (60%)
+  // Palette principale (Structure)
   background: {
-    primary: "#FAF9F6", // Blanc cassé principal
-    secondary: "#FFFFFF", // Blanc pur
-    tertiary: "#F5F3F0", // Blanc cassé plus foncé
+    primary: "#FFFFFF", // Blanc pur
+    secondary: "#F8F8F8", // Blanc très légèrement grisé (pour les cartes)
+    tertiary: "#F0F0F0", // Gris très clair
+    modal: "rgba(0, 0, 0, 0.7)", // Fond modal sombre
   },
 
-  // Palette secondaire (30%)
-  orange: {
-    50: "#FFF5EB", // Orange très clair
-    100: "#FFE8CC", // Orange clair
-    200: "#FFD4A3", // Orange moyen-clair
-    300: "#FFC078", // Orange moyen
-    400: "#FFA94D", // Orange vif
-    500: "#FF8C42", // Orange principal (30%)
-    600: "#E6772E", // Orange foncé
-  },
-
-  // Palette accent (10%)
-  accent: {
-    50: "#F4E6D7", // Brun très clair
-    100: "#E8CCB3", // Brun clair
-    200: "#D4A574", // Brun moyen
-    300: "#C17A3D", // Brun foncé
-    400: "#A05E2C", // Brun principal (10%)
-    500: "#7D4720", // Brun très foncé
-  },
-
-  // Couleurs fonctionnelles
+  // Texte & Traits
   text: {
-    primary: "#1A1A1A", // Presque noir
-    secondary: "#4A4A4A", // Gris foncé
-    tertiary: "#8A8A8A", // Gris moyen
-    disabled: "#C4C4C4", // Gris clair
-    inverse: "#FFFFFF", // Blanc pour fonds foncés
+    primary: "#1A1A1A", // Gris Anthracite "Encre" (Moins dur que le noir pur)
+    secondary: "#555555", // Gris moyen élégant
+    tertiary: "#8E8E8E", 
+    disabled: "#D1D1D1",
+    inverse: "#FFFFFF",
   },
 
+  // Bordures (Traits fins)
   border: {
-    light: "#E8E8E8", // Bordure claire
-    medium: "#D4D4D4", // Bordure moyenne
-    dark: "#A0A0A0", // Bordure foncée
+    light: "#E5E5E5",
+    medium: "#1A1A1A", // Suit la couleur du texte principal
+    dark: "#000000",
   },
 
-  // États
+  // Palette "Pop" pour l'UI et les actions
+  primary: {
+    main: "#1A1A1A", // Action principale Encre
+    light: "#333333",
+    dark: "#000000",
+  },
+
+  // Couleurs des coups (Badges d'analyse)
+  chess: {
+    brilliant: "#26C6DA", // !! Cyan
+    great: "#4DB6AC", // ! Bleu-vert
+    best: "#66BB6A", // ★ Vert
+    excellent: "#9CCC65", // ✓ Vert clair
+    good: "#42A5F5", // ! Bleu
+    book: "#8D6E63", // 📖 Marron
+    inaccuracy: "#FBC02D", // ?! Jaune
+    mistake: "#FF9800", // ? Orange
+    miss: "#FF4081", // ✕ Rose
+    blunder: "#D32F2F", // ?? Rouge
+  },
+  
+  // Legacy mappings (pour compatibilité temporaire, à refactoriser)
+  orange: {
+    50: "#FFF3E0",
+    100: "#FFE0B2", 
+    200: "#FFCC80",
+    300: "#FFB74D",
+    400: "#FFA726",
+    500: "#FF9800", // Orange principal remplacé par la couleur "Mistake" ou action secondaire
+    600: "#FB8C00",
+  },
+  
+  // États fonctionnels
   success: {
     light: "#D4EDDA",
-    main: "#28A745",
-    dark: "#1E7E34",
+    main: "#66BB6A", // Vert "Best"
+    dark: "#388E3C",
   },
 
   error: {
-    light: "#F8D7DA",
-    main: "#DC3545",
-    dark: "#C82333",
+    light: "#FFEBEE",
+    main: "#D32F2F", // Rouge "Blunder"
+    dark: "#C62828",
   },
 
   warning: {
-    light: "#FFF3CD",
-    main: "#FFC107",
-    dark: "#E0A800",
+    light: "#FFFDE7",
+    main: "#FBC02D", // Jaune "Inaccuracy"
+    dark: "#F9A825",
   },
 
   info: {
-    light: "#D1ECF1",
-    main: "#17A2B8",
-    dark: "#117A8B",
+    light: "#E3F2FD",
+    main: "#42A5F5", // Bleu "Good"
+    dark: "#1565C0",
   },
 } as const;
 

@@ -1,6 +1,6 @@
 /**
  * Écran 3 : Saisie du pseudo
- * L'utilisateur entre son username pour la plateforme choisie
+ * Style "Sketch & Play" - Maquette 1
  */
 
 import { useState } from "react";
@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft, Check } from "lucide-react-native";
+import { ArrowRight } from "lucide-react-native";
 import { useChessPlatform } from "@/hooks/useChessPlatform";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import type { Platform } from "@/types/chess";
@@ -31,68 +31,54 @@ export default function UsernameOnboardingScreen() {
   const [username, setUsername] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleBack = () => {
-    router.back();
-  };
-
   const handleSubmit = async () => {
     if (!username.trim()) {
-      Alert.alert("Erreur", "Veuillez entrer un nom d'utilisateur");
+      Alert.alert("Oups !", "Il manque ton pseudo !");
       return;
     }
 
     if (!platform) {
-      Alert.alert("Erreur", "Plateforme non sélectionnée");
+      Alert.alert("Oups !", "Plateforme non sélectionnée");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Ajouter la plateforme
       await addPlatform({
         platform,
         username: username.trim(),
       });
 
-      // Marquer l'onboarding comme complété
       await completeOnboarding();
-
-      // Petit délai pour s'assurer que l'état est bien mis à jour
-      // avant de naviguer (évite les conflits de navigation)
       await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Rediriger vers l'app (dashboard)
       router.replace("/(protected)/(tabs)/");
     } catch (error: any) {
       Alert.alert(
-        "Erreur",
-        error?.message ||
-          "Impossible d'ajouter ce username. Vérifiez qu'il existe sur la plateforme.",
+        "Introuvable",
+        "Impossible de trouver ce joueur. Vérifie ton pseudo !",
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const platformName = platform === "lichess" ? "Lichess" : "Chess.com";
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.content}>
+        
+        {/* Titre */}
         <View style={styles.header}>
-          <Text style={styles.title}>Quel est ton pseudo ?</Text>
-          <Text style={styles.subtitle}>
-            Entre ton nom d&apos;utilisateur {platformName} pour synchroniser tes
-            parties
-          </Text>
+          <Text style={styles.title}>Quel est votre</Text>
+          <Text style={styles.title}>pseudo ?</Text>
         </View>
 
+        {/* Input Style "Marker" */}
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Nom d&apos;utilisateur {platformName}</Text>
           <TextInput
             style={styles.input}
             placeholder="ton_pseudo"
+            placeholderTextColor={colors.text.tertiary}
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
@@ -100,39 +86,30 @@ export default function UsernameOnboardingScreen() {
             autoFocus
             editable={!isSubmitting}
           />
-          <Text style={styles.inputHint}>
-            Ce pseudo sera utilisé pour récupérer tes parties depuis{" "}
-            {platformName}
-          </Text>
         </View>
+        
+        {/* Illustration Fou (Bishop) */}
+        <View style={styles.illustrationContainer}>
+           <Text style={styles.bishopEmoji}>♝</Text>
+        </View>
+
       </View>
 
+      {/* Footer avec bouton Flèche */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.footerButton, styles.backButton]}
-          onPress={handleBack}
-          disabled={isSubmitting}
-        >
-          <ArrowLeft size={20} color={colors.text.secondary} />
-          <Text style={styles.backButtonText}>Retour</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
           style={[
-            styles.footerButton,
-            styles.submitButton,
-            (!username.trim() || isSubmitting) && styles.submitButtonDisabled,
+            styles.nextButton,
+            (!username.trim() || isSubmitting) && styles.nextButtonDisabled,
           ]}
           onPress={handleSubmit}
           disabled={!username.trim() || isSubmitting}
+          activeOpacity={0.8}
         >
           {isSubmitting ? (
-            <ActivityIndicator color={colors.text.inverse} size="small" />
+            <ActivityIndicator color={colors.text.primary} size="small" />
           ) : (
-            <>
-              <Text style={styles.submitButtonText}>Terminer</Text>
-              <Check size={20} color={colors.text.inverse} />
-            </>
+             <ArrowRight size={32} color={colors.text.primary} strokeWidth={3} />
           )}
         </TouchableOpacity>
       </View>
@@ -148,86 +125,64 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: spacing[6],
-    paddingTop: spacing[8],
+    paddingTop: spacing[12],
   },
   header: {
-    marginBottom: spacing[10],
+    marginBottom: spacing[8],
+    alignItems: "center",
   },
   title: {
-    fontSize: typography.fontSize["3xl"],
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.body,
+    fontSize: 32,
     color: colors.text.primary,
-    marginBottom: spacing[3],
     textAlign: "center",
-  },
-  subtitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.text.secondary,
-    textAlign: "center",
-    lineHeight: typography.fontSize.base * typography.lineHeight.normal,
+    lineHeight: 40,
   },
   inputContainer: {
-    marginTop: spacing[6],
-  },
-  inputLabel: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.text.primary,
-    marginBottom: spacing[2],
+    marginBottom: spacing[8],
   },
   input: {
-    backgroundColor: colors.background.secondary,
-    borderWidth: borders.width.thin,
-    borderColor: colors.border.light,
-    borderRadius: borders.radius.lg,
-    padding: spacing[4],
-    fontSize: typography.fontSize.base,
+    backgroundColor: colors.background.primary,
+    borderWidth: borders.width.medium, // 3px
+    borderColor: colors.border.medium,
+    borderRadius: borders.radius.md,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    fontSize: 24,
+    fontFamily: typography.fontFamily.body,
     color: colors.text.primary,
-    marginBottom: spacing[2],
+    textAlign: "center",
     ...shadows.sm,
   },
-  inputHint: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text.tertiary,
-    lineHeight: typography.fontSize.sm * typography.lineHeight.normal,
+  illustrationContainer: {
+    flex: 1,
+    justifyContent: "center",
+    marginLeft: spacing[4], // Décalé un peu à gauche comme sur la maquette
+  },
+  bishopEmoji: {
+    fontSize: 80,
+    transform: [{ rotate: "15deg" }],
   },
   footer: {
-    flexDirection: "row",
-    paddingHorizontal: spacing[6],
-    paddingBottom: spacing[8],
-    gap: spacing[3],
+    padding: spacing[6],
+    alignItems: "flex-end",
+    height: 120,
   },
-  footerButton: {
-    flex: 1,
-    flexDirection: "row",
+  nextButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: borders.width.medium,
+    borderColor: colors.border.medium,
+    backgroundColor: colors.background.primary,
     alignItems: "center",
     justifyContent: "center",
-    padding: spacing[4],
-    borderRadius: borders.radius.lg,
-    gap: spacing[2],
+    ...shadows.sm,
   },
-  backButton: {
-    backgroundColor: colors.background.secondary,
-    borderWidth: borders.width.thin,
-    borderColor: colors.border.medium,
-  },
-  backButtonText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.text.secondary,
-  },
-  submitButton: {
-    backgroundColor: colors.orange[500],
-    ...shadows.md,
-  },
-  submitButtonDisabled: {
-    backgroundColor: colors.background.tertiary,
+  nextButtonDisabled: {
+    opacity: 0.5,
+    borderColor: colors.text.disabled,
     ...shadows.none,
-  },
-  submitButtonText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.text.inverse,
   },
 });
 

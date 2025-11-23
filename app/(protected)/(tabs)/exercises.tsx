@@ -104,6 +104,7 @@ export default function ExercisesScreen() {
           <TouchableOpacity
             style={[styles.filter, filter === "pending" && styles.filterActive]}
             onPress={() => setFilter("pending")}
+            activeOpacity={0.7}
           >
             <Text
               style={[
@@ -120,6 +121,7 @@ export default function ExercisesScreen() {
               filter === "completed" && styles.filterActive,
             ]}
             onPress={() => setFilter("completed")}
+            activeOpacity={0.7}
           >
             <Text
               style={[
@@ -143,7 +145,7 @@ export default function ExercisesScreen() {
           filteredExercises.length === 0 && styles.listEmpty,
         ]}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.text.primary} colors={[colors.text.primary]}/>
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -177,37 +179,41 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   header: {
-    padding: spacing[4],
-    backgroundColor: colors.background.secondary,
-    borderBottomWidth: borders.width.thin,
-    borderBottomColor: colors.border.light,
+    paddingHorizontal: spacing[6],
+    paddingTop: spacing[4],
+    paddingBottom: spacing[4],
+    backgroundColor: colors.background.primary,
   },
   title: {
-    fontSize: typography.fontSize["2xl"],
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.display, // Patrick Hand
+    fontSize: 32,
     color: colors.text.primary,
-    marginBottom: spacing[3],
+    marginBottom: spacing[4],
   },
   filters: {
     flexDirection: "row",
-    gap: spacing[4],
+    gap: spacing[3],
   },
   filter: {
     paddingVertical: spacing[2],
-    paddingHorizontal: spacing[3],
-    borderRadius: borders.radius.md,
-    backgroundColor: colors.background.tertiary,
+    paddingHorizontal: spacing[4],
+    borderRadius: borders.radius.full,
+    backgroundColor: colors.background.primary,
+    borderWidth: borders.width.thin,
+    borderColor: colors.border.medium,
   },
   filterActive: {
-    backgroundColor: colors.orange[100],
+    backgroundColor: colors.text.primary,
+    borderColor: colors.text.primary,
   },
   filterText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text.secondary,
+    fontFamily: typography.fontFamily.body, // System
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text.primary,
   },
   filterTextActive: {
-    color: colors.orange[600],
-    fontWeight: typography.fontWeight.semibold,
+    color: colors.text.inverse,
   },
   list: {
     padding: spacing[4],
@@ -220,35 +226,37 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[2],
     marginTop: spacing[4],
     marginBottom: spacing[2],
     backgroundColor: colors.background.primary,
   },
   sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.display, // Patrick Hand
+    fontSize: 22,
     color: colors.text.primary,
   },
   sectionCount: {
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.body, // System
+    fontSize: 14,
     color: colors.text.secondary,
-    fontWeight: typography.fontWeight.medium,
   },
   emptyContainer: {
     padding: spacing[8],
     alignItems: "center",
   },
   emptyText: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.body, // System
+    fontSize: 18,
+    fontWeight: "600",
     color: colors.text.secondary,
     marginBottom: spacing[2],
     textAlign: "center",
   },
   emptySubtext: {
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.body, // System
+    fontSize: 14,
     color: colors.text.tertiary,
     textAlign: "center",
   },

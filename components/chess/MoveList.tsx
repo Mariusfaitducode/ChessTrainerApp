@@ -134,7 +134,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.tertiary,
   },
   currentMove: {
-    backgroundColor: colors.orange[500],
+    // backgroundColor: colors.text.primary, // Noir "Encre"
+    borderWidth: borders.width.thin,
+    color: colors.text.primary,
     ...shadows.sm,
   },
   moveNumber: {
