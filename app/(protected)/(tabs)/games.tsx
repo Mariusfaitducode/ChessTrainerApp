@@ -164,7 +164,11 @@ export default function GamesScreen() {
               <ActivityIndicator color={colors.text.primary} size="small" />
             ) : (
               <>
-                <RefreshCw size={18} color={colors.text.primary} strokeWidth={1.5} />
+                <RefreshCw
+                  size={18}
+                  color={colors.text.primary}
+                  strokeWidth={1.5}
+                />
                 <Text style={styles.syncButtonText}>Synchroniser</Text>
               </>
             )}
@@ -284,8 +288,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: typography.fontFamily.body,
-    fontSize: 14, // Plus petit, plus discret (style label)
-    fontWeight: "600",
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
     color: colors.text.secondary,
     textTransform: "uppercase",
     letterSpacing: 1,

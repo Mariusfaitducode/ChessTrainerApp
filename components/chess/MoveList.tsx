@@ -114,24 +114,24 @@ export const MoveList = ({
 
 const styles = StyleSheet.create({
   container: {
-    maxHeight: 200,
+    paddingVertical: spacing[2],
   },
   scrollView: {
     flexGrow: 0,
   },
   movesContainer: {
     flexDirection: "row",
-    flexWrap: "wrap",
     padding: spacing[3],
     gap: spacing[1],
   },
   move: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[1],
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
     borderRadius: borders.radius.md,
     backgroundColor: colors.background.tertiary,
+    minHeight: 36,
   },
   currentMove: {
     // backgroundColor: colors.text.primary, // Noir "Encre"

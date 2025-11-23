@@ -352,13 +352,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing[4],
   },
   analysisInfoText: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.bold,
     color: colors.text.primary,
     fontFamily: typography.fontFamily.body,
   },
   analysisQualityText: {
-    fontSize: 16,
+    fontSize: typography.fontSize.base,
     color: colors.text.secondary,
     fontFamily: typography.fontFamily.body,
   },
@@ -375,16 +375,22 @@ const styles = StyleSheet.create({
     // Pas de bordure, le MoveList gère son scroll
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: typography.fontSize.xl,
     fontFamily: typography.fontFamily.body,
-    fontWeight: "600",
+    fontWeight: typography.fontWeight.semibold,
     marginBottom: spacing[3],
     color: colors.text.primary,
     letterSpacing: -0.5,
   },
+  loadingPlaceholder: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: spacing[5],
+  },
   loadingPlaceholderText: {
     marginTop: spacing[3],
-    fontSize: 14,
+    fontSize: typography.fontSize.sm,
     color: colors.text.secondary,
     fontFamily: typography.fontFamily.body,
   },

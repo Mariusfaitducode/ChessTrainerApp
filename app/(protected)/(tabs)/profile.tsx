@@ -274,27 +274,27 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: typography.fontFamily.body,
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.semibold,
     color: colors.text.primary,
     marginBottom: spacing[4],
     letterSpacing: -0.5,
   },
   infoCard: {
     backgroundColor: colors.background.primary,
-    borderRadius: 16, // Radius moderne
-    padding: spacing[5], // Padding aéré
+    borderRadius: borders.radius.xl,
+    padding: spacing[5],
     borderWidth: borders.width.thin,
     borderColor: colors.border.medium,
     ...shadows.sm,
   },
   infoLabel: {
-    fontSize: 12,
+    fontSize: typography.fontSize.xs,
     color: colors.text.secondary,
     marginBottom: spacing[1],
     textTransform: "uppercase",
     fontFamily: typography.fontFamily.body,
-    fontWeight: "500",
+    fontWeight: typography.fontWeight.medium,
     letterSpacing: 1,
   },
   infoValue: {
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   },
   signOutButton: {
     backgroundColor: colors.background.primary,
-    borderRadius: 16,
+    borderRadius: borders.radius.xl,
     borderWidth: borders.width.thin,
     borderColor: colors.error.main,
     padding: spacing[4],
@@ -314,26 +314,26 @@ const styles = StyleSheet.create({
   },
   signOutText: {
     color: colors.error.main,
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
     fontFamily: typography.fontFamily.body,
   },
   signUpButton: {
-    backgroundColor: colors.text.primary, // Noir
-    borderRadius: 16,
+    backgroundColor: colors.text.primary,
+    borderRadius: borders.radius.xl,
     padding: spacing[4],
     alignItems: "center",
     ...shadows.sm,
   },
   signUpText: {
-    color: colors.text.inverse, // Blanc
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.text.inverse,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
     fontFamily: typography.fontFamily.body,
   },
   platformCard: {
     backgroundColor: colors.background.primary,
-    borderRadius: 16,
+    borderRadius: borders.radius.xl,
     padding: spacing[5],
     borderWidth: borders.width.thin,
     borderColor: colors.border.medium,
@@ -346,9 +346,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing[3],
   },
   platformName: {
-    fontSize: 18,
-    fontFamily: typography.fontFamily.body, // System, plus Patrick Hand
-    fontWeight: "600",
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.body,
+    fontWeight: typography.fontWeight.semibold,
     color: colors.text.primary,
   },
   connectedBadge: {

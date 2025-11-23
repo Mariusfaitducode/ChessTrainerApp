@@ -239,8 +239,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: typography.fontFamily.body,
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
     color: colors.text.secondary,
     textTransform: "uppercase",
     letterSpacing: 1,

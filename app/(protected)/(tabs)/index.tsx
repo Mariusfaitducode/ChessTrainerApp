@@ -19,7 +19,15 @@ import { colors, spacing, typography, shadows, borders } from "@/theme";
 import { getQualityBadgeImage } from "@/utils/chess-badge";
 
 // Composant StatCard "Clean Wireframe"
-const StatCard = ({ label, value, subtitle }: { label: string; value: string | number; subtitle?: string }) => (
+const StatCard = ({
+  label,
+  value,
+  subtitle,
+}: {
+  label: string;
+  value: string | number;
+  subtitle?: string;
+}) => (
   <View style={styles.statCard}>
     <Text style={styles.statNumber}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
@@ -28,19 +36,32 @@ const StatCard = ({ label, value, subtitle }: { label: string; value: string | n
 );
 
 // Composant ActionCard "Clean Wireframe"
-const ActionCard = ({ title, subtitle, icon: Icon, onPress, loading = false, disabled = false }: any) => (
-  <TouchableOpacity 
-    style={[styles.actionCard, disabled && styles.actionCardDisabled]} 
+const ActionCard = ({
+  title,
+  subtitle,
+  icon: Icon,
+  onPress,
+  loading = false,
+  disabled = false,
+}: any) => (
+  <TouchableOpacity
+    style={[styles.actionCard, disabled && styles.actionCardDisabled]}
     onPress={onPress}
     disabled={disabled}
     activeOpacity={0.8}
   >
     <View style={styles.actionContent}>
       <View style={styles.actionIconContainer}>
-        {loading ? <ActivityIndicator color={colors.text.primary} /> : <Icon size={24} color={colors.text.primary} strokeWidth={1.5} />}
+        {loading ? (
+          <ActivityIndicator color={colors.text.primary} />
+        ) : (
+          <Icon size={24} color={colors.text.primary} strokeWidth={1.5} />
+        )}
       </View>
       <View style={styles.actionTextContainer}>
-        <Text style={styles.actionTitle}>{loading ? "Analyse en cours..." : title}</Text>
+        <Text style={styles.actionTitle}>
+          {loading ? "Analyse en cours..." : title}
+        </Text>
         <Text style={styles.actionSubtitle}>{subtitle}</Text>
       </View>
     </View>
@@ -70,7 +91,7 @@ export default function DashboardScreen() {
 
   const pendingExercises = exercises.filter((e) => !e.completed);
   const completedExercises = exercises.filter((e) => e.completed);
-  
+
   const unanalyzedGames = games.filter((g) => !g.analyzed_at).slice(0, 5);
   const analyzedGamesCount = games.filter((g) => g.analyzed_at).length;
 
@@ -109,15 +130,15 @@ export default function DashboardScreen() {
 
       {/* Stats */}
       <View style={styles.statsRow}>
-        <StatCard 
-          value={`${analyzedGamesCount}/${games.length}`} 
-          label="Parties" 
-          subtitle="analysées" 
+        <StatCard
+          value={`${analyzedGamesCount}/${games.length}`}
+          label="Parties"
+          subtitle="analysées"
         />
-        <StatCard 
-          value={`${completedExercises.length}/${exercises.length}`} 
-          label="Exercices" 
-          subtitle="résolus" 
+        <StatCard
+          value={`${completedExercises.length}/${exercises.length}`}
+          label="Exercices"
+          subtitle="résolus"
         />
       </View>
 
@@ -136,14 +157,18 @@ export default function DashboardScreen() {
         ) : (
           <View style={styles.infoCard}>
             <Trophy size={24} color={colors.text.primary} strokeWidth={1.5} />
-            <Text style={styles.infoCardText}>Toutes tes parties sont analysées !</Text>
+            <Text style={styles.infoCardText}>
+              Toutes tes parties sont analysées !
+            </Text>
           </View>
         )}
 
         {isAnalyzing && (
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+              <View
+                style={[styles.progressFill, { width: `${progressPercent}%` }]}
+              />
             </View>
             <Text style={styles.progressText}>
               Analyse du cerveau en cours... {progressPercent}%
@@ -157,7 +182,11 @@ export default function DashboardScreen() {
         <Text style={styles.sectionTitle}>Entraînement</Text>
         <ActionCard
           title="Résoudre des exercices"
-          subtitle={pendingExercises.length > 0 ? `${pendingExercises.length} exercices t'attendent` : "Aucun exercice pour le moment"}
+          subtitle={
+            pendingExercises.length > 0
+              ? `${pendingExercises.length} exercices t'attendent`
+              : "Aucun exercice pour le moment"
+          }
           icon={Zap}
           onPress={() => {}} // TODO: Naviguer vers exercices
           disabled={pendingExercises.length === 0}
@@ -166,23 +195,52 @@ export default function DashboardScreen() {
 
       {/* Badges Card avec les vrais assets */}
       <View style={styles.badgesCard}>
-         <Text style={styles.sectionTitle}>Légende</Text>
-         <View style={styles.badgesRow}>
-            <Image source={getQualityBadgeImage("brilliant")} style={styles.badgeIcon} />
-            <Image source={getQualityBadgeImage("great")} style={styles.badgeIcon} />
-            <Image source={getQualityBadgeImage("best")} style={styles.badgeIcon} />
-            <Image source={getQualityBadgeImage("excellent")} style={styles.badgeIcon} />
-            <Image source={getQualityBadgeImage("good")} style={styles.badgeIcon} />
-         </View>
-         <View style={styles.badgesRow}>
-            <Image source={getQualityBadgeImage("inaccuracy")} style={styles.badgeIcon} />
-            <Image source={getQualityBadgeImage("mistake")} style={styles.badgeIcon} />
-            <Image source={getQualityBadgeImage("miss")} style={styles.badgeIcon} />
-            <Image source={getQualityBadgeImage("blunder")} style={styles.badgeIcon} />
-            <Image source={getQualityBadgeImage("book")} style={styles.badgeIcon} />
-         </View>
+        <Text style={styles.sectionTitle}>Légende</Text>
+        <View style={styles.badgesRow}>
+          <Image
+            source={getQualityBadgeImage("brilliant")}
+            style={styles.badgeIcon}
+          />
+          <Image
+            source={getQualityBadgeImage("great")}
+            style={styles.badgeIcon}
+          />
+          <Image
+            source={getQualityBadgeImage("best")}
+            style={styles.badgeIcon}
+          />
+          <Image
+            source={getQualityBadgeImage("excellent")}
+            style={styles.badgeIcon}
+          />
+          <Image
+            source={getQualityBadgeImage("good")}
+            style={styles.badgeIcon}
+          />
+        </View>
+        <View style={styles.badgesRow}>
+          <Image
+            source={getQualityBadgeImage("inaccuracy")}
+            style={styles.badgeIcon}
+          />
+          <Image
+            source={getQualityBadgeImage("mistake")}
+            style={styles.badgeIcon}
+          />
+          <Image
+            source={getQualityBadgeImage("miss")}
+            style={styles.badgeIcon}
+          />
+          <Image
+            source={getQualityBadgeImage("blunder")}
+            style={styles.badgeIcon}
+          />
+          <Image
+            source={getQualityBadgeImage("book")}
+            style={styles.badgeIcon}
+          />
+        </View>
       </View>
-
     </ScrollView>
   );
 }
@@ -203,12 +261,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   sectionTitle: {
-    fontFamily: typography.fontFamily.body, // Retour à la police système (Moderne)
-    fontSize: 20,
-    fontWeight: "600",
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.semibold,
     marginBottom: spacing[3],
     color: colors.text.primary,
-    letterSpacing: -0.5, // Un peu plus serré pour le côté moderne
+    letterSpacing: -0.5,
   },
   statsRow: {
     flexDirection: "row",
@@ -220,7 +278,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
     borderWidth: borders.width.thin,
     borderColor: colors.border.medium,
-    borderRadius: 16, // Plus arrondi (Moderne)
+    borderRadius: borders.radius.xl,
     padding: spacing[4],
     alignItems: "center",
     justifyContent: "center",
@@ -228,26 +286,23 @@ const styles = StyleSheet.create({
     aspectRatio: 1.2,
   },
   statNumber: {
-    fontFamily: typography.fontFamily.display, // On garde Patrick Hand juste pour le gros chiffre c'est sympa ? ou System ?
-    // L'user a dit "uniquement titres des pages". Donc passons le chiffre en System aussi pour être strict sur "Moderne".
-    // Mais un chiffre manuscrit c'est joli. Je vais le mettre en System Bold pour respecter la consigne "Moderne".
     fontFamily: typography.fontFamily.body,
-    fontWeight: "700",
-    fontSize: 32,
+    fontWeight: typography.fontWeight.bold,
+    fontSize: typography.fontSize["3xl"],
     color: colors.text.primary,
     marginBottom: spacing[1],
   },
   statLabel: {
     fontFamily: typography.fontFamily.body,
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.text.secondary, // Plus discret
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.text.secondary,
     textTransform: "uppercase",
     letterSpacing: 1,
   },
   statSubtitle: {
     fontFamily: typography.fontFamily.body,
-    fontSize: 12,
+    fontSize: typography.fontSize.xs,
     color: colors.text.tertiary,
     marginTop: 2,
   },
@@ -258,8 +313,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
     borderWidth: borders.width.thin,
     borderColor: colors.border.medium,
-    borderRadius: 16, // Plus arrondi
-    padding: spacing[5], // Plus aéré
+    borderRadius: borders.radius.xl,
+    padding: spacing[5],
     ...shadows.sm,
   },
   actionCardDisabled: {
@@ -302,13 +357,13 @@ const styles = StyleSheet.create({
     gap: spacing[3],
     backgroundColor: colors.background.secondary,
     padding: spacing[4],
-    borderRadius: 16,
+    borderRadius: borders.radius.xl,
     borderWidth: borders.width.thin,
     borderColor: colors.border.light,
   },
   infoCardText: {
     fontFamily: typography.fontFamily.body,
-    fontSize: 14,
+    fontSize: typography.fontSize.sm,
     color: colors.text.primary,
   },
   progressContainer: {
@@ -327,7 +382,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontFamily: typography.fontFamily.body,
-    fontSize: 12,
+    fontSize: typography.fontSize.xs,
     textAlign: "center",
     color: colors.text.secondary,
   },
@@ -335,7 +390,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
     borderWidth: borders.width.thin,
     borderColor: colors.border.medium,
-    borderRadius: 16,
+    borderRadius: borders.radius.xl,
     padding: spacing[4],
     ...shadows.sm,
     marginTop: spacing[2],
@@ -351,4 +406,3 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
 });
-
