@@ -4,52 +4,33 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  Image,
   RefreshControl,
   Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Lock, Check, Trophy, X, Play } from "lucide-react-native";
 import Svg, { Path } from "react-native-svg";
 
 import { useGames } from "@/hooks/useGames";
 import { useExercises } from "@/hooks/useExercises";
 import { useChessPlatform } from "@/hooks/useChessPlatform";
-import { colors, spacing, typography, shadows, borders } from "@/theme";
-import { getQualityBadgeImage } from "@/utils/chess-badge";
-import { uciToSan } from "@/utils/chess-move-format";
-import type { Exercise } from "@/types/exercises";
-import type { Game } from "@/types/games";
+import { colors, spacing, typography, borders } from "@/theme";
 import { parseWhiteElo, parseBlackElo } from "@/utils/pgn";
+
+// Nouveaux composants
+import { GameNode } from "@/components/map/GameNode";
+import { ExerciseNode } from "@/components/map/ExerciseNode";
+import type { MapItem } from "@/types/map";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // --- CONFIGURATION DU LAYOUT ---
 const NODE_SIZE = 70;
 const NODE_MARGIN_VERTICAL = 20;
-const HEADER_HEIGHT = 100;
+const HEADER_HEIGHT = 100; // Réduit pour être moins haut
 const PATH_WIDTH = 4;
-const X_VARIATION = 80; // Amplitude du zigzag
-const ITEM_HEIGHT_EXERCISE = NODE_SIZE + NODE_MARGIN_VERTICAL; // Espace vertical par exercice
-
-// Interface pour les éléments plats de la liste
-type MapItemType = "game_header" | "exercise" | "start_point";
-
-interface MapItem {
-  id: string;
-  type: MapItemType;
-  index: number; // Index global pour le zigzag
-  data?: {
-    game?: Game;
-    exercise?: Exercise;
-    result?: "win" | "loss" | "draw" | null;
-    opponentName?: string;
-    opponentElo?: number | null;
-    userColor?: "white" | "black" | null;
-  };
-}
+const X_VARIATION = 80;
+const ITEM_HEIGHT_EXERCISE = NODE_SIZE + NODE_MARGIN_VERTICAL;
 
 export default function MapScreen() {
   const insets = useSafeAreaInsets();
@@ -78,6 +59,15 @@ export default function MapScreen() {
 
   const normalizeUsername = (username: string | null): string => {
     return username?.toLowerCase().trim().replace(/\s+/g, "") || "";
+  };
+
+  const getGameType = (timeControl: string | null): string => {
+    if (!timeControl) return "Standard";
+    const baseTime = parseInt(timeControl.split("+")[0], 10);
+    if (baseTime < 180) return "Bullet";
+    if (baseTime < 600) return "Blitz";
+    if (baseTime < 3600) return "Rapid";
+    return "Classical";
   };
 
   // 1. Calcul du statut de verrouillage (Logique de progression stricte)
@@ -136,7 +126,6 @@ export default function MapScreen() {
     let globalIndex = 0;
 
     // Tri des parties pour l'affichage: RÉCENT (Haut) -> ANCIEN (Bas)
-    // On veut afficher le "sommet" en haut.
     const sortedGames = [...games].sort((a, b) => {
       const dateStrA = a.played_at || a.imported_at;
       const dateStrB = b.played_at || b.imported_at;
@@ -175,6 +164,11 @@ export default function MapScreen() {
           result = userColor === "black" ? "win" : "loss";
         else if (game.result === "1/2-1/2") result = "draw";
 
+        const gameType = getGameType(game.time_control);
+
+        // Simulation Accuracy (à remplacer par vraie donnée si dispo)
+        const accuracy = undefined;
+
         // 1. Ajouter Header de Partie
         items.push({
           id: `game-${game.id}`,
@@ -186,11 +180,12 @@ export default function MapScreen() {
             opponentName,
             opponentElo,
             userColor,
+            gameType,
+            accuracy,
           },
         });
 
         // 2. Ajouter Exercices (Ordre DESCENDANT: Move N -> Move 1) pour affichage Haut -> Bas
-        // Car on "monte" depuis le bas.
         const sortedExercises = [...gameExercises].sort(
           (a, b) => (b.move_number || 0) - (a.move_number || 0),
         );
@@ -218,7 +213,7 @@ export default function MapScreen() {
 
   // --- LOGIQUE DE POSITIONNEMENT (SNAKE) ---
   const getPosition = useCallback(
-    (index: number, type: MapItemType) => {
+    (index: number, type: "game_header" | "exercise" | "start_point") => {
       const centerX = containerWidth / 2;
 
       if (type === "game_header" || type === "start_point") {
@@ -311,9 +306,6 @@ export default function MapScreen() {
     if (targetIndex !== -1) {
       const y = getItemY(targetIndex);
       // On veut l'item en bas de l'écran (pour regarder vers le haut/futur)
-      // offset + height = y + margin
-      // offset = y - height + margin
-      // Margin pour le décoller du bord bas (ex: 200px)
       const bottomMargin = 250;
       const offset = y - scrollViewHeight + bottomMargin;
 
@@ -384,39 +376,7 @@ export default function MapScreen() {
           const y = getItemY(i);
 
           if (item.type === "game_header") {
-            const { opponentName, opponentElo, result } = item.data!;
-            return (
-              <View
-                key={item.id}
-                style={[styles.headerItemContainer, { top: y, left: x - 90 }]} // Centré (180 width)
-              >
-                <View style={styles.opponentSign}>
-                  <View style={styles.opponentHeader}>
-                    <Text style={styles.opponentLabel}>VS</Text>
-                    {result === "win" && (
-                      <Trophy
-                        size={12}
-                        color={colors.text.inverse}
-                        style={{ marginLeft: 4 }}
-                      />
-                    )}
-                    {result === "loss" && (
-                      <X
-                        size={12}
-                        color={colors.text.inverse}
-                        style={{ marginLeft: 4 }}
-                      />
-                    )}
-                  </View>
-                  <Text style={styles.opponentName} numberOfLines={1}>
-                    {opponentName}
-                  </Text>
-                  {opponentElo && (
-                    <Text style={styles.opponentElo}>({opponentElo})</Text>
-                  )}
-                </View>
-              </View>
-            );
+            return <GameNode key={item.id} item={item} y={y} x={x} />;
           } else if (item.type === "start_point") {
             return (
               <View
@@ -428,98 +388,19 @@ export default function MapScreen() {
               </View>
             );
           } else {
-            // EXERCISE NODE
-            const ex = item.data!.exercise!;
-            const isCompleted = ex.completed;
-            const isLocked = lockedExerciseIds.has(ex.id);
-            const isCurrent = currentExerciseId === ex.id;
-            const badgeImage = getQualityBadgeImage(ex.move_quality);
-            const moveSan = ex.played_move
-              ? ex.fen_before
-                ? uciToSan(ex.played_move, ex.fen_before)
-                : ex.played_move
-              : "?";
-
             return (
-              <View
+              <ExerciseNode
                 key={item.id}
-                style={[
-                  styles.nodeContainer,
-                  {
-                    top: y,
-                    left: x - NODE_SIZE / 2,
-                    height: NODE_SIZE,
-                    width: NODE_SIZE,
-                  },
-                ]}
-              >
-                <TouchableOpacity
-                  style={[
-                    styles.node,
-                    isCompleted && styles.nodeCompleted,
-                    isLocked && styles.nodeLocked,
-                    isCurrent && styles.nodeCurrent,
-                  ]}
-                  onPress={() =>
-                    !isLocked &&
-                    router.push(`/(protected)/exercise/${ex.id}` as any)
-                  }
-                  activeOpacity={isLocked ? 1 : 0.7}
-                  disabled={isLocked}
-                >
-                  <View style={styles.nodeContent}>
-                    <Text
-                      style={[styles.moveNumber, isLocked && styles.textLocked]}
-                    >
-                      #{ex.move_number}
-                    </Text>
-                    <Text
-                      style={[styles.moveSan, isLocked && styles.textLocked]}
-                    >
-                      {moveSan}
-                    </Text>
-                  </View>
-
-                  {/* Badge */}
-                  {!isLocked && (
-                    <View style={styles.badgeCorner}>
-                      <Image
-                        source={badgeImage}
-                        style={styles.badgeImageSmall}
-                      />
-                    </View>
-                  )}
-
-                  {/* Lock */}
-                  {isLocked && (
-                    <View style={styles.lockOverlay}>
-                      <Lock size={16} color={colors.text.tertiary} />
-                    </View>
-                  )}
-
-                  {/* Check */}
-                  {isCompleted && (
-                    <View style={styles.checkBadge}>
-                      <Check
-                        size={10}
-                        color={colors.text.inverse}
-                        strokeWidth={4}
-                      />
-                    </View>
-                  )}
-
-                  {/* Current Indicator (Play Icon) */}
-                  {isCurrent && (
-                    <View style={styles.playBadge}>
-                      <Play
-                        size={12}
-                        color={colors.background.primary}
-                        fill={colors.background.primary}
-                      />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </View>
+                item={item}
+                y={y}
+                x={x}
+                lockedExerciseIds={lockedExerciseIds}
+                currentExerciseId={currentExerciseId}
+                onPress={(id) =>
+                  router.push(`/(protected)/exercise/${id}` as any)
+                }
+                nodeSize={NODE_SIZE}
+              />
             );
           }
         })}
@@ -571,161 +452,11 @@ const styles = StyleSheet.create({
     // Height is managed dynamically
     paddingBottom: spacing[8],
   },
-  // Positioning Containers
-  headerItemContainer: {
-    position: "absolute",
-    width: 180,
-    height: HEADER_HEIGHT,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 2,
-  },
-  nodeContainer: {
-    position: "absolute",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 3,
-  },
   startPointContainer: {
     position: "absolute",
     width: 80,
     alignItems: "center",
     justifyContent: "center",
-  },
-  // Visual Components
-  opponentSign: {
-    backgroundColor: colors.text.primary,
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
-    borderRadius: 12,
-    borderWidth: borders.width.thin,
-    borderColor: colors.text.primary,
-    alignItems: "center",
-    width: "100%",
-    ...shadows.md,
-  },
-  opponentHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 2,
-  },
-  opponentLabel: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: 10,
-    color: colors.text.inverse,
-    fontWeight: "700",
-    letterSpacing: 1,
-  },
-  opponentName: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: 14,
-    color: colors.text.inverse,
-    fontWeight: "600",
-  },
-  opponentElo: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: 12,
-    color: colors.text.disabled,
-  },
-  node: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: colors.background.primary,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: colors.text.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    ...shadows.sm,
-  },
-  nodeCompleted: {
-    backgroundColor: colors.success.light,
-    borderColor: colors.success.main,
-    borderStyle: "dashed",
-  },
-  nodeLocked: {
-    backgroundColor: colors.background.tertiary,
-    borderColor: colors.border.medium,
-    borderStyle: "solid",
-    ...shadows.none,
-  },
-  nodeCurrent: {
-    borderColor: colors.text.primary,
-    borderWidth: 3,
-    transform: [{ scale: 1.1 }],
-    backgroundColor: colors.background.primary,
-    ...shadows.md,
-  },
-  nodeContent: {
-    alignItems: "center",
-  },
-  moveNumber: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: 10,
-    color: colors.text.tertiary,
-    fontWeight: "600",
-    marginBottom: 0,
-  },
-  moveSan: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: 14,
-    color: colors.text.primary,
-    fontWeight: "bold",
-  },
-  textLocked: {
-    color: colors.text.tertiary,
-  },
-  badgeCorner: {
-    position: "absolute",
-    top: -8,
-    right: -8,
-    // backgroundColor: colors.background.primary,
-    // borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    // borderWidth: 1,
-    // borderColor: colors.border.light,
-    // ...shadows.sm,
-    zIndex: 5,
-  },
-  badgeImageSmall: {
-    width: 28,
-    height: 28,
-    resizeMode: "contain",
-  },
-  lockOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.4)",
-    borderRadius: 20,
-  },
-  checkBadge: {
-    position: "absolute",
-    bottom: -6,
-    right: -6,
-    backgroundColor: colors.success.main,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 5,
-  },
-  playBadge: {
-    position: "absolute",
-    bottom: -10,
-    alignSelf: "center",
-    backgroundColor: colors.text.primary,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: colors.background.primary,
-    zIndex: 10,
-    ...shadows.sm,
   },
   startDot: {
     width: 20,
