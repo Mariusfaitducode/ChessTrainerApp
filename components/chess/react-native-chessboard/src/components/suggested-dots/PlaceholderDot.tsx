@@ -1,6 +1,6 @@
 import type { Square } from 'chess.js';
 import React, { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Pressable } from 'react-native';
 import Animated, {
   type SharedValue,
   useAnimatedStyle,
@@ -63,17 +63,16 @@ const PlaceholderDotComponent: React.FC<PlaceholderDotProps> = ({
     return { opacity: withTiming(canBeSelected ? 0.15 : 0) };
   }, []);
 
-  // Handler pour onTouchEnd - doit être une fonction JS normale, pas un worklet
-  const handleTouchEnd = React.useCallback(() => {
-    // Accéder à isSelectable.value dans un callback JS est OK
+  // Handler pour onPress - fonctionne sur toutes les plateformes (web et mobile)
+  const handlePress = React.useCallback(() => {
     if (isSelectable.value && moveTo) {
       moveTo(currentSquare);
     }
   }, [currentSquare, isSelectable, moveTo]);
 
   return (
-    <View
-      onTouchEnd={handleTouchEnd}
+    <Pressable
+      onPress={handlePress}
       style={[
         styles.placeholderContainer,
         {
@@ -85,6 +84,7 @@ const PlaceholderDotComponent: React.FC<PlaceholderDotProps> = ({
           ],
         },
       ]}
+      hitSlop={pieceSize / 4}
     >
       <Animated.View
         style={[
@@ -92,8 +92,9 @@ const PlaceholderDotComponent: React.FC<PlaceholderDotProps> = ({
           styles.placeholder,
           rPlaceholderStyle,
         ]}
+        pointerEvents="none"
       />
-    </View>
+    </Pressable>
   );
 };
 
