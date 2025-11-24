@@ -265,27 +265,26 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.fontFamily.display, // Patrick Hand
-    fontSize: 32,
+    fontSize: 34,
     color: colors.text.primary,
     marginBottom: spacing[6],
+    textAlign: "left",
   },
   section: {
     marginBottom: spacing[6],
   },
   sectionTitle: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.heading,
+    fontSize: 20,
+    fontWeight: "700",
     color: colors.text.primary,
     marginBottom: spacing[4],
     letterSpacing: -0.5,
   },
   infoCard: {
-    backgroundColor: colors.background.primary,
-    borderRadius: borders.radius.xl,
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.card,
     padding: spacing[5],
-    borderWidth: borders.width.thin,
-    borderColor: colors.border.medium,
     ...shadows.sm,
   },
   infoLabel: {
@@ -304,10 +303,8 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.body,
   },
   signOutButton: {
-    backgroundColor: colors.background.primary,
-    borderRadius: borders.radius.xl,
-    borderWidth: borders.width.thin,
-    borderColor: colors.error.main,
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.card,
     padding: spacing[4],
     alignItems: "center",
     ...shadows.sm,
@@ -332,11 +329,9 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.body,
   },
   platformCard: {
-    backgroundColor: colors.background.primary,
-    borderRadius: borders.radius.xl,
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.card,
     padding: spacing[5],
-    borderWidth: borders.width.thin,
-    borderColor: colors.border.medium,
     ...shadows.sm,
   },
   platformHeader: {

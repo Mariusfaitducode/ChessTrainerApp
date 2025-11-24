@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, Image, Dimensions } from "react-native";
 import { Zap, Target } from "lucide-react-native";
-import { colors, spacing, typography, shadows } from "@/theme";
+import { colors, spacing, typography, shadows, borders } from "@/theme";
 import type { MapItem } from "@/types/map";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -109,10 +109,8 @@ const styles = StyleSheet.create({
   },
   gameCard: {
     width: "100%",
-    backgroundColor: colors.background.primary,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: colors.border.light,
+    backgroundColor: colors.background.secondary, // Blanc
+    borderRadius: borders.radius.card,
     ...shadows.md,
     overflow: "hidden",
     paddingHorizontal: spacing[4],
@@ -127,17 +125,18 @@ const styles = StyleSheet.create({
   gameTypeBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.background.tertiary,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    backgroundColor: colors.background.primary, // Stone 50
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   gameTypeText: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: typography.fontFamily.body,
-    color: colors.text.primary,
-    fontWeight: "700",
+    color: colors.text.secondary, // Plus discret
+    fontWeight: "600",
     textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   gameCardBody: {
     flexDirection: "row",

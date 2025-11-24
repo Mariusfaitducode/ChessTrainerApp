@@ -112,18 +112,17 @@ export const ExerciseCard = ({ exercise, onPress }: ExerciseCardProps) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background.primary,
-    borderRadius: 16, // Moderne
-    borderWidth: borders.width.thin, // 2px
-    borderColor: colors.border.medium,
-    padding: spacing[4], // Aéré
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.card,
+    padding: spacing[4],
     marginBottom: spacing[3],
-    ...shadows.sm,
+    ...shadows.md,
   },
   completedCard: {
-    backgroundColor: colors.background.tertiary, // Grisé si terminé
-    borderColor: colors.border.light,
-    opacity: 0.8,
+    backgroundColor: colors.background.secondary,
+    opacity: 0.6,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   content: {
     flexDirection: "row",

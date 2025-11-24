@@ -5,28 +5,28 @@
  */
 
 export const colors = {
-  // Palette principale (Structure)
+  // Palette "Modern Tactics" (Sérieux & Efficace)
   background: {
-    primary: "#FFFFFF", // Blanc pur
-    secondary: "#F8F8F8", // Blanc très légèrement grisé (pour les cartes)
-    tertiary: "#F0F0F0", // Gris très clair
-    modal: "rgba(0, 0, 0, 0.7)", // Fond modal sombre
+    primary: "#FAFAF9", // Stone 50 (Blanc cassé doux)
+    secondary: "#FFFFFF", // Blanc pur pour les cartes (Élévation)
+    tertiary: "#E7E5E4", // Stone 200 (Séparateurs doux)
+    modal: "rgba(30, 41, 59, 0.7)", // Slate 900 transparent
   },
 
   // Texte & Traits
   text: {
-    primary: "#1A1A1A", // Gris Anthracite "Encre" (Moins dur que le noir pur)
-    secondary: "#555555", // Gris moyen élégant
-    tertiary: "#8E8E8E", 
-    disabled: "#D1D1D1",
+    primary: "#1C1917", // Stone 900 (Presque noir, mais chaud)
+    secondary: "#57534E", // Stone 600
+    tertiary: "#A8A29E", // Stone 400
+    disabled: "#D6D3D1",
     inverse: "#FFFFFF",
   },
 
-  // Bordures (Traits fins)
+  // Bordures (Subtiles)
   border: {
-    light: "#E5E5E5",
-    medium: "#1A1A1A", // Suit la couleur du texte principal
-    dark: "#000000",
+    light: "#F5F5F4", // Stone 100
+    medium: "#E7E5E4", // Stone 200
+    dark: "#78716C", // Stone 500
   },
 
   // Palette "Pop" pour l'UI et les actions

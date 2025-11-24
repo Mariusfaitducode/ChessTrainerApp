@@ -1,6 +1,6 @@
 /**
- * Système d'ombres "Clean Sketch"
- * Micro-reliefs nets
+ * Système d'ombres "Modern Tactics"
+ * Ombres douces et diffuses pour l'élévation naturelle
  */
 
 import { ViewStyle } from "react-native";
@@ -15,27 +15,30 @@ export const shadows = {
     elevation: 0,
   } as ViewStyle,
 
+  // Ombre très légère pour les éléments interactifs mineurs
   sm: {
-    shadowColor: colors.text.primary,
-    shadowOffset: { width: 1, height: 1 }, // Décalage minime
-    shadowOpacity: 0.1,
-    shadowRadius: 0,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
     elevation: 1,
   } as ViewStyle,
 
+  // Ombre standard pour les cartes (Card UI)
   md: {
-    shadowColor: colors.text.primary,
-    shadowOffset: { width: 2, height: 2 }, // Décalage standard
-    shadowOpacity: 0.15,
-    shadowRadius: 0,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 2,
   } as ViewStyle,
 
+  // Ombre plus marquée pour les éléments flottants ou modales
   lg: {
-    shadowColor: colors.text.primary,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 0,
-    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
   } as ViewStyle,
 } as const;

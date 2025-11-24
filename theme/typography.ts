@@ -6,10 +6,12 @@
 
 export const typography = {
   fontFamily: {
-    // Patrick Hand pour les titres et l'identité visuelle
+    // Patrick Hand pour le grand titre d'accueil uniquement (Identité)
     display: "PatrickHand_400Regular",
-    heading: "PatrickHand_400Regular",
-    subheading: "PatrickHand_400Regular",
+    
+    // Retour à la police système pour le reste (Sérieux & Lisibilité)
+    heading: "System",
+    subheading: "System",
     
     // Police système native pour le corps de texte (lisibilité)
     body: "System",

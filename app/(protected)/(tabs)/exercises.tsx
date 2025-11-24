@@ -238,10 +238,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   sectionTitle: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.text.secondary,
+    fontFamily: typography.fontFamily.heading,
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.text.tertiary, // Plus discret pour les sous-titres de liste
     textTransform: "uppercase",
     letterSpacing: 1,
   },

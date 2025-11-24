@@ -162,44 +162,9 @@ export default function DashboardScreen() {
         />
       </View>
 
-      {/* Section Analyse */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Analyse</Text>
-        {unanalyzedGames.length > 0 ? (
-          <ActionCard
-            title="Analyser mes parties"
-            subtitle={`${unanalyzedGames.length} nouvelles parties détectées`}
-            icon={Brain}
-            onPress={handleAnalyzeFirst}
-            loading={isAnalyzing}
-            disabled={isAnalyzing}
-          />
-        ) : (
-          <View style={styles.infoCard}>
-            <Trophy size={24} color={colors.text.primary} strokeWidth={1.5} />
-            <Text style={styles.infoCardText}>
-              Toutes tes parties sont analysées !
-            </Text>
-          </View>
-        )}
-
-        {isAnalyzing && (
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View
-                style={[styles.progressFill, { width: `${progressPercent}%` }]}
-              />
-            </View>
-            <Text style={styles.progressText}>
-              Analyse du cerveau en cours... {progressPercent}%
-            </Text>
-          </View>
-        )}
-      </View>
-
       {/* Section Exercices */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Entraînement</Text>
+        {/* <Text style={styles.sectionTitle}>Entraînement</Text> */}
         <ExerciseActionCard
           exercise={pendingExercises.length > 0 ? pendingExercises[0] : null}
           title="Résoudre des exercices"
@@ -276,42 +241,41 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.fontFamily.display, // Patrick Hand
-    fontSize: 32,
+    fontSize: 34, // Un peu plus grand pour l'impact
     marginBottom: spacing[6],
     color: colors.text.primary,
-    textAlign: "center",
+    textAlign: "left", // Alignement gauche demandé
   },
   sectionTitle: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.semibold,
-    marginBottom: spacing[3],
+    fontFamily: typography.fontFamily.heading, // System
+    fontSize: 20, // Taille standard titre section
+    fontWeight: "700",
+    marginBottom: spacing[4],
     color: colors.text.primary,
     letterSpacing: -0.5,
   },
   statsRow: {
     flexDirection: "row",
-    gap: spacing[3],
+    gap: spacing[4],
     marginBottom: spacing[6],
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.background.primary,
-    borderWidth: borders.width.thin,
-    borderColor: colors.border.medium,
-    borderRadius: borders.radius.xl,
-    padding: spacing[4],
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.card,
+    padding: spacing[5],
     alignItems: "center",
     justifyContent: "center",
-    ...shadows.sm,
-    aspectRatio: 1.2,
+    ...shadows.md,
+    aspectRatio: 1.1,
   },
   statNumber: {
-    fontFamily: typography.fontFamily.body,
-    fontWeight: typography.fontWeight.bold,
-    fontSize: typography.fontSize["3xl"],
+    fontFamily: typography.fontFamily.heading, // System
+    fontWeight: "800", // Extra bold
+    fontSize: 36,
     color: colors.text.primary,
     marginBottom: spacing[1],
+    letterSpacing: -1,
   },
   statLabel: {
     fontFamily: typography.fontFamily.body,
@@ -331,17 +295,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing[6],
   },
   actionCard: {
-    backgroundColor: colors.background.primary,
-    borderWidth: borders.width.thin,
-    borderColor: colors.border.medium,
-    borderRadius: borders.radius.xl,
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.card,
     padding: spacing[5],
-    ...shadows.sm,
+    ...shadows.md,
   },
   actionCardDisabled: {
-    backgroundColor: colors.background.secondary, // Grisé léger
-    borderColor: colors.border.light,
-    ...shadows.none,
+    opacity: 0.6,
+    backgroundColor: colors.background.tertiary,
   },
   actionContent: {
     flexDirection: "row",
@@ -353,68 +314,69 @@ const styles = StyleSheet.create({
     height: 48,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border.medium,
-    borderRadius: 24, // Rond
+    backgroundColor: colors.background.primary,
+    borderRadius: borders.radius.button,
   },
   actionTextContainer: {
     flex: 1,
   },
   actionTitle: {
-    fontFamily: typography.fontFamily.body, // System
-    fontWeight: "600",
-    fontSize: 16,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: "700",
+    fontSize: 17,
     color: colors.text.primary,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   actionSubtitle: {
     fontFamily: typography.fontFamily.body,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.text.secondary,
+    lineHeight: 20,
   },
   infoCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing[3],
     backgroundColor: colors.background.secondary,
-    padding: spacing[4],
-    borderRadius: borders.radius.xl,
-    borderWidth: borders.width.thin,
-    borderColor: colors.border.light,
+    padding: spacing[5],
+    borderRadius: borders.radius.card,
+    ...shadows.sm,
   },
   infoCardText: {
     fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.sm,
-    color: colors.text.primary,
+    fontSize: 15,
+    color: colors.text.secondary,
+    flex: 1,
+    fontWeight: "500",
   },
   progressContainer: {
     marginTop: spacing[4],
   },
   progressBar: {
-    height: 6, // Plus fin
-    backgroundColor: colors.background.secondary,
-    borderRadius: borders.radius.full,
+    height: 6,
+    backgroundColor: colors.background.tertiary, // Stone 200
+    borderRadius: 3,
     overflow: "hidden",
     marginBottom: spacing[2],
   },
   progressFill: {
     height: "100%",
     backgroundColor: colors.text.primary,
+    borderRadius: 3,
   },
   progressText: {
     fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.xs,
+    fontSize: 13,
     textAlign: "center",
-    color: colors.text.secondary,
+    color: colors.text.tertiary, // Plus discret
+    fontWeight: "500",
   },
   badgesCard: {
-    backgroundColor: colors.background.primary,
-    borderWidth: borders.width.thin,
-    borderColor: colors.border.medium,
-    borderRadius: borders.radius.xl,
-    padding: spacing[4],
-    ...shadows.sm,
-    marginTop: spacing[2],
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.card,
+    padding: spacing[6],
+    marginTop: spacing[4],
+    ...shadows.md,
   },
   badgesRow: {
     flexDirection: "row",

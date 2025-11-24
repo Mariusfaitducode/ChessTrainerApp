@@ -76,22 +76,20 @@ export const ExerciseActionCard = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background.primary,
-    borderWidth: borders.width.thin,
-    borderColor: colors.border.medium,
-    borderRadius: borders.radius.xl,
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.card,
     overflow: "hidden",
-    ...shadows.sm,
+    ...shadows.md,
   },
   cardDisabled: {
-    backgroundColor: colors.background.secondary,
-    borderColor: colors.border.light,
+    backgroundColor: colors.background.tertiary,
+    opacity: 0.6,
     ...shadows.none,
   },
   content: {
     flexDirection: "row",
     alignItems: "stretch",
-    minHeight: 120, // Hauteur minimale pour la carte
+    height: 120,
   },
   chessboardContainer: {
     height: "100%",
@@ -102,8 +100,7 @@ const styles = StyleSheet.create({
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    borderRightWidth: borders.width.thin,
-    borderRightColor: colors.border.medium,
+    backgroundColor: colors.background.primary, // Stone 50 pour le contraste
   },
   textContainer: {
     flex: 1,
@@ -111,15 +108,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   title: {
-    fontFamily: typography.fontFamily.body,
-    fontWeight: "600",
-    fontSize: 16,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: "700",
+    fontSize: 17,
     color: colors.text.primary,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   subtitle: {
     fontFamily: typography.fontFamily.body,
     fontSize: 14,
     color: colors.text.secondary,
+    lineHeight: 20,
   },
 });

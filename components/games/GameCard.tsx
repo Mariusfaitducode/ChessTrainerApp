@@ -192,13 +192,11 @@ export const GameCard = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background.primary,
-    borderRadius: 16, // Moderne
-    borderWidth: borders.width.thin, // Trait fin
-    borderColor: colors.border.medium,
-    padding: spacing[4], // Aéré
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.card,
+    padding: spacing[4],
     marginBottom: spacing[3],
-    ...shadows.sm, // Ombre légère
+    ...shadows.md,
   },
   content: {
     flexDirection: "row",
@@ -210,9 +208,8 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border.medium,
-    borderRadius: borders.radius.sm,
+    backgroundColor: colors.background.primary,
+    borderRadius: borders.radius.md,
   },
   opponentContainer: {
     flex: 1,
@@ -244,9 +241,7 @@ const styles = StyleSheet.create({
     // Animation automatique
   },
   blundersBadge: {
-    backgroundColor: colors.background.primary,
-    borderWidth: 1,
-    borderColor: colors.chess.blunder, // On garde la couleur juste pour le trait rouge du blunder
+    backgroundColor: colors.background.primary, // Stone 50
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
     borderRadius: borders.radius.full,

@@ -286,16 +286,14 @@ export default function ExerciseScreen() {
             <Text style={styles.headerTitle} numberOfLines={1}>
               {headerTitle}
             </Text>
-            {headerSubtitle && (
-              <Text style={styles.headerSubtitle} numberOfLines={1}>
-                {headerSubtitle}
-              </Text>
-            )}
+            {/* Suppression du sous-titre dans la barre de nav pour épuré */}
           </View>
         ),
-        headerTitleStyle: {
-          width: "100%",
+        headerShadowVisible: false, // Pas de bordure/ombre sur le header natif
+        headerStyle: {
+          backgroundColor: colors.background.primary,
         },
+        headerTitleAlign: "left", // Alignement gauche
       });
     }
   }, [exercise, navigation]);
@@ -770,8 +768,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[2],
   },
   headerTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
+    fontSize: 20, // Plus grand
+    fontFamily: typography.fontFamily.display, // Patrick Hand pour la cohérence
     color: colors.text.primary,
     flex: 1,
   },
@@ -803,14 +801,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   descriptionContainer: {
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.secondary, // Blanc
     paddingVertical: spacing[4],
     paddingHorizontal: spacing[4],
-    borderRadius: borders.radius.md,
+    borderRadius: borders.radius.card,
     marginHorizontal: spacing[4],
     marginBottom: spacing[4],
-    borderWidth: borders.width.thin,
-    borderColor: colors.border.medium,
     ...shadows.sm,
   },
   description: {
@@ -824,15 +820,13 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
     width: "100%",
     marginBottom: spacing[4],
-    borderBottomWidth: borders.width.thin,
-    borderBottomColor: colors.border.medium,
+    // Suppression bordure bas
   },
   analysisBarContainer: {
     width: 16,
     alignSelf: "stretch",
     backgroundColor: colors.background.primary,
-    borderRightWidth: borders.width.thin,
-    borderRightColor: colors.border.medium,
+    // Suppression bordure droite
   },
   chessboardContainer: {
     flex: 1,
@@ -845,22 +839,22 @@ const styles = StyleSheet.create({
     gap: spacing[2],
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
-    borderRadius: borders.radius.md,
+    borderRadius: borders.radius.card,
     marginBottom: spacing[4],
-    borderWidth: borders.width.thin, // Cadre fin
-    backgroundColor: colors.background.primary, // Fond blanc
+    backgroundColor: colors.background.secondary, // Fond blanc
+    ...shadows.md,
   },
   feedbackCorrect: {
-    borderColor: colors.success.main,
+    backgroundColor: "#DCFCE7", // Vert très pâle
   },
   feedbackGood: {
-    borderColor: colors.success.main,
+    backgroundColor: "#DCFCE7",
   },
   feedbackAnalyzing: {
-    borderColor: colors.warning.main,
+    backgroundColor: "#FEF9C3", // Jaune très pâle
   },
   feedbackIncorrect: {
-    borderColor: colors.error.main,
+    backgroundColor: "#FEE2E2", // Rouge très pâle
   },
   feedbackText: {
     fontSize: typography.fontSize.base,
@@ -884,24 +878,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing[2],
     padding: spacing[3],
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.secondary,
     borderRadius: borders.radius.md,
-    borderWidth: borders.width.thin,
-    borderColor: colors.warning.main,
+    borderWidth: 1,
+    borderColor: colors.border.light,
   },
   hintButtonText: {
     fontSize: typography.fontSize.sm,
-    color: colors.text.primary,
+    color: colors.text.secondary,
     fontFamily: typography.fontFamily.body,
     fontWeight: typography.fontWeight.medium,
   },
   hintContent: {
     padding: spacing[3],
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.secondary,
     borderRadius: borders.radius.md,
     marginBottom: spacing[4],
-    borderWidth: borders.width.thin,
-    borderColor: colors.border.medium,
     ...shadows.sm,
   },
   hintText: {

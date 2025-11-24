@@ -429,20 +429,19 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[4],
     backgroundColor: colors.background.primary,
     zIndex: 10,
-    borderBottomWidth: borders.width.thin,
-    borderBottomColor: colors.border.light,
+    // Suppression de la bordure demandée
   },
   title: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 32,
+    fontSize: 34,
     color: colors.text.primary,
-    textAlign: "center",
+    textAlign: "left", // Alignement gauche
   },
   subtitle: {
     fontFamily: typography.fontFamily.body,
     fontSize: 14,
     color: colors.text.secondary,
-    textAlign: "center",
+    textAlign: "left", // Alignement gauche
     marginTop: spacing[1],
   },
   scrollView: {
