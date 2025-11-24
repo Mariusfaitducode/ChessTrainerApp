@@ -101,7 +101,6 @@ export const getPlayerArchives = async (
 
   // Vérifier le format de la réponse
   if (!data || !data.archives || !Array.isArray(data.archives)) {
-    console.warn("[Chess.com] Format de réponse inattendu:", data);
     return { archives: [] };
   }
 
@@ -158,7 +157,6 @@ export const getAllPlayerGames = async (
   const allGames: ChessComGame[] = [];
 
   if (!archives.archives || archives.archives.length === 0) {
-    console.warn("[Chess.com] Aucune archive trouvée");
     return [];
   }
 
@@ -186,26 +184,16 @@ export const getAllPlayerGames = async (
     .slice(0, maxMonths);
 
   if (parsedArchives.length === 0) {
-    console.warn("[Chess.com] Aucune archive valide parsée");
     return [];
   }
-
-  console.log(`[Chess.com] ${parsedArchives.length} archives à traiter`);
 
   // Récupérer les parties mois par mois
   for (const archive of parsedArchives) {
     try {
-      console.log(`[Chess.com] Récupération ${archive.year}/${archive.month}`);
       const games = await getPlayerGames(username, archive.year, archive.month);
       allGames.push(...games);
-      console.log(
-        `[Chess.com] ${games.length} parties récupérées pour ${archive.year}/${archive.month}`,
-      );
-    } catch (error) {
-      console.warn(
-        `Erreur lors de la récupération des parties pour ${archive.year}/${archive.month}:`,
-        error,
-      );
+    } catch {
+      // Ignore errors
     }
   }
 

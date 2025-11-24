@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -16,8 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGames } from "@/hooks/useGames";
 import { useExercises } from "@/hooks/useExercises";
 import { useAnalyzeGames } from "@/hooks/useAnalyzeGames";
-import { useChessPlatform } from "@/hooks/useChessPlatform";
-import { useSyncGames } from "@/hooks/useSyncGames";
+import { useAutoSync } from "@/hooks/useAutoSync";
 import { colors, spacing, typography, shadows, borders } from "@/theme";
 import { getQualityBadgeImage } from "@/utils/chess-badge";
 import { ExerciseActionCard } from "@/components/exercises/ExerciseActionCard";
@@ -86,29 +85,13 @@ export default function DashboardScreen() {
     refetch: refetchExercises,
   } = useExercises();
   const { analyzeGames, isAnalyzing, progress } = useAnalyzeGames();
-  const { platforms } = useChessPlatform();
-  const { syncGames } = useSyncGames({ silent: true });
+
+  // Synchronisation automatique : charge les 10 premières parties puis vérifie périodiquement
+  useAutoSync();
+
   const [analyzingGameId, setAnalyzingGameId] = useState<string | null>(null);
-  const hasAutoSynced = useRef(false); // Flag pour éviter les sync multiples
 
   const isLoading = isLoadingGames || isLoadingExercises;
-
-  // Auto-sync au premier montage si pas de parties mais plateformes configurées
-  useEffect(() => {
-    if (
-      !isLoadingGames &&
-      !hasAutoSynced.current &&
-      games.length === 0 &&
-      platforms.length > 0
-    ) {
-      hasAutoSynced.current = true;
-      console.log("[Dashboard] Auto-sync des 10 dernières parties...");
-      syncGames({ maxGames: 10 }).catch((error) => {
-        console.warn("[Dashboard] Erreur auto-sync:", error);
-        // On ne bloque pas l'utilisateur, juste un log
-      });
-    }
-  }, [isLoadingGames, games.length, platforms.length, syncGames]);
 
   const onRefresh = async () => {
     await Promise.all([refetchGames(), refetchExercises()]);
