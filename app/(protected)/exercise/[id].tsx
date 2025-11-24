@@ -723,19 +723,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing[2],
     padding: spacing[3],
-    backgroundColor: colors.orange[50],
-    borderRadius: borders.radius.md,
-    borderWidth: 1,
-    borderColor: colors.orange[200],
+    backgroundColor: "#FFEDD5", // Orange 100 (Plus soutenu que 50)
+    borderRadius: borders.radius.button,
   },
   solutionButtonActive: {
-    backgroundColor: colors.orange[100],
+    backgroundColor: "#FED7AA", // Orange 200
     opacity: 0.8,
   },
   solutionButtonText: {
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.orange[600],
+    fontWeight: "700",
+    fontFamily: typography.fontFamily.body,
+    color: "#EA580C", // Orange 600 (Contraste fort)
   },
   bottomContentContainer: {
     paddingHorizontal: spacing[4],
@@ -878,16 +877,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing[2],
     padding: spacing[3],
-    backgroundColor: colors.background.secondary,
-    borderRadius: borders.radius.md,
-    borderWidth: 1,
-    borderColor: colors.border.light,
+    backgroundColor: "#FEF9C3", // Yellow 100 (Plus soutenu que warning.light)
+    borderRadius: borders.radius.button,
   },
   hintButtonText: {
     fontSize: typography.fontSize.sm,
-    color: colors.text.secondary,
+    color: "#A16207", // Yellow 700 (Ambre foncé, très lisible)
     fontFamily: typography.fontFamily.body,
-    fontWeight: typography.fontWeight.medium,
+    fontWeight: "700",
   },
   hintContent: {
     padding: spacing[3],
@@ -911,27 +908,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing[2],
     padding: spacing[4],
-    borderRadius: borders.radius.md,
-    backgroundColor: colors.text.primary, // Bouton noir
-    ...shadows.sm,
+    borderRadius: borders.radius.button,
+    // Shadow commune
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   actionButtonSuccess: {
-    backgroundColor: colors.text.primary,
+    backgroundColor: colors.text.primary, // Noir/Slate foncé
   },
   actionButtonRetry: {
-    backgroundColor: colors.background.primary,
-    borderWidth: borders.width.thin,
-    borderColor: colors.text.primary,
+    backgroundColor: colors.background.tertiary, // Stone 200 (Gris doux)
+    shadowOpacity: 0, // Pas d'ombre pour le bouton secondaire
+    elevation: 0,
   },
   actionButtonText: {
     fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
+    fontWeight: "700",
     fontFamily: typography.fontFamily.body,
   },
   actionButtonTextSuccess: {
-    color: colors.text.inverse, // Blanc sur noir
+    color: colors.text.inverse, // Blanc
   },
   actionButtonTextRetry: {
-    color: colors.text.primary, // Noir sur blanc
+    color: colors.text.secondary, // Gris foncé
   },
 });
