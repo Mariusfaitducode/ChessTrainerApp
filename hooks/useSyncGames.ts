@@ -11,6 +11,21 @@ import { getUserGames, type LichessGame } from "@/services/lichess/api";
 import { prepareGamesForInsert } from "@/services/sync/games";
 
 /**
+ * Extrait la date d'une partie selon son type
+ * Chess.com: end_time (timestamp en secondes)
+ * Lichess: lastMoveAt (timestamp en millisecondes)
+ */
+const getGameDate = (game: ChessComGame | LichessGame): Date => {
+  if ("end_time" in game) {
+    // Chess.com: end_time est en secondes
+    return new Date(game.end_time * 1000);
+  } else {
+    // Lichess: lastMoveAt est en millisecondes
+    return new Date(game.lastMoveAt);
+  }
+};
+
+/**
  * Hook pour synchroniser les parties depuis les plateformes
  */
 export const useSyncGames = (options?: {
@@ -68,7 +83,7 @@ export const useSyncGames = (options?: {
             if (since) {
               const sinceDate = new Date(since);
               apiGames = apiGames.filter((game) => {
-                const gameDate = new Date(game.end_time * 1000);
+                const gameDate = getGameDate(game);
                 return gameDate > sinceDate;
               });
             }

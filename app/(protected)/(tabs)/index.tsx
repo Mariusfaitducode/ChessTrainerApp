@@ -17,6 +17,7 @@ import { useGames } from "@/hooks/useGames";
 import { useExercises } from "@/hooks/useExercises";
 import { useAnalyzeGames } from "@/hooks/useAnalyzeGames";
 import { useAutoSync } from "@/hooks/useAutoSync";
+import { useAutoAnalyze } from "@/hooks/useAutoAnalyze";
 import { colors, spacing, typography, shadows, borders } from "@/theme";
 import { getQualityBadgeImage } from "@/utils/chess-badge";
 import { ExerciseActionCard } from "@/components/exercises/ExerciseActionCard";
@@ -88,6 +89,9 @@ export default function DashboardScreen() {
 
   // Synchronisation automatique : charge les 10 premières parties puis vérifie périodiquement
   useAutoSync();
+
+  // Analyse automatique : analyse la prochaine partie si moins de 3 parties avec exercices
+  useAutoAnalyze();
 
   const [analyzingGameId, setAnalyzingGameId] = useState<string | null>(null);
 
