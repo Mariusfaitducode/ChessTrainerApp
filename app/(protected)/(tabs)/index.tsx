@@ -9,7 +9,8 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
-import { Brain, Play, Trophy, Zap } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { Brain, Trophy, Zap } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useGames } from "@/hooks/useGames";
@@ -19,6 +20,7 @@ import { useChessPlatform } from "@/hooks/useChessPlatform";
 import { useSyncGames } from "@/hooks/useSyncGames";
 import { colors, spacing, typography, shadows, borders } from "@/theme";
 import { getQualityBadgeImage } from "@/utils/chess-badge";
+import { ExerciseActionCard } from "@/components/exercises/ExerciseActionCard";
 
 // Composant StatCard "Clean Wireframe"
 const StatCard = ({
@@ -72,6 +74,7 @@ const ActionCard = ({
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const {
     games,
     isLoading: isLoadingGames,
@@ -84,7 +87,7 @@ export default function DashboardScreen() {
   } = useExercises();
   const { analyzeGames, isAnalyzing, progress } = useAnalyzeGames();
   const { platforms } = useChessPlatform();
-  const { syncGames, isSyncing } = useSyncGames({ silent: true });
+  const { syncGames } = useSyncGames({ silent: true });
   const [analyzingGameId, setAnalyzingGameId] = useState<string | null>(null);
   const hasAutoSynced = useRef(false); // Flag pour éviter les sync multiples
 
@@ -131,6 +134,14 @@ export default function DashboardScreen() {
     } finally {
       setAnalyzingGameId(null);
     }
+  };
+
+  const handleStartExercise = () => {
+    if (pendingExercises.length === 0) return;
+
+    // Prendre le premier exercice non complété (le prochain à résoudre)
+    const nextExercise = pendingExercises[0];
+    router.push(`/(protected)/exercise/${nextExercise.id}` as any);
   };
 
   const currentProgress = analyzingGameId ? progress[analyzingGameId] : null;
@@ -202,7 +213,8 @@ export default function DashboardScreen() {
       {/* Section Exercices */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Entraînement</Text>
-        <ActionCard
+        <ExerciseActionCard
+          exercise={pendingExercises.length > 0 ? pendingExercises[0] : null}
           title="Résoudre des exercices"
           subtitle={
             pendingExercises.length > 0
@@ -210,7 +222,7 @@ export default function DashboardScreen() {
               : "Aucun exercice pour le moment"
           }
           icon={Zap}
-          onPress={() => {}} // TODO: Naviguer vers exercices
+          onPress={handleStartExercise}
           disabled={pendingExercises.length === 0}
         />
       </View>
