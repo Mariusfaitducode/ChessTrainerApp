@@ -6,15 +6,17 @@ import {
   ScrollView,
   RefreshControl,
   Dimensions,
+  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
+import { Play } from "lucide-react-native";
 
 import { useGames } from "@/hooks/useGames";
 import { useExercises } from "@/hooks/useExercises";
 import { useChessPlatform } from "@/hooks/useChessPlatform";
-import { colors, spacing, typography, borders } from "@/theme";
+import { colors, spacing, typography, borders, shadows } from "@/theme";
 import { parseWhiteElo, parseBlackElo } from "@/utils/pgn";
 
 // Nouveaux composants
@@ -415,6 +417,31 @@ export default function MapScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Bouton flottant "Continuer l'aventure" */}
+      {currentExerciseId && (
+        <View
+          style={[
+            styles.fabContainer,
+            { bottom: insets.bottom > 0 ? insets.bottom + 20 : 30 },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() =>
+              router.push(`/(protected)/exercise/${currentExerciseId}` as any)
+            }
+            activeOpacity={0.8}
+          >
+            <Play
+              size={24}
+              color={colors.text.inverse}
+              fill={colors.text.inverse}
+            />
+            <Text style={styles.fabText}>Continuer</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -489,5 +516,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text.secondary,
     textAlign: "center",
+  },
+  fabContainer: {
+    position: "absolute",
+    right: spacing[6],
+    zIndex: 50,
+  },
+  fab: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.text.primary,
+    paddingHorizontal: spacing[6],
+    paddingVertical: spacing[4],
+    borderRadius: borders.radius.xl,
+    gap: spacing[2],
+    ...shadows.lg,
+  },
+  fabText: {
+    fontFamily: typography.fontFamily.heading,
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.text.inverse,
   },
 });

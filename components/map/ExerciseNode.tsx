@@ -84,17 +84,6 @@ export const ExerciseNode = ({
             <Lock size={16} color={colors.text.tertiary} />
           </View>
         )}
-
-        {/* Current Indicator (Play Icon) */}
-        {isCurrent && (
-          <View style={styles.playBadge}>
-            <Play
-              size={12}
-              color={colors.background.primary}
-              fill={colors.background.primary}
-            />
-          </View>
-        )}
       </TouchableOpacity>
     </View>
   );
@@ -171,20 +160,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.4)",
     borderRadius: 20,
-  },
-  playBadge: {
-    position: "absolute",
-    bottom: -10,
-    alignSelf: "center",
-    backgroundColor: colors.text.primary,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: colors.background.primary,
-    zIndex: 10,
-    ...shadows.sm,
   },
 });
