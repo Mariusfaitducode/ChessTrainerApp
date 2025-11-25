@@ -79,6 +79,13 @@ export const useSyncGames = (options?: {
               Math.min(months, 12),
             );
 
+            // Trier par date décroissante (plus récentes en premier)
+            apiGames.sort((a, b) => {
+              const dateA = getGameDate(a).getTime();
+              const dateB = getGameDate(b).getTime();
+              return dateB - dateA;
+            });
+
             // Filtrer par date si since est fourni
             if (since) {
               const sinceDate = new Date(since);
@@ -95,6 +102,16 @@ export const useSyncGames = (options?: {
               maxGames,
               since,
             );
+
+            // Trier par date décroissante (plus récentes en premier) pour garantir l'ordre
+            apiGames.sort((a, b) => {
+              const dateA = getGameDate(a).getTime();
+              const dateB = getGameDate(b).getTime();
+              return dateB - dateA;
+            });
+
+            // Limiter au nombre demandé après tri
+            apiGames = apiGames.slice(0, maxGames);
           }
 
           if (apiGames.length === 0) {

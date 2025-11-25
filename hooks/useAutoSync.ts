@@ -142,15 +142,4 @@ export const useAutoSync = () => {
       subscription.remove();
     };
   }, [checkForNewGames]);
-
-  // Vérifier aussi quand les parties changent (après la sync initiale)
-  useEffect(() => {
-    if (games.length > 0 && platforms.length > 0) {
-      const timeout = setTimeout(() => {
-        checkForNewGames();
-      }, 2000);
-
-      return () => clearTimeout(timeout);
-    }
-  }, [games.length, platforms.length, checkForNewGames]);
 };
