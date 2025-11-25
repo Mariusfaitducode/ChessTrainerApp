@@ -390,6 +390,8 @@ export default function MapScreen() {
               </View>
             );
           } else {
+            const isLeft = x < containerWidth / 2;
+
             return (
               <ExerciseNode
                 key={item.id}
@@ -402,6 +404,7 @@ export default function MapScreen() {
                   router.push(`/(protected)/exercise/${id}` as any)
                 }
                 nodeSize={NODE_SIZE}
+                mascotPosition={isLeft ? "right" : "left"}
               />
             );
           }

@@ -13,6 +13,7 @@ interface ExerciseNodeProps {
   currentExerciseId: string | null;
   onPress: (id: string) => void;
   nodeSize: number;
+  mascotPosition?: "left" | "right";
 }
 
 export const ExerciseNode = ({
@@ -23,6 +24,7 @@ export const ExerciseNode = ({
   currentExerciseId,
   onPress,
   nodeSize,
+  mascotPosition = "right",
 }: ExerciseNodeProps) => {
   const ex = item.data!.exercise!;
   const isCompleted = ex.completed;
@@ -85,6 +87,22 @@ export const ExerciseNode = ({
           </View>
         )}
       </TouchableOpacity>
+
+      {/* Mascotte (Uniquement pour l'exercice courant) */}
+      {isCurrent && (
+        <View
+          style={[
+            styles.mascotContainer,
+            mascotPosition === "left" ? styles.mascotLeft : styles.mascotRight,
+          ]}
+          pointerEvents="none"
+        >
+          <Image
+            source={require("@/assets/Chesscorrect.png")}
+            style={styles.mascotImage}
+          />
+        </View>
+      )}
     </View>
   );
 };
@@ -160,5 +178,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.4)",
     borderRadius: 20,
+  },
+  mascotContainer: {
+    position: "absolute",
+    bottom: 10,
+    zIndex: 10,
+  },
+  mascotLeft: {
+    right: "100%",
+    marginRight: 8,
+  },
+  mascotRight: {
+    left: "100%",
+    marginLeft: 8,
+  },
+  mascotImage: {
+    width: 70,
+    height: 70,
+    resizeMode: "contain",
   },
 });
