@@ -77,7 +77,9 @@ function RootNavigator() {
   useEffect(() => {
     // Timeout de sécurité : forcer le masquage du splash screen après 5 secondes max
     const safetyTimeout = setTimeout(() => {
-      console.warn("[RootNavigator] Timeout: forçant le masquage du splash screen");
+      console.warn(
+        "[RootNavigator] Timeout: forçant le masquage du splash screen",
+      );
       SplashScreen.hideAsync().catch(() => {
         // Ignore error if splash screen is already hidden
       });

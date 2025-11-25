@@ -6,13 +6,18 @@ import {
   ScrollView,
   ActivityIndicator,
   InteractionManager,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Play } from "lucide-react-native";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useGame } from "@/hooks/useGame";
 import { useChessGame } from "@/hooks/useChessGame";
 import { useChessPlatform } from "@/hooks/useChessPlatform";
+import { useAnalyzeGame } from "@/hooks/useAnalyzeGame";
 import { Chessboard } from "@/components/chess/Chessboard";
 import { MoveList } from "@/components/chess/MoveList";
 import { GameControls } from "@/components/chess/GameControls";
@@ -25,8 +30,10 @@ export default function GameDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
+  const queryClient = useQueryClient();
   const { game, analyses, isLoading, error } = useGame(id);
   const { platforms } = useChessPlatform();
+  const { analyze, isAnalyzing } = useAnalyzeGame();
 
   const {
     moves,
@@ -157,6 +164,26 @@ export default function GameDetailScreen() {
     [goToMove],
   );
 
+  const handleAnalyze = useCallback(async () => {
+    if (!game) return;
+
+    if (!game.pgn) {
+      Alert.alert("Erreur", "PGN manquant pour cette partie");
+      return;
+    }
+
+    try {
+      await analyze({ game, options: { depth: 13 } });
+      // Invalider les queries pour rafraîchir les données
+      queryClient.invalidateQueries({ queryKey: ["game-analyses", id] });
+      queryClient.invalidateQueries({ queryKey: ["game-metadata", id] });
+      queryClient.invalidateQueries({ queryKey: ["game-pgn", id] });
+      Alert.alert("Succès", "Analyse terminée avec succès");
+    } catch (error: any) {
+      Alert.alert("Erreur", error?.message || "Erreur lors de l'analyse");
+    }
+  }, [game, analyze, queryClient, id]);
+
   if (!game && isLoading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
@@ -261,9 +288,52 @@ export default function GameDetailScreen() {
                         ? "❌ Erreur"
                         : currentAnalysis.move_quality === "inaccuracy"
                           ? "⚠️ Imprécision"
-                          : "✓ Bon coup"}
+                          : currentAnalysis.move_quality === "miss"
+                            ? "🎯 Opportunité manquée"
+                            : "✓ Bon coup"}
                 </Text>
               )}
+            </View>
+          )}
+
+          {/* Bouton d'analyse */}
+          {game && (
+            <View style={styles.analyzeButtonContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.analyzeButton,
+                  (isAnalyzing || !game.pgn) && styles.analyzeButtonDisabled,
+                ]}
+                onPress={handleAnalyze}
+                disabled={isAnalyzing || !game.pgn}
+                activeOpacity={0.7}
+              >
+                {isAnalyzing ? (
+                  <>
+                    <ActivityIndicator
+                      size="small"
+                      color={colors.text.primary}
+                    />
+                    <Text style={styles.analyzeButtonText}>
+                      Analyse en cours...
+                    </Text>
+                  </>
+                ) : game.analyzed_at ? (
+                  <>
+                    <Play size={18} color={colors.text.primary} />
+                    <Text style={styles.analyzeButtonText}>
+                      Réanalyser la partie
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Play size={18} color={colors.text.primary} />
+                    <Text style={styles.analyzeButtonText}>
+                      Analyser la partie
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
           )}
 
@@ -393,5 +463,30 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.text.secondary,
     fontFamily: typography.fontFamily.body,
+  },
+  analyzeButtonContainer: {
+    paddingHorizontal: spacing[4],
+    marginBottom: spacing[4],
+  },
+  analyzeButton: {
+    backgroundColor: colors.background.secondary,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    borderRadius: borders.radius.button,
+    gap: spacing[2],
+    ...shadows.sm,
+  },
+  analyzeButtonDisabled: {
+    opacity: 0.6,
+    backgroundColor: colors.background.tertiary,
+  },
+  analyzeButtonText: {
+    color: colors.text.primary,
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
   },
 });

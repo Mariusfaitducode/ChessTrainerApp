@@ -48,7 +48,7 @@ def classify_move(
     """
     Classifie un coup et retourne (move_quality, game_phase, evaluation_loss)
 
-    move_quality: "best", "excellent", "good", "inaccuracy", "mistake", "blunder"
+    move_quality: "best", "excellent", "good", "inaccuracy", "mistake", "blunder", "miss"
     game_phase: "opening", "middlegame", "endgame"
     evaluation_loss: en centipawns
     """
@@ -115,6 +115,25 @@ def classify_move(
         evaluation_loss = abs(eval_after - eval_best_after)
     else:
         evaluation_loss = abs(eval_after - eval_before)
+
+    # Détecter les "miss" : opportunités manquées
+    # Un "miss" est un coup où :
+    # - Le joueur n'a pas perdu d'avantage (eval_after >= eval_before - 10 cp)
+    # - Mais il a manqué une opportunité significative (eval_best_after >> eval_after)
+    # - La différence doit être significative (>= 100 cp)
+    if eval_best_after is not None:
+        # Calculer la différence entre le meilleur coup et le coup joué
+        missed_opportunity = eval_best_after - eval_after
+        
+        # Vérifier si c'est un "miss" :
+        # 1. Le coup joué n'a pas causé de perte significative (tolérance de 10 cp)
+        # 2. Le meilleur coup aurait donné un avantage significatif (>= 100 cp de différence)
+        # 3. Le meilleur coup est meilleur que le coup joué
+        if (
+            missed_opportunity >= 100  # Opportunité manquée significative
+            and eval_after >= eval_before - 10  # Pas de perte significative
+        ):
+            return ("miss", game_phase, evaluation_loss)
 
     # Classifier selon la perte d'évaluation
     if evaluation_loss < 10:

@@ -187,10 +187,7 @@ export default function DashboardScreen() {
             source={getQualityBadgeImage("brilliant")}
             style={styles.badgeIcon}
           />
-          <Image
-            source={getQualityBadgeImage("great")}
-            style={styles.badgeIcon}
-          />
+          <Image source={getQualityBadgeImage("ok")} style={styles.badgeIcon} />
           <Image
             source={getQualityBadgeImage("best")}
             style={styles.badgeIcon}
@@ -222,7 +219,7 @@ export default function DashboardScreen() {
             style={styles.badgeIcon}
           />
           <Image
-            source={getQualityBadgeImage("book")}
+            source={getQualityBadgeImage("theory")}
             style={styles.badgeIcon}
           />
         </View>

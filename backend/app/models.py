@@ -31,7 +31,7 @@ class GameAnalysisResponse(BaseModel):
     evaluation: float  # En pawns (pour correspondre à la DB)
     best_move: Optional[str]  # UCI
     played_move: str  # UCI
-    move_quality: str  # "best", "excellent", "good", "inaccuracy", "mistake", "blunder"
+    move_quality: str  # "best", "excellent", "good", "inaccuracy", "mistake", "blunder", "miss"
     game_phase: str  # "opening", "middlegame", "endgame"
     evaluation_loss: float  # En centipawns
     evaluation_type: str  # "cp" ou "mate"
@@ -51,7 +51,7 @@ class ClassifyMoveRequest(BaseModel):
 
 class ClassifyMoveResponse(BaseModel):
     """Classification d'un coup"""
-    move_quality: str  # "best", "excellent", "good", "inaccuracy", "mistake", "blunder"
+    move_quality: str  # "best", "excellent", "good", "inaccuracy", "mistake", "blunder", "miss"
     evaluation_loss: float  # En centipawns
     best_move: Optional[str]  # UCI - meilleur coup dans la position initiale
     opponent_best_move: Optional[str]  # UCI - meilleur coup de l'adversaire après le coup joué

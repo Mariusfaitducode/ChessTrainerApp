@@ -79,7 +79,8 @@ export const analyzeGame = async (
           | "good"
           | "inaccuracy"
           | "mistake"
-          | "blunder",
+          | "blunder"
+          | "miss",
         game_phase: analysis.game_phase as "opening" | "middlegame" | "endgame",
         evaluation_loss: analysis.evaluation_loss, // En centipawns
         evaluation_type: analysis.evaluation_type || null,

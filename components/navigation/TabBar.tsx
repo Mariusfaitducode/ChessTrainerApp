@@ -1,7 +1,7 @@
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { useSegments, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { LayoutDashboard, Map, User } from "lucide-react-native";
+import { LayoutDashboard, Map, User, Trophy } from "lucide-react-native";
 
 import { colors, spacing, typography, shadows, borders } from "@/theme";
 
@@ -18,6 +18,12 @@ const tabs: TabItem[] = [
     label: "Dashboard",
     route: "/(protected)/(tabs)/",
     icon: LayoutDashboard,
+  },
+  {
+    name: "games",
+    label: "Parties",
+    route: "/(protected)/(tabs)/games",
+    icon: Trophy,
   },
   {
     name: "map",

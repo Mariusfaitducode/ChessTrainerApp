@@ -19,3 +19,4 @@ export interface MapItem {
     accuracy?: number; // e.g. 85.5
   };
 }
+
