@@ -9,8 +9,8 @@ const CHECK_INTERVAL = 5000; // 5 secondes
 /**
  * Hook pour analyser automatiquement les parties
  * - Vérifie le nombre de parties avec exercices non complétés
- * - Si < 3, analyse la prochaine partie non analysée dans l'ordre chronologique
- * - Les parties sont triées par date (played_at) décroissante (plus récentes en premier)
+ * - Si < 3, analyse la prochaine partie non analysée (la plus ancienne)
+ * - Les parties sont triées par date (played_at) croissante (plus anciennes en premier)
  */
 export const useAutoAnalyze = () => {
   const { games, isLoading: isLoadingGames } = useGames();
@@ -50,15 +50,15 @@ export const useAutoAnalyze = () => {
       return;
     }
 
-    // Trier les parties par date décroissante (plus récentes en premier)
-    // Cela garantit qu'on analyse dans l'ordre chronologique
+    // Trier les parties par date croissante (plus anciennes en premier)
+    // Cela garantit qu'on analyse les parties les plus anciennes en premier
     const sortedGames = [...games].sort((a, b) => {
       const dateA = a.played_at ? new Date(a.played_at).getTime() : 0;
       const dateB = b.played_at ? new Date(b.played_at).getTime() : 0;
-      return dateB - dateA; // Décroissant (plus récentes en premier)
+      return dateA - dateB; // Croissant (plus anciennes en premier)
     });
 
-    // Trouver la prochaine partie non analysée dans l'ordre chronologique
+    // Trouver la prochaine partie non analysée (la plus ancienne)
     const nextUnanalyzedGame = sortedGames.find(
       (game) => !game.analyzed_at && game.pgn,
     );
