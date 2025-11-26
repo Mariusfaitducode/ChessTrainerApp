@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert } from "react-native";
 
@@ -34,6 +34,8 @@ export const useAnalyzeGames = () => {
   const queryClient = useQueryClient();
   const { platforms } = useChessPlatform();
   const [progress, setProgress] = useState<Record<string, Progress>>({});
+  const [isAnalyzingInternal, setIsAnalyzingInternal] = useState(false);
+  const analyzingRef = useRef(false);
 
   const analyzeGames = useMutation({
     mutationFn: async ({
@@ -47,6 +49,10 @@ export const useAnalyzeGames = () => {
         throw new Error("Aucune partie à analyser");
       }
 
+      // Marquer comme en cours d'analyse
+      analyzingRef.current = true;
+      setIsAnalyzingInternal(true);
+
       const depth = options.depth ?? 13;
       const results: {
         gameId: string;
@@ -54,13 +60,13 @@ export const useAnalyzeGames = () => {
         error?: string;
       }[] = [];
 
-      // Initialiser le progress
+      // Initialiser le progress avec un état "en cours" même si total est 0
       const initialProgress: Record<string, Progress> = {};
       games.forEach((game) => {
         initialProgress[game.id] = {
           gameId: game.id,
           current: 0,
-          total: 0,
+          total: 0, // Sera mis à jour par onProgress
           completed: false,
         };
       });
@@ -171,20 +177,34 @@ export const useAnalyzeGames = () => {
         }
       }
 
+      // Ne pas marquer comme terminé ici - onSuccess/onError le fera
+      // Cela permet de garder isAnalyzing true pendant toute la durée
       return results;
     },
     onSuccess: () => {
+      analyzingRef.current = false;
+      setIsAnalyzingInternal(false);
       queryClient.invalidateQueries({ queryKey: ["games"] });
       Alert.alert("Analyse terminée", "Les parties ont été analysées.");
     },
     onError: (error: Error) => {
+      analyzingRef.current = false;
+      setIsAnalyzingInternal(false);
       Alert.alert("Erreur d'analyse", error.message);
     },
   });
 
+  // isAnalyzing est true si :
+  // - La mutation est pending (React Query)
+  // - L'état interne indique une analyse en cours
+  // - Il y a une progression active (même avec total=0, cela signifie qu'on a initialisé)
+  const hasActiveProgress = Object.values(progress).some((p) => !p.completed);
+  const isAnalyzing =
+    analyzeGames.isPending || isAnalyzingInternal || hasActiveProgress;
+
   return {
     analyzeGames: analyzeGames.mutateAsync,
-    isAnalyzing: analyzeGames.isPending,
+    isAnalyzing,
     progress,
   };
 };

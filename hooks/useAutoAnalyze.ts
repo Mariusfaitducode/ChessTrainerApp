@@ -2,9 +2,16 @@ import { useEffect, useRef } from "react";
 import { useGames } from "./useGames";
 import { useExercises } from "./useExercises";
 import { useAnalyzeGames } from "./useAnalyzeGames";
+import type { Game } from "@/types/games";
 
 const MIN_GAMES_WITH_EXERCISES = 3;
 const CHECK_INTERVAL = 5000; // 5 secondes
+const INITIAL_CHECK_DELAY = 1000; // 1 seconde après le chargement initial
+
+interface UseAutoAnalyzeOptions {
+  analyzeGames?: (params: { games: Game[] }) => Promise<any>;
+  isAnalyzing?: boolean;
+}
 
 /**
  * Hook pour analyser automatiquement les parties
@@ -17,10 +24,55 @@ export const useAutoAnalyze = () => {
   const { exercises, isLoading: isLoadingExercises } = useExercises(false); // Non complétés uniquement
   const { analyzeGames, isAnalyzing } = useAnalyzeGames();
 
+  return useAutoAnalyzeInternal({
+    analyzeGames,
+    isAnalyzing,
+    games,
+    exercises,
+    isLoadingGames,
+    isLoadingExercises,
+  });
+};
+
+/**
+ * Version interne qui accepte les fonctions en paramètre pour éviter les instances multiples
+ */
+export const useAutoAnalyzeInternal = ({
+  analyzeGames: analyzeGamesFn,
+  isAnalyzing: isAnalyzingValue,
+  games,
+  exercises,
+  isLoadingGames,
+  isLoadingExercises,
+}: UseAutoAnalyzeOptions & {
+  games: Game[];
+  exercises: any[];
+  isLoadingGames: boolean;
+  isLoadingExercises: boolean;
+}) => {
+  // Utiliser les fonctions passées en paramètre ou créer une nouvelle instance
+  const analyzeGamesHook = useAnalyzeGames();
+  const analyzeGames = analyzeGamesFn || analyzeGamesHook.analyzeGames;
+  const isAnalyzing =
+    isAnalyzingValue !== undefined
+      ? isAnalyzingValue
+      : analyzeGamesHook.isAnalyzing;
+
   const isAnalyzingRef = useRef(false);
   const lastCheckRef = useRef<number>(0);
+  const hasCheckedInitiallyRef = useRef(false);
 
   useEffect(() => {
+    // Au premier chargement, attendre un peu puis vérifier immédiatement
+    if (
+      !hasCheckedInitiallyRef.current &&
+      !isLoadingGames &&
+      !isLoadingExercises
+    ) {
+      hasCheckedInitiallyRef.current = true;
+      lastCheckRef.current = Date.now() - CHECK_INTERVAL + INITIAL_CHECK_DELAY; // Permettre le check immédiat
+    }
+
     // Éviter les vérifications trop fréquentes
     const now = Date.now();
     if (now - lastCheckRef.current < CHECK_INTERVAL) {

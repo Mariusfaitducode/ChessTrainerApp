@@ -1,23 +1,19 @@
-import { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   RefreshControl,
-  TouchableOpacity,
   ActivityIndicator,
   Image,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Brain, Trophy, Zap } from "lucide-react-native";
+import { Zap } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useGames } from "@/hooks/useGames";
 import { useExercises } from "@/hooks/useExercises";
-import { useAnalyzeGames } from "@/hooks/useAnalyzeGames";
-import { useAutoSync } from "@/hooks/useAutoSync";
-import { useAutoAnalyze } from "@/hooks/useAutoAnalyze";
+import { useSync } from "@/providers/sync-provider";
 import { colors, spacing, typography, shadows, borders } from "@/theme";
 import { getQualityBadgeImage } from "@/utils/chess-badge";
 import { ExerciseActionCard } from "@/components/exercises/ExerciseActionCard";
@@ -39,39 +35,6 @@ const StatCard = ({
   </View>
 );
 
-// Composant ActionCard "Clean Wireframe"
-const ActionCard = ({
-  title,
-  subtitle,
-  icon: Icon,
-  onPress,
-  loading = false,
-  disabled = false,
-}: any) => (
-  <TouchableOpacity
-    style={[styles.actionCard, disabled && styles.actionCardDisabled]}
-    onPress={onPress}
-    disabled={disabled}
-    activeOpacity={0.8}
-  >
-    <View style={styles.actionContent}>
-      <View style={styles.actionIconContainer}>
-        {loading ? (
-          <ActivityIndicator color={colors.text.primary} />
-        ) : (
-          <Icon size={24} color={colors.text.primary} strokeWidth={1.5} />
-        )}
-      </View>
-      <View style={styles.actionTextContainer}>
-        <Text style={styles.actionTitle}>
-          {loading ? "Analyse en cours..." : title}
-        </Text>
-        <Text style={styles.actionSubtitle}>{subtitle}</Text>
-      </View>
-    </View>
-  </TouchableOpacity>
-);
-
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -85,15 +48,8 @@ export default function DashboardScreen() {
     isLoading: isLoadingExercises,
     refetch: refetchExercises,
   } = useExercises();
-  const { analyzeGames, isAnalyzing, progress } = useAnalyzeGames();
-
-  // Synchronisation automatique : charge les 10 premières parties puis vérifie périodiquement
-  useAutoSync();
-
-  // Analyse automatique : analyse la prochaine partie si moins de 3 parties avec exercices
-  useAutoAnalyze();
-
-  const [analyzingGameId, setAnalyzingGameId] = useState<string | null>(null);
+  // Utiliser le contexte global pour l'état de sync et d'analyse
+  const { isAnalyzing, progress } = useSync();
 
   const isLoading = isLoadingGames || isLoadingExercises;
 
@@ -104,24 +60,7 @@ export default function DashboardScreen() {
   const pendingExercises = exercises.filter((e) => !e.completed);
   const completedExercises = exercises.filter((e) => e.completed);
 
-  const unanalyzedGames = games.filter((g) => !g.analyzed_at).slice(0, 5);
   const analyzedGamesCount = games.filter((g) => g.analyzed_at).length;
-
-  const handleAnalyzeFirst = async () => {
-    if (unanalyzedGames.length === 0) return;
-
-    const firstGame = unanalyzedGames[0];
-    setAnalyzingGameId(firstGame.id);
-
-    try {
-      await analyzeGames({ games: [firstGame] });
-      await Promise.all([refetchGames(), refetchExercises()]);
-    } catch {
-      // L'erreur est déjà gérée dans le hook avec Alert
-    } finally {
-      setAnalyzingGameId(null);
-    }
-  };
 
   const handleStartExercise = () => {
     if (pendingExercises.length === 0) return;
@@ -131,10 +70,19 @@ export default function DashboardScreen() {
     router.push(`/(protected)/exercise/${nextExercise.id}` as any);
   };
 
-  const currentProgress = analyzingGameId ? progress[analyzingGameId] : null;
-  const progressPercent =
-    currentProgress && currentProgress.total > 0
-      ? Math.round((currentProgress.current / currentProgress.total) * 100)
+  // Trouver la partie en cours d'analyse
+  const analyzingGameProgress = isAnalyzing
+    ? Object.values(progress).find((p) => !p.completed)
+    : null;
+
+  // Afficher l'indicateur si on analyse
+  const showAnalyzingIndicator = isAnalyzing;
+
+  const analyzingProgressPercent =
+    analyzingGameProgress && analyzingGameProgress.total > 0
+      ? Math.round(
+          (analyzingGameProgress.current / analyzingGameProgress.total) * 100,
+        )
       : 0;
 
   return (
@@ -161,6 +109,40 @@ export default function DashboardScreen() {
           subtitle="résolus"
         />
       </View>
+
+      {/* Indicateur d'analyse en cours */}
+      {showAnalyzingIndicator && (
+        <View style={styles.analyzingCard}>
+          <View style={styles.analyzingContent}>
+            <View style={styles.analyzingIconContainer}>
+              <ActivityIndicator size="small" color={colors.text.primary} />
+            </View>
+            <View style={styles.analyzingTextContainer}>
+              <Text style={styles.analyzingTitle}>Analyse en cours</Text>
+              <Text style={styles.analyzingSubtitle}>
+                {analyzingGameProgress && analyzingGameProgress.total > 0
+                  ? `Coup ${analyzingGameProgress.current}/${analyzingGameProgress.total}`
+                  : "Préparation de l'analyse..."}
+              </Text>
+            </View>
+          </View>
+          {analyzingGameProgress && analyzingGameProgress.total > 0 && (
+            <View style={styles.analyzingProgressContainer}>
+              <View style={styles.analyzingProgressBar}>
+                <View
+                  style={[
+                    styles.analyzingProgressFill,
+                    { width: `${analyzingProgressPercent}%` },
+                  ]}
+                />
+              </View>
+              <Text style={styles.analyzingProgressText}>
+                {analyzingProgressPercent}%
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Section Exercices */}
       <View style={styles.section}>
@@ -384,5 +366,63 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     resizeMode: "contain",
+  },
+  analyzingCard: {
+    backgroundColor: colors.background.secondary,
+    borderRadius: borders.radius.card,
+    padding: spacing[5],
+    marginBottom: spacing[6],
+    ...shadows.md,
+  },
+  analyzingContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[4],
+  },
+  analyzingIconContainer: {
+    width: 48,
+    height: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: colors.background.primary,
+    borderRadius: borders.radius.button,
+  },
+  analyzingTextContainer: {
+    flex: 1,
+  },
+  analyzingTitle: {
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: "700",
+    fontSize: 17,
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
+  analyzingSubtitle: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 15,
+    color: colors.text.secondary,
+    lineHeight: 20,
+  },
+  analyzingProgressContainer: {
+    marginTop: spacing[4],
+  },
+  analyzingProgressBar: {
+    height: 6,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: 3,
+    overflow: "hidden",
+    marginBottom: spacing[2],
+  },
+  analyzingProgressFill: {
+    height: "100%",
+    backgroundColor: colors.text.primary,
+    borderRadius: 3,
+  },
+  analyzingProgressText: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 13,
+    textAlign: "center",
+    color: colors.text.tertiary,
+    fontWeight: "500",
   },
 });

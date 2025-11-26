@@ -16,6 +16,7 @@ import { useSupabase } from "@/hooks/useSupabase";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { QueryProvider } from "@/providers/query-provider";
 import { SupabaseProvider } from "@/providers/supabase-provider";
+import { SyncProvider } from "@/providers/sync-provider";
 
 SplashScreen.setOptions({
   duration: 500,
@@ -60,7 +61,9 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SupabaseProvider>
         <QueryProvider>
-          <RootNavigator />
+          <SyncProvider>
+            <RootNavigator />
+          </SyncProvider>
         </QueryProvider>
       </SupabaseProvider>
     </GestureHandlerRootView>
