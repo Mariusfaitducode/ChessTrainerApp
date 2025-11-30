@@ -94,21 +94,43 @@ const generateDescription = (
 };
 
 /**
- * Crée un exercice à partir d'une analyse de blunder
+ * Ordre de gravité des erreurs (du plus grave au moins grave)
+ */
+const ERROR_SEVERITY_ORDER: Record<string, number> = {
+  blunder: 3,
+  mistake: 2,
+  inaccuracy: 1,
+};
+
+/**
+ * Compare deux analyses par gravité (du plus grave au moins grave)
+ */
+const compareBySeverity = (a: GameAnalysis, b: GameAnalysis): number => {
+  const severityA = ERROR_SEVERITY_ORDER[a.move_quality || ""] || 0;
+  const severityB = ERROR_SEVERITY_ORDER[b.move_quality || ""] || 0;
+  return severityB - severityA; // Ordre décroissant (blunder en premier)
+};
+
+/**
+ * Crée un exercice à partir d'une analyse d'erreur
  */
 const createExerciseFromAnalysis = (
   analysis: GameAnalysis,
   context: ExerciseGenerationContext,
 ): Omit<Exercise, "id" | "created_at"> | null => {
-  // Vérifier que c'est bien un blunder (basé sur move_quality)
-  if (analysis.move_quality !== "blunder") {
+  // Vérifier que c'est bien une erreur (blunder, mistake, ou inaccuracy)
+  if (
+    analysis.move_quality !== "blunder" &&
+    analysis.move_quality !== "mistake" &&
+    analysis.move_quality !== "inaccuracy"
+  ) {
     return null;
   }
 
   // Vérifier que c'est le joueur utilisateur qui a fait l'erreur
-  //   if (!isUserMove(analysis.move_number, context.game, context.userUsernames)) {
-  //     return null;
-  //   }
+  if (!isUserMove(analysis.move_number, context.game, context.userUsernames)) {
+    return null;
+  }
 
   // Vérifier que best_move existe
   if (!analysis.best_move) {
@@ -175,9 +197,48 @@ export const generateExercisesFromAnalyses = async (
     userUsernames,
   };
 
-  // Filtrer uniquement les blunders (basé sur move_quality)
-  const blunders = analyses.filter((a) => a.move_quality === "blunder");
-  console.log(`[ExerciseGenerator] ${blunders.length} blunders trouvés`);
+  // Filtrer uniquement les erreurs du joueur (blunder, mistake, inaccuracy)
+  const userErrors = analyses.filter(
+    (a) =>
+      (a.move_quality === "blunder" ||
+        a.move_quality === "mistake" ||
+        a.move_quality === "inaccuracy") &&
+      isUserMove(a.move_number, game, userUsernames),
+  );
+
+  // Trier par gravité (blunder > mistake > inaccuracy)
+  userErrors.sort(compareBySeverity);
+
+  // Sélectionner jusqu'à 6 erreurs, en priorisant les plus graves
+  // D'abord les blunders, puis mistakes, puis inaccuracies
+  const selectedErrors: GameAnalysis[] = [];
+  const blunders = userErrors.filter((a) => a.move_quality === "blunder");
+  const mistakes = userErrors.filter((a) => a.move_quality === "mistake");
+  const inaccuracies = userErrors.filter(
+    (a) => a.move_quality === "inaccuracy",
+  );
+
+  // Ajouter d'abord tous les blunders
+  selectedErrors.push(...blunders);
+
+  // Si moins de 6, compléter avec des mistakes
+  if (selectedErrors.length < 6) {
+    const remaining = 6 - selectedErrors.length;
+    selectedErrors.push(...mistakes.slice(0, remaining));
+  }
+
+  // Si encore moins de 6, compléter avec des inaccuracies
+  if (selectedErrors.length < 6) {
+    const remaining = 6 - selectedErrors.length;
+    selectedErrors.push(...inaccuracies.slice(0, remaining));
+  }
+
+  console.log(
+    `[ExerciseGenerator] ${userErrors.length} erreurs du joueur trouvées (${blunders.length} blunders, ${mistakes.length} mistakes, ${inaccuracies.length} inaccuracies)`,
+  );
+  console.log(
+    `[ExerciseGenerator] ${selectedErrors.length} erreurs sélectionnées pour créer des exercices`,
+  );
 
   // Créer les exercices avec leur analyse associée
   const exercisesWithAnalysis: {
@@ -185,7 +246,7 @@ export const generateExercisesFromAnalyses = async (
     analysis: GameAnalysis;
   }[] = [];
 
-  for (const analysis of blunders) {
+  for (const analysis of selectedErrors) {
     const exercise = createExerciseFromAnalysis(analysis, context);
     if (exercise) {
       exercisesWithAnalysis.push({ exercise, analysis });
@@ -303,9 +364,48 @@ export const generateExercisesFromAnalysesGuest = async (
     userUsernames,
   };
 
-  // Filtrer uniquement les blunders (basé sur move_quality)
-  const blunders = analyses.filter((a) => a.move_quality === "blunder");
-  console.log(`[ExerciseGenerator] ${blunders.length} blunders trouvés`);
+  // Filtrer uniquement les erreurs du joueur (blunder, mistake, inaccuracy)
+  const userErrors = analyses.filter(
+    (a) =>
+      (a.move_quality === "blunder" ||
+        a.move_quality === "mistake" ||
+        a.move_quality === "inaccuracy") &&
+      isUserMove(a.move_number, game, userUsernames),
+  );
+
+  // Trier par gravité (blunder > mistake > inaccuracy)
+  userErrors.sort(compareBySeverity);
+
+  // Sélectionner jusqu'à 6 erreurs, en priorisant les plus graves
+  // D'abord les blunders, puis mistakes, puis inaccuracies
+  const selectedErrors: GameAnalysis[] = [];
+  const blunders = userErrors.filter((a) => a.move_quality === "blunder");
+  const mistakes = userErrors.filter((a) => a.move_quality === "mistake");
+  const inaccuracies = userErrors.filter(
+    (a) => a.move_quality === "inaccuracy",
+  );
+
+  // Ajouter d'abord tous les blunders
+  selectedErrors.push(...blunders);
+
+  // Si moins de 6, compléter avec des mistakes
+  if (selectedErrors.length < 6) {
+    const remaining = 6 - selectedErrors.length;
+    selectedErrors.push(...mistakes.slice(0, remaining));
+  }
+
+  // Si encore moins de 6, compléter avec des inaccuracies
+  if (selectedErrors.length < 6) {
+    const remaining = 6 - selectedErrors.length;
+    selectedErrors.push(...inaccuracies.slice(0, remaining));
+  }
+
+  console.log(
+    `[ExerciseGenerator] ${userErrors.length} erreurs du joueur trouvées (${blunders.length} blunders, ${mistakes.length} mistakes, ${inaccuracies.length} inaccuracies)`,
+  );
+  console.log(
+    `[ExerciseGenerator] ${selectedErrors.length} erreurs sélectionnées pour créer des exercices`,
+  );
 
   // Créer les exercices avec leur analyse associée
   const exercisesWithAnalysis: {
@@ -313,7 +413,7 @@ export const generateExercisesFromAnalysesGuest = async (
     analysis: GameAnalysis;
   }[] = [];
 
-  for (const analysis of blunders) {
+  for (const analysis of selectedErrors) {
     const exercise = createExerciseFromAnalysis(analysis, context);
     if (exercise) {
       exercisesWithAnalysis.push({ exercise, analysis });
