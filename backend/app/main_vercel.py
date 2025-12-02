@@ -1,4 +1,7 @@
-"""Point d'entrée de l'application FastAPI"""
+"""
+Point d'entrée FastAPI adapté pour Vercel (serverless)
+Utilise lazy initialization pour Stockfish
+"""
 import logging
 import os
 
@@ -8,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
 from app.routes import analyze, health
-from app.services.stockfish_manager import StockfishManager
+from app.services.stockfish_manager_serverless import StockfishManagerServerless
 
 load_dotenv()
 
@@ -16,20 +19,30 @@ load_dotenv()
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+    datefmt="%Y-%m-%d %H:%M-%S",
 )
 logger = logging.getLogger(__name__)
 
-STOCKFISH_PATH = os.getenv("STOCKFISH_PATH", "stockfish")
+# Sur Vercel, Stockfish est installé dans backend/bin/stockfish par le build script
+# Vérifier si on est sur Vercel
+IS_VERCEL = os.getenv("VERCEL") == "1"
 
-# Initialiser le gestionnaire Stockfish
-manager = StockfishManager(STOCKFISH_PATH)
+if IS_VERCEL:
+    # Sur Vercel, utiliser le chemin relatif depuis le build
+    # Le build script installe Stockfish dans backend/bin/stockfish
+    default_path = os.path.join(os.path.dirname(__file__), "..", "bin", "stockfish")
+    STOCKFISH_PATH = os.getenv("STOCKFISH_PATH", default_path)
+    logger.info(f"[FastAPI] Mode Vercel détecté, STOCKFISH_PATH: {STOCKFISH_PATH}")
+else:
+    STOCKFISH_PATH = os.getenv("STOCKFISH_PATH", "stockfish")
+
+# Initialiser le gestionnaire Stockfish (serverless avec lazy init)
+manager = StockfishManagerServerless(STOCKFISH_PATH)
 
 # Créer l'application FastAPI
 app = FastAPI(title="Chess Analyzer", version="1.0.0")
 
-# Configuration CORS pour permettre les requêtes depuis l'app mobile
-# En beta, autoriser toutes les origines. En production, spécifier via CORS_ORIGINS
+# Configuration CORS
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*")
 if CORS_ORIGINS == "*":
     cors_origins = ["*"]
@@ -45,7 +58,7 @@ app.add_middleware(
 )
 
 # Configurer la dépendance pour les routes d'analyse
-def get_engine_manager() -> StockfishManager:
+def get_engine_manager() -> StockfishManagerServerless:
     """Dependency pour obtenir le gestionnaire Stockfish"""
     return manager
 
@@ -56,20 +69,8 @@ analyze.set_engine_manager_dependency(get_engine_manager)
 app.include_router(health.router)
 app.include_router(analyze.router)
 
-
-@app.on_event("startup")
-async def startup_event() -> None:
-    """Démarre l'application et initialise Stockfish"""
-    logger.info("[FastAPI] Démarrage de l'application...")
-    await manager.start()
-    logger.info("[FastAPI] Application démarrée, prête à recevoir des requêtes")
-
-
-@app.on_event("shutdown")
-async def shutdown_event() -> None:
-    """Arrête l'application et ferme Stockfish"""
-    await manager.stop()
-
+# Pas d'événements startup/shutdown en serverless
+# Stockfish sera initialisé à la demande (lazy)
 
 @app.exception_handler(RuntimeError)
 async def runtime_error_handler(
@@ -78,3 +79,4 @@ async def runtime_error_handler(
     """Gestionnaire d'erreurs pour les RuntimeError"""
     logger.error(f"[FastAPI] RuntimeError: {exc}")
     return JSONResponse(status_code=500, content={"detail": str(exc)})
+
