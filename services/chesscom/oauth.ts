@@ -33,7 +33,7 @@
 
 //   // Déterminer le redirect URI selon la plateforme
 //   const redirectUriValue = AuthSession.makeRedirectUri({
-//     scheme: Constants.expoConfig?.scheme || "expo-supabase-starter",
+//     scheme: Constants.expoConfig?.scheme || "chesscorrect",
 //     path: "oauth/chesscom",
 //   });
 //   const redirectUri =

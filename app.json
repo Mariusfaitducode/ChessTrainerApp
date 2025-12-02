@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "expo-supabase-starter",
-    "slug": "expo-supabase-starter",
+    "name": "ChessCorrect",
+    "slug": "chesscorrect",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "expo-supabase-starter",
+    "scheme": "chesscorrect",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "platforms": [
@@ -15,7 +15,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.flemingvincent.expo-supabase-starter"
+      "bundleIdentifier": "com.chesscorrect.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +23,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.flemingvincent.exposupabasestarter"
+      "package": "com.chesscorrect.app"
     },
     "plugins": [
       "expo-router",
@@ -41,6 +41,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2be33031-3bad-4fa7-8ac6-c9bb9a0a5437"
+      }
     }
   }
 }

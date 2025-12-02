@@ -30,7 +30,7 @@ export const initiateLichessOAuth = async (): Promise<LichessOAuthResult> => {
   }
 
   const redirectUri = AuthSession.makeRedirectUri({
-    scheme: Constants.expoConfig?.scheme || "expo-supabase-starter",
+    scheme: (Constants.expoConfig?.scheme as string) || "chesscorrect",
     path: "oauth/lichess",
   });
 
