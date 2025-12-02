@@ -1,5 +1,6 @@
 # Configuration Nixpacks pour Railway
 # Installe Stockfish et configure l'environnement Python
+# Ce fichier doit être dans le dossier backend/
 
 [phases.setup]
 nixPkgs = ["stockfish"]

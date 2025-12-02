@@ -1,0 +1,12 @@
+# Ignorer tout sauf le backend
+*
+!backend/
+backend/*
+!backend/app/
+!backend/app/**
+!backend/requirements.txt
+!backend/nixpacks.toml
+!backend/Procfile
+!backend/Dockerfile
+!backend/README.md
+
