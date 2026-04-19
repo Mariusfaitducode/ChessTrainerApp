@@ -31,8 +31,8 @@ export async function syncAndAnalyze({
   if (signal?.aborted) return;
 
   const todo = await gameRepo.listUnanalyzed(db);
-  await engine.init();
   try {
+    await engine.init();
     for (let i = 0; i < todo.length; i++) {
       if (signal?.aborted) return;
       const g = todo[i];
