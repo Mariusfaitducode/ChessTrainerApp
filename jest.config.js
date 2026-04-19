@@ -38,5 +38,13 @@ module.exports = {
         '^expo-sqlite$': '<rootDir>/__mocks__/expo-sqlite.ts',
       },
     },
+    {
+      displayName: 'services',
+      testMatch: ['<rootDir>/src/services/**/*.test.ts'],
+      testEnvironment: 'node',
+      moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/$1',
+      },
+    },
   ],
 };
