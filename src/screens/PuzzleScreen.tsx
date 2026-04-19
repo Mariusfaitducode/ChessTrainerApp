@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -27,13 +27,27 @@ export function PuzzleScreen() {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [outcome, setOutcome] = useState<Outcome>("pending");
   const [hint, setHint] = useState<string | null>(null);
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
     (async () => {
       const db = await openDb();
-      setPuzzle(await puzzleRepo.get(db, id!));
+      const p = await puzzleRepo.get(db, id);
+      if (!cancelled) setPuzzle(p);
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
+
+  useEffect(
+    () => () => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    },
+    [],
+  );
 
   const fenTurnColor = useMemo(
     () => (puzzle ? puzzle.fen.split(" ")[1] : "w"),
@@ -53,7 +67,8 @@ export function PuzzleScreen() {
       setOutcome("correct");
     } else {
       setOutcome("incorrect");
-      setTimeout(() => setOutcome("pending"), 1000);
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = setTimeout(() => setOutcome("pending"), 1000);
     }
     return isCorrect;
   };

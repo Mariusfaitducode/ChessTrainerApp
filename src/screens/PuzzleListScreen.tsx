@@ -22,10 +22,15 @@ export function PuzzleListScreen() {
   const [filter, setFilter] = useState<Filter>("all");
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       const db = await openDb();
-      setAll(await puzzleRepo.listUnsolved(db));
+      const puzzles = await puzzleRepo.listUnsolved(db);
+      if (!cancelled) setAll(puzzles);
     })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filtered =
