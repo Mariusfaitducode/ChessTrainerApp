@@ -16,6 +16,7 @@ export function UsernameScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
+    if (loading) return;
     setError(null);
     const v = value.trim();
     if (v.length < 3) {
