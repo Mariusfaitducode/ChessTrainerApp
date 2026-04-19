@@ -51,3 +51,4 @@ android/
 backend/.venv/
 **/__pycache__/
 .vercel
+.superpowers/
