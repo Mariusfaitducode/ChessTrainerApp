@@ -18,12 +18,9 @@ export function extractPuzzles(
 
   evaluations.forEach((m) => {
     if (m.playedMove === m.bestMove) return;
+    if (m.color !== userColor) return;
 
-    // Determine mover color from moveNumber parity: odd = white, even = black
-    const moverColor: Color = m.moveNumber % 2 === 1 ? 'w' : 'b';
-    if (moverColor !== userColor) return;
-
-    const loss = computeLoss(m.evalBefore, m.evalAfter, moverColor);
+    const loss = computeLoss(m.evalBefore, m.evalAfter, m.color);
     const quality = classify(loss);
     if (quality !== 'blunder' && quality !== 'mistake' && quality !== 'inaccuracy') {
       return;

@@ -4,6 +4,7 @@ import type { MoveEvaluation } from './types';
 function mv(partial: Partial<MoveEvaluation> & { moveNumber: number }): MoveEvaluation {
   return {
     moveNumber: partial.moveNumber,
+    color: partial.color ?? 'w',
     fen: partial.fen ?? 'fen' + partial.moveNumber,
     playedMove: partial.playedMove ?? 'e2e4',
     evalBefore: partial.evalBefore ?? 0,
@@ -107,11 +108,21 @@ describe('extractPuzzles', () => {
 
   it('only extracts from user moves (color filter)', () => {
     const moves = [
-      mv({ moveNumber: 1, evalBefore: 0, evalAfter: -600 }), // white blunder (index 0 = white)
-      mv({ moveNumber: 2, evalBefore: -100, evalAfter: -600 }), // black, index 1 (improvement, not blunder)
+      mv({ moveNumber: 1, color: 'w', evalBefore: 0, evalAfter: -600 }), // white blunder
+      mv({ moveNumber: 1, color: 'b', evalBefore: -100, evalAfter: -600 }), // black improvement, not blunder
     ];
     const result = extractPuzzles(moves, 'b', 'g', () => 'u');
     expect(result).toEqual([]);
+  });
+
+  it('extracts a black blunder on move 1 (both colors share moveNumber)', () => {
+    const moves = [
+      mv({ moveNumber: 1, color: 'w', evalBefore: 0, evalAfter: 20 }), // white best
+      mv({ moveNumber: 1, color: 'b', evalBefore: 20, evalAfter: 520 }), // black blunder
+    ];
+    const result = extractPuzzles(moves, 'b', 'g', () => 'u');
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ quality: 'blunder', moveNumber: 1 });
   });
 
 });

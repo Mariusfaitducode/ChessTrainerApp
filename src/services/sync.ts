@@ -47,6 +47,7 @@ export async function syncAndAnalyze({
           const after = await engine.evaluate(m.fenAfter, depth);
           evaluations.push({
             moveNumber: m.moveNumber,
+            color: m.color,
             fen: m.fenBefore,
             playedMove: m.uci,
             evalBefore: before.cp,

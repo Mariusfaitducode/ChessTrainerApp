@@ -30,6 +30,7 @@ export interface Puzzle {
 
 export interface MoveEvaluation {
   moveNumber: number;
+  color: Color;
   fen: string;
   playedMove: string;
   evalBefore: number;
